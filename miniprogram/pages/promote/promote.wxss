@@ -190,15 +190,19 @@
   align-items: center;
   font-size: 24rpx;
   margin-bottom: 12rpx;
+  gap: 12rpx;
 }
 
 .f-label {
   color: #4B5563;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .f-calc {
   color: #374151;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .highlight {

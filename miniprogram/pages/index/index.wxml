@@ -24,16 +24,20 @@
       <text class="schedule-link">作坊出炉说明 ></text>
     </view>
 
-    <!-- 配送/自提地址与收件人联系条 -->
+    <!-- 配送/自提地址与收件人联系条 (垂直分层结构，绝不拥挤截断) -->
     <view class="address-strip">
       <view class="address-loc-group">
-        <view class="loc-icon-circle">📍</view>
-        <view class="address-bold">{{deliveryType === 1 ? destAddress : '潘小兜作坊自提点 (临天八弄36号)'}}</view>
-        <view class="address-hint" wx:if="{{deliveryType === 1}}">
-          收件联系人：{{receiverName}} ({{receiverPhone}})
+        <view class="address-line-primary">
+          <text class="loc-icon-circle">📍</text>
+          <text class="address-bold">{{deliveryType === 1 ? destAddress : '潘小兜作坊实体自提点 (临天八弄36号)'}}</text>
         </view>
-        <view class="address-hint" wx:else>
-          锦城街道临天八弄36号实体工坊 · 报手机号自提
+        <view class="address-line-secondary" wx:if="{{deliveryType === 1}}">
+          <text class="contact-label">收件人：</text>
+          <text class="contact-value">{{receiverName}} ({{receiverPhone}})</text>
+        </view>
+        <view class="address-line-secondary" wx:else>
+          <text class="contact-label">工坊地址：</text>
+          <text class="contact-value">临安锦城临天八弄36号 · 报手机号自提</text>
         </view>
       </view>
       <view class="address-edit-btn" bindtap="editAddress">修改</view>

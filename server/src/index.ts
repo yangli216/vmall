@@ -46,8 +46,11 @@ router.get('/health', async (ctx) => {
 
 // 1. 商品相关
 router.get('/products', productCtrl.getProductList);
+router.get('/categories', productCtrl.getCategoryList);
 router.post('/admin/product/toggle', productCtrl.toggleProductStatus);
 router.post('/admin/product/add', productCtrl.addProduct);
+router.post('/admin/product/update', productCtrl.updateProduct);
+router.post('/admin/product/delete', productCtrl.deleteProduct);
 
 // 2. 用户与会员相关
 router.get('/user/info', userCtrl.getOrCreateCurrentUser);

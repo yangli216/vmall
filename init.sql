@@ -31,7 +31,10 @@ INSERT INTO `t_system_config` (`config_key`, `config_value`, `remark`) VALUES
 ('DELIVERY_MAX_DISTANCE', '5.0', '作坊自配送最大覆盖半径(公里，超出仅限自提)'),
 ('WORKSHOP_ADDRESS', '浙江省杭州市临安区锦城街道临天八弄36号', '潘小兜实体工坊自提发货地址'),
 ('DELIVERY_PERSON_NAME', '潘坚 (潘师傅)', '默认自配送负责人姓名'),
-('DELIVERY_PERSON_PHONE', '13735518290', '默认自配送负责人电话');
+('DELIVERY_PERSON_PHONE', '13735518290', '默认自配送负责人电话'),
+('MEMBER_DISCOUNT_RATE', '0.88', '尊享会员折扣率(如0.88代表8.8折)'),
+('WORKSHOP_ANNOUNCEMENT', '今日傍晚 16:30 准时出锅，临天八弄现捞保温直达', '作坊主页顶部出炉与营业公告'),
+('BATCH_SCHEDULE_TIME', '16:30', '每日出锅截单时段(如16:30)');
 
 -- ----------------------------
 -- 2. 卤味商品主表

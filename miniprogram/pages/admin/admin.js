@@ -10,12 +10,18 @@ Page({
       MEMBER_ENTRY_MODE: 'CONSUME',
       MEMBER_ENTRY_THRESHOLD: 68,
       RED_PACKET_MAX_DEDUCT_RATIO: '0.50',
-      COMMISSION_RATE: '0.03'
+      COMMISSION_RATE: '0.03',
+      DELIVERY_BASE_FEE: '3.00',
+      DELIVERY_FREE_THRESHOLD: '38.00',
+      DELIVERY_PERSON_PHONE: '13735518290',
+      WORKSHOP_ANNOUNCEMENT: '今日傍晚 16:30 准时出锅，临天八弄现捞保温直达'
     },
     redDeductPercent: 50,
     commissionPercent: 3,
     showAddModal: false,
-    newDish: {
+    isEditingDish: false,
+    dishForm: {
+      id: 0,
       title: '',
       origin_price: '',
       member_price: '',
@@ -87,6 +93,7 @@ Page({
 
         that.setData({
           config: {
+            ...that.data.config,
             ...c,
             MEMBER_ENTRY_THRESHOLD: threshold,
             MEMBER_ENTRY_MODE: c.MEMBER_ENTRY_MODE || 'CONSUME'
@@ -101,7 +108,7 @@ Page({
     });
   },
 
-  // 一键切换上下架/沽清状态 (直连云数据库)
+  // 一键切换上下架/沽清状态
   toggleProductStatus: function (e) {
     const that = this;
     const dishId = e.currentTarget.dataset.id;
@@ -136,39 +143,172 @@ Page({
     });
   },
 
-  // 切换升级门槛模式
+  // 删除菜品
+  confirmDeleteDish: function (e) {
+    const that = this;
+    const id = e.currentTarget.dataset.id;
+    const title = e.currentTarget.dataset.title;
+
+    wx.showModal({
+      title: '确认删除菜品？',
+      content: `确定从菜单中彻底删除「${title}」？删除后前台顾客将无法看到此菜品。`,
+      confirmColor: '#DC2626',
+      confirmText: '确认删除',
+      success: (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '正在删除...' });
+          app.callContainer({
+            path: '/api/admin/product/delete',
+            method: 'POST',
+            data: { id }
+          }).then(apiRes => {
+            wx.hideLoading();
+            if (apiRes && apiRes.code === 0) {
+              wx.showToast({ title: '已成功删除', icon: 'success' });
+              that.loadDishes();
+            } else {
+              wx.showToast({ title: apiRes.msg || '删除失败', icon: 'none' });
+            }
+          }).catch(() => {
+            wx.hideLoading();
+            wx.showToast({ title: '网络异常', icon: 'none' });
+          });
+        }
+      }
+    });
+  },
+
+  // 打开编辑模态框
+  openEditModal: function (e) {
+    const dish = e.currentTarget.dataset.dish;
+    this.setData({
+      showAddModal: true,
+      isEditingDish: true,
+      dishForm: {
+        id: dish.id,
+        title: dish.title,
+        origin_price: dish.origin_price,
+        member_price: dish.member_price,
+        badge: dish.badge || '手工老卤',
+        intro: dish.intro || ''
+      }
+    });
+  },
+
+  // 打开新增模态框
+  openAddModal: function () {
+    this.setData({
+      showAddModal: true,
+      isEditingDish: false,
+      dishForm: {
+        id: 0,
+        title: '',
+        origin_price: '',
+        member_price: '',
+        badge: '今日现捞',
+        intro: ''
+      }
+    });
+  },
+
+  closeAddModal: function () {
+    this.setData({ showAddModal: false });
+  },
+
+  onInputFormTitle: function (e) {
+    this.setData({ 'dishForm.title': e.detail.value });
+  },
+  onInputFormOriginPrice: function (e) {
+    const origin = parseFloat(e.detail.value) || 0;
+    const member = (origin * 0.88).toFixed(2);
+    this.setData({
+      'dishForm.origin_price': e.detail.value,
+      'dishForm.member_price': member
+    });
+  },
+  onInputFormMemberPrice: function (e) {
+    this.setData({ 'dishForm.member_price': e.detail.value });
+  },
+  onInputFormBadge: function (e) {
+    this.setData({ 'dishForm.badge': e.detail.value });
+  },
+  onInputFormIntro: function (e) {
+    this.setData({ 'dishForm.intro': e.detail.value });
+  },
+
+  // 提交新增或修改菜品
+  submitDishForm: function () {
+    const that = this;
+    const f = this.data.dishForm;
+    if (!f.title || !f.origin_price) {
+      wx.showToast({ title: '请填写名称与价格', icon: 'none' });
+      return;
+    }
+
+    const isEdit = this.data.isEditingDish;
+    wx.showLoading({ title: isEdit ? '正在保存修改...' : '正在发布上架...' });
+
+    const payload = {
+      id: f.id,
+      category_id: 1,
+      title: f.title,
+      intro: f.intro || '临天八弄纯手工老卤，鲜卤现捞',
+      origin_price: parseFloat(f.origin_price),
+      member_price: parseFloat(f.member_price || (parseFloat(f.origin_price) * 0.88).toFixed(2)),
+      badge: f.badge || '手工老卤'
+    };
+
+    const apiPath = isEdit ? '/api/admin/product/update' : '/api/admin/product/add';
+
+    app.callContainer({
+      path: apiPath,
+      method: 'POST',
+      data: payload
+    }).then(res => {
+      wx.hideLoading();
+      if (res && res.code === 0) {
+        that.closeAddModal();
+        wx.showToast({ title: isEdit ? '修改保存成功！' : '上架成功！', icon: 'success' });
+        that.loadDishes();
+      } else {
+        wx.showToast({ title: res.msg || '操作失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.hideLoading();
+      wx.showToast({ title: '请求异常', icon: 'none' });
+    });
+  },
+
+  // 运营配置项输入处理器
   changeUpgradeType: function (e) {
-    const type = e.currentTarget.dataset.type;
-    this.setData({
-      'config.MEMBER_ENTRY_MODE': type
-    });
+    this.setData({ 'config.MEMBER_ENTRY_MODE': e.currentTarget.dataset.type });
   },
-
-  // 修改累计消费门槛滑块
   updateThresholdSlider: function (e) {
-    this.setData({
-      'config.MEMBER_ENTRY_THRESHOLD': e.detail.value
-    });
+    this.setData({ 'config.MEMBER_ENTRY_THRESHOLD': e.detail.value });
   },
-
-  // 修改红包抵扣上限滑块
   updateRedRatioSlider: function (e) {
-    this.setData({
-      redDeductPercent: e.detail.value
-    });
+    this.setData({ redDeductPercent: e.detail.value });
   },
-
-  // 修改返佣比例滑块
   updateCommissionSlider: function (e) {
-    this.setData({
-      commissionPercent: e.detail.value
-    });
+    this.setData({ commissionPercent: e.detail.value });
+  },
+  onInputDeliveryFee: function (e) {
+    this.setData({ 'config.DELIVERY_BASE_FEE': e.detail.value });
+  },
+  onInputFreeThreshold: function (e) {
+    this.setData({ 'config.DELIVERY_FREE_THRESHOLD': e.detail.value });
+  },
+  onInputPhone: function (e) {
+    this.setData({ 'config.DELIVERY_PERSON_PHONE': e.detail.value });
+  },
+  onInputAnnouncement: function (e) {
+    this.setData({ 'config.WORKSHOP_ANNOUNCEMENT': e.detail.value });
   },
 
   // 保存全部真实运营参数至云端数据库
   saveAllConfigs: function () {
     const that = this;
-    wx.showLoading({ title: '正在保存配置...' });
+    wx.showLoading({ title: '正在保存全部配置...' });
 
     const redRatioStr = (this.data.redDeductPercent / 100).toFixed(2);
     const commRateStr = (this.data.commissionPercent / 100).toFixed(2);
@@ -179,7 +319,11 @@ Page({
       { key: 'MEMBER_ENTRY_MODE', val: entryModeStr },
       { key: 'MEMBER_ENTRY_THRESHOLD', val: thresholdStr },
       { key: 'RED_PACKET_MAX_DEDUCT_RATIO', val: redRatioStr },
-      { key: 'COMMISSION_RATE', val: commRateStr }
+      { key: 'COMMISSION_RATE', val: commRateStr },
+      { key: 'DELIVERY_BASE_FEE', val: this.data.config.DELIVERY_BASE_FEE || '3.00' },
+      { key: 'DELIVERY_FREE_THRESHOLD', val: this.data.config.DELIVERY_FREE_THRESHOLD || '38.00' },
+      { key: 'DELIVERY_PERSON_PHONE', val: this.data.config.DELIVERY_PERSON_PHONE || '13735518290' },
+      { key: 'WORKSHOP_ANNOUNCEMENT', val: this.data.config.WORKSHOP_ANNOUNCEMENT || '' }
     ];
 
     const promises = updates.map(u => {
@@ -195,11 +339,11 @@ Page({
 
     Promise.all(promises).then(() => {
       wx.hideLoading();
-      wx.showToast({ title: '运营配置已生效！', icon: 'success' });
+      wx.showToast({ title: '全部运营配置已生效！', icon: 'success' });
       that.loadConfigs();
     }).catch(() => {
       wx.hideLoading();
-      wx.showToast({ title: '保存配置失败，请重试', icon: 'none' });
+      wx.showToast({ title: '保存配置异常，请重试', icon: 'none' });
     });
   },
 
@@ -256,84 +400,6 @@ Page({
           });
         }
       }
-    });
-  },
-
-  // 新增菜品模态框
-  openAddModal: function () {
-    this.setData({
-      showAddModal: true,
-      newDish: {
-        title: '',
-        origin_price: '',
-        member_price: '',
-        badge: '今日现捞',
-        intro: ''
-      }
-    });
-  },
-
-  closeAddModal: function () {
-    this.setData({ showAddModal: false });
-  },
-
-  onInputTitle: function (e) {
-    this.setData({ 'newDish.title': e.detail.value });
-  },
-  onInputOriginPrice: function (e) {
-    const origin = parseFloat(e.detail.value) || 0;
-    const member = (origin * 0.88).toFixed(2);
-    this.setData({
-      'newDish.origin_price': e.detail.value,
-      'newDish.member_price': member
-    });
-  },
-  onInputMemberPrice: function (e) {
-    this.setData({ 'newDish.member_price': e.detail.value });
-  },
-  onInputBadge: function (e) {
-    this.setData({ 'newDish.badge': e.detail.value });
-  },
-  onInputIntro: function (e) {
-    this.setData({ 'newDish.intro': e.detail.value });
-  },
-
-  // 提交新增菜品至真实数据库
-  submitAddDish: function () {
-    const that = this;
-    const d = this.data.newDish;
-    if (!d.title || !d.origin_price) {
-      wx.showToast({ title: '请填写名称与价格', icon: 'none' });
-      return;
-    }
-
-    wx.showLoading({ title: '正在上架...' });
-    const payload = {
-      category_id: 1,
-      title: d.title,
-      intro: d.intro || '临天八弄纯手工老卤，鲜卤现捞',
-      origin_price: parseFloat(d.origin_price),
-      member_price: parseFloat(d.member_price || (parseFloat(d.origin_price) * 0.88).toFixed(2)),
-      cover_img: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500',
-      badge: d.badge || '手工现做'
-    };
-
-    app.callContainer({
-      path: '/api/admin/product/add',
-      method: 'POST',
-      data: payload
-    }).then(res => {
-      wx.hideLoading();
-      if (res && res.code === 0) {
-        that.closeAddModal();
-        wx.showToast({ title: '新菜品上架成功！', icon: 'success' });
-        that.loadDishes();
-      } else {
-        wx.showToast({ title: res.msg || '上架失败', icon: 'none' });
-      }
-    }).catch(() => {
-      wx.hideLoading();
-      wx.showToast({ title: '上架请求异常', icon: 'none' });
     });
   }
 });

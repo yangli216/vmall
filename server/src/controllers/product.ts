@@ -10,7 +10,7 @@ export async function getProductList(ctx: Context) {
   let sql = 'SELECT * FROM t_product';
   const params: any[] = [];
 
-  if (category_id) {
+  if (category_id && category_id !== '0' && category_id !== '1') {
     sql += ' WHERE category_id = ?';
     params.push(category_id);
   }
@@ -27,6 +27,20 @@ export async function getProductList(ctx: Context) {
   }));
 
   ctx.body = { code: 0, msg: 'ok', data: formatted };
+}
+
+/**
+ * 获取动态菜品分类列表
+ */
+export async function getCategoryList(ctx: Context) {
+  const defaultCats = [
+    { id: 1, name: '🔥 招牌必吃' },
+    { id: 2, name: '秘制酱牛肉' },
+    { id: 3, name: '麻辣鸭副件' },
+    { id: 4, name: '爽脆下酒菜' },
+    { id: 5, name: '手工饮品' }
+  ];
+  ctx.body = { code: 0, msg: 'ok', data: defaultCats };
 }
 
 /**
@@ -92,4 +106,57 @@ export async function addProduct(ctx: Context) {
       status: 1
     }
   };
+}
+
+/**
+ * 店主端：编辑更新现有菜品 (标题、价格、会员价、简介、标签)
+ */
+export async function updateProduct(ctx: Context) {
+  const body = ctx.request.body as {
+    id: number;
+    title: string;
+    origin_price: number;
+    member_price?: number;
+    intro?: string;
+    badge?: string;
+    category_id?: number;
+    cover_img?: string;
+  };
+
+  if (!body.id || !body.title || !body.origin_price) {
+    ctx.status = 400;
+    ctx.body = { code: 400, msg: '菜品ID、标题与价格必填' };
+    return;
+  }
+
+  const originPrice = parseFloat(body.origin_price.toString());
+  const memberPrice = body.member_price ? parseFloat(body.member_price.toString()) : Number((originPrice * 0.88).toFixed(2));
+  const categoryId = body.category_id || 1;
+  const badge = body.badge || '手工老卤';
+  const intro = body.intro || '纯手工慢卤';
+  const coverImg = body.cover_img || 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400';
+
+  await query(
+    `UPDATE t_product 
+     SET title = ?, origin_price = ?, member_price = ?, intro = ?, badge = ?, category_id = ?, cover_img = ?
+     WHERE id = ?`,
+    [body.title, originPrice, memberPrice, intro, badge, categoryId, coverImg, body.id]
+  );
+
+  ctx.body = { code: 0, msg: '菜品修改保存成功', data: { id: body.id } };
+}
+
+/**
+ * 店主端：删除菜品
+ */
+export async function deleteProduct(ctx: Context) {
+  const { id } = ctx.request.body as { id: number };
+  if (!id) {
+    ctx.status = 400;
+    ctx.body = { code: 400, msg: '缺少菜品ID' };
+    return;
+  }
+
+  await query('DELETE FROM t_product WHERE id = ?', [id]);
+  ctx.body = { code: 0, msg: '菜品已删除', data: { id } };
 }

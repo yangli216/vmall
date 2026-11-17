@@ -71,12 +71,13 @@
   background: #F8F9FA;
   border: 1rpx solid var(--border-soft);
   border-radius: 24rpx;
-  padding: 16rpx 24rpx;
+  padding: 16rpx 20rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 22rpx;
   margin-top: 18rpx;
+  gap: 16rpx;
 }
 
 .schedule-left {
@@ -85,7 +86,14 @@
   gap: 12rpx;
   color: var(--text-main);
   font-weight: 700;
+  flex: 1;
+  min-width: 0;
+}
+
+.schedule-left text {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pulse-orange-dot {
@@ -105,49 +113,85 @@
   color: var(--brand-red);
   font-weight: 700;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
-/* 地址条 */
+/* 地址条 (垂直分层工整布局) */
 .address-strip {
-  margin-top: 16rpx;
+  margin-top: 18rpx;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 24rpx;
+  padding: 18rpx 20rpx;
+  background: #F9FAFB;
+  border-radius: 20rpx;
+  border: 1rpx solid var(--border-soft);
+  gap: 16rpx;
 }
 
 .address-loc-group {
   display: flex;
-  align-items: center;
-  gap: 12rpx;
+  flex-direction: column;
+  gap: 8rpx;
   min-width: 0;
   flex: 1;
 }
 
+.address-line-primary {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  min-width: 0;
+}
+
 .loc-icon-circle {
-  font-size: 26rpx;
+  font-size: 24rpx;
+  flex-shrink: 0;
 }
 
 .address-bold {
   font-weight: 800;
+  font-size: 26rpx;
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.address-hint {
-  font-size: 21rpx;
+.address-line-secondary {
+  font-size: 22rpx;
   color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding-left: 34rpx;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contact-label {
+  color: #9CA3AF;
   flex-shrink: 0;
+}
+
+.contact-value {
+  color: var(--text-main);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .address-edit-btn {
   font-size: 22rpx;
   font-weight: 800;
   color: var(--brand-red);
+  background: #FFF1E6;
+  padding: 8rpx 20rpx;
+  border-radius: 24rpx;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* 香槟金会员通栏 */
@@ -337,14 +381,16 @@
 
 .dish-bottom-action {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  margin-top: 10rpx;
+  margin-top: 14rpx;
+  gap: 12rpx;
 }
 
 .dish-price-group {
   display: flex;
   align-items: baseline;
+  flex-shrink: 0;
 }
 
 .price-symbol {
