@@ -5,7 +5,7 @@ App({
     systemConfig: {},
     // 微信云托管环境 ID (在微信开发者工具云托管控制台创建后填入)
     // 填写您的真实环境ID（如 prod-xxxx）后，将自动通过微信内部专线免鉴权请求
-    cloudEnvId: '',
+    cloudEnvId: 'prod-d8gf0ab0a1eeb1899',
     serviceName: 'pandou-server'
   },
 
