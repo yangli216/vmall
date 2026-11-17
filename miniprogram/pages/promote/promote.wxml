@@ -1,0 +1,139 @@
+<!-- miniprogram/pages/promote/promote.wxml -->
+<view class="container">
+
+  <!-- 1. 邀请码尊享卡片 -->
+  <view class="invite-hero-card">
+    <view class="invite-card-tag">🤝 会员推荐专享</view>
+    <view class="hero-title">邀请街坊品鲜老卤</view>
+    <view class="hero-sub">好友享全场8.8折 · 你享每笔实付 3% 红包积分返利</view>
+
+    <!-- 邀请码展示与复制 -->
+    <view class="invite-code-box">
+      <view class="code-left">
+        <text class="code-label">专属邀请码</text>
+        <text class="code-value">{{myReferralCode}}</text>
+      </view>
+      <button class="btn-copy-code btn-press" bindtap="copyCode">复制邀请码</button>
+    </view>
+
+    <!-- 分享操作按钮组 -->
+    <view class="share-actions-row">
+      <button class="btn-share-wx btn-press" open-type="share">
+        💬 发送给微信好友
+      </button>
+      <button class="btn-share-poster btn-press" bindtap="showPosterTip">
+        🖼️ 生成推广海报
+      </button>
+    </view>
+  </view>
+
+  <!-- 2. 防刷与返利动态交互试算器 (透明清晰呈现用户提出的核心规则) -->
+  <view class="calc-section-card">
+    <view class="calc-header">
+      <view class="calc-title-h3">
+        <text>🧮 返利收益实时测算</text>
+        <text class="badge-ratio">{{commissionRatePercent}}% 返佣率</text>
+      </view>
+      <view class="calc-intro-p">拖动滑块查看好友不同付款场景下的红包积分收益</view>
+    </view>
+
+    <!-- 好友订单原价 -->
+    <view class="slider-block">
+      <view class="slider-label-row">
+        <text class="slider-title">好友订单消费金额</text>
+        <text class="slider-num">¥{{simOrderAmount}}</text>
+      </view>
+      <slider 
+        min="20" 
+        max="300" 
+        step="10" 
+        value="{{simOrderAmount}}" 
+        activeColor="#D9480F" 
+        block-color="#D9480F" 
+        bindchanging="onSimOrderChange" 
+        bindchange="onSimOrderChange"
+      />
+    </view>
+
+    <!-- 好友红包积分抵扣 -->
+    <view class="slider-block">
+      <view class="slider-label-row">
+        <text class="slider-title">好友使用红包积分抵扣</text>
+        <text class="slider-num red">-¥{{simRedDeduct}}</text>
+      </view>
+      <slider 
+        min="0" 
+        max="{{maxSimRedAllowed}}" 
+        step="5" 
+        value="{{simRedDeduct}}" 
+        activeColor="#B45309" 
+        block-color="#B45309" 
+        bindchanging="onSimRedChange" 
+        bindchange="onSimRedChange"
+      />
+    </view>
+
+    <!-- 试算结果看板与防刷规则说明 -->
+    <view class="formula-result-card">
+      <view class="formula-line">
+        <text class="f-label">有效微信实付基数：</text>
+        <text class="f-calc">¥{{simOrderAmount}} - ¥{{simRedDeduct}} = <text class="highlight">¥{{simActualCash}}</text></text>
+      </view>
+      <view class="formula-line">
+        <text class="f-label">你将获得红包积分：</text>
+        <text class="f-result">¥{{simActualCash}} × {{commissionRatePercent}}% = <text class="final-earn">+¥{{simEarnCommission}}</text></text>
+      </view>
+      <view class="anti-fraud-alert">
+        <text class="alert-icon">🛡️</text>
+        <text class="alert-text">核心防刷规则：好友使用红包积分抵扣的部分【¥{{simRedDeduct}}】严格不产生任何推荐返佣，杜绝虚假自循环刷单！</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 3. 我的邀请与返佣统计看板 -->
+  <view class="stats-overview-grid">
+    <view class="stat-card">
+      <view class="stat-num">{{summary.total_referred || 0}}</view>
+      <view class="stat-label">成功绑定好友(人)</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-num">{{summary.total_orders || 0}}</view>
+      <view class="stat-label">好友累计下单(笔)</view>
+    </view>
+    <view class="stat-card">
+      <view class="stat-num red">¥{{summary.total_commission || '0.00'}}</view>
+      <view class="stat-label">累计赚取红包(元)</view>
+    </view>
+  </view>
+
+  <!-- 4. 绑定的好友明细列表 -->
+  <view class="referral-list-section">
+    <view class="list-section-header">
+      <text class="list-title">已绑定的好友列表</text>
+      <text class="list-total">共 {{referrals.length}} 位</text>
+    </view>
+
+    <view wx:if="{{referrals.length === 0}}" class="empty-list-box">
+      <view class="empty-icon">👥</view>
+      <view class="empty-text">暂无邀请好友，快去分享专属邀请码吧！</view>
+    </view>
+
+    <view wx:else class="referrals-feed">
+      <view wx:for="{{referrals}}" wx:key="id" class="referral-row-item">
+        <image class="ref-avatar" src="{{item.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}}" mode="aspectFill"></image>
+        <view class="ref-info">
+          <view class="ref-name-row">
+            <text class="ref-nickname">{{item.nickname}}</text>
+            <text class="ref-vip-badge">{{item.is_member === 1 ? '尊享会员' : '普通用户'}}</text>
+          </view>
+          <view class="ref-date">绑定时间: {{item.bind_time}}</view>
+        </view>
+        <view class="ref-reward-col">
+          <text class="reward-title">已为我贡献</text>
+          <text class="reward-amount">+¥{{item.commission_earned}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+</view>

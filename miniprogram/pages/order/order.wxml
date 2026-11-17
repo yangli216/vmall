@@ -1,0 +1,147 @@
+<!-- miniprogram/pages/order/order.wxml -->
+<view class="container">
+
+  <!-- 1. 活跃进行中订单 (卡片) -->
+  <view wx:if="{{activeOrder}}" class="active-order-card">
+    <!-- 状态头部 -->
+    <view class="order-status-header">
+      <view class="status-left">
+        <view class="pulse-indicator"></view>
+        <text class="status-main-title">{{statusTitleMap[activeOrder.order_status] || '作坊处理中'}}</text>
+      </view>
+      <text class="status-badge-pill">{{activeOrder.delivery_type === 1 ? '作坊自送' : '到店自提'}}</text>
+    </view>
+
+    <!-- 配送或自提核心卡片 -->
+    <!-- 场景A：潘师傅电瓶车自送 -->
+    <view wx:if="{{activeOrder.delivery_type === 1}}" class="delivery-hero-box">
+      <view class="rider-profile-row">
+        <image class="rider-avatar" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120" mode="aspectFill"></image>
+        <view class="rider-info">
+          <view class="rider-name-tag">
+            <text class="rider-name">{{activeOrder.delivery_person_name || '掌柜 潘师傅 (潘健)'}}</text>
+            <text class="rider-tag">店主亲送</text>
+          </view>
+          <view class="rider-desc">电瓶车保温箱恒温直达 · 拒绝冷水气</view>
+        </view>
+        <view class="btn-call-rider btn-press" bindtap="callPanMaster">
+          <text class="call-icon">📞</text>
+          <text>致电</text>
+        </view>
+      </view>
+
+      <view class="delivery-track-timeline">
+        <view class="timeline-step {{activeOrder.order_status >= 20 ? 'done' : ''}}">
+          <view class="step-dot"></view>
+          <view class="step-text">临天八弄36号实体工坊傍晚 16:30 准时出锅</view>
+        </view>
+        <view class="timeline-step {{activeOrder.order_status >= 30 ? 'active' : ''}}">
+          <view class="step-dot"></view>
+          <view class="step-text">{{activeOrder.order_status >= 30 ? '潘师傅已发车，正在锦城周边骑行配送中' : '老卤出锅排单中，即将封盒发车'}}</view>
+        </view>
+        <view class="timeline-step {{activeOrder.order_status === 40 ? 'done' : ''}}">
+          <view class="step-dot"></view>
+          <view class="step-text">送达目的地：{{activeOrder.receiver_address}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 场景B：到店自提展示4位数字核销码 -->
+    <view wx:else class="pickup-hero-box">
+      <view class="pickup-code-label">4位到店自提码</view>
+      <view class="pickup-big-code">{{activeOrder.pickup_code || '----'}}</view>
+      <view class="pickup-addr-info">
+        <view class="addr-line">📍 浙江省杭州市临安区锦城街道临天八弄36号</view>
+        <view class="addr-sub">出锅时间：今日 16:30 批次 · 报手机号或自提码取餐</view>
+      </view>
+    </view>
+
+    <!-- 订单菜品清单 -->
+    <view class="order-items-list">
+      <view class="items-title-row">
+        <text class="items-h4">点单老卤清单 ({{activeOrder.items ? activeOrder.items.length : 0}}件)</text>
+        <text class="order-sn">单号: {{activeOrder.order_sn}}</text>
+      </view>
+
+      <view wx:for="{{activeOrder.items}}" wx:key="id" class="dish-item-row">
+        <text class="item-name">{{item.product_title || item.title}}</text>
+        <text class="item-qty">x{{item.quantity}}</text>
+        <text class="item-price">¥{{item.price}}</text>
+      </view>
+
+      <view class="order-remark-row" wx:if="{{activeOrder.order_remark}}">
+        <text class="remark-label">口味备注:</text>
+        <text class="remark-val">{{activeOrder.order_remark}}</text>
+      </view>
+    </view>
+
+    <!-- 账单抵扣与结算明细 -->
+    <view class="order-bill-card">
+      <view class="bill-row">
+        <text>商品总额</text>
+        <text>¥{{activeOrder.goods_origin_total}}</text>
+      </view>
+      <view class="bill-row red" wx:if="{{activeOrder.member_discount > 0}}">
+        <text>会员8.8折优惠</text>
+        <text>-¥{{activeOrder.member_discount}}</text>
+      </view>
+      <view class="bill-row orange" wx:if="{{activeOrder.normal_deduct > 0}}">
+        <text>普通积分满减</text>
+        <text>-¥{{activeOrder.normal_deduct}}</text>
+      </view>
+      <view class="bill-row red bold" wx:if="{{activeOrder.red_deduct > 0}}">
+        <text>红包积分冲抵</text>
+        <text>-¥{{activeOrder.red_deduct}}</text>
+      </view>
+      <view class="bill-row" wx:if="{{activeOrder.delivery_fee > 0}}">
+        <text>作坊自送补贴</text>
+        <text>+¥{{activeOrder.delivery_fee}}</text>
+      </view>
+      <view class="bill-divider"></view>
+      <view class="bill-row final">
+        <text class="final-txt">微信支付实付金额</text>
+        <text class="final-price">¥{{activeOrder.final_pay_amount}}</text>
+      </view>
+      <view class="rebate-note" wx:if="{{activeOrder.commission_rebated > 0}}">
+        🤝 微信实付金额已为推荐人贡献 ¥{{activeOrder.commission_rebated}} 红包积分返利
+      </view>
+    </view>
+
+    <!-- 操作按钮区 -->
+    <view class="action-footer" wx:if="{{activeOrder.order_status === 10}}">
+      <button class="btn-confirm-receipt btn-press" bindtap="payActiveOrder">
+        立即完成微信支付 (¥{{activeOrder.final_pay_amount}})
+      </button>
+    </view>
+    <view class="action-footer" wx:elif="{{activeOrder.order_status === 30}}">
+      <button class="btn-confirm-receipt btn-press" bindtap="confirmDelivered">
+        已收到老卤 · 确认送达
+      </button>
+    </view>
+  </view>
+
+  <!-- 2. 无活跃订单时的空状态 -->
+  <view wx:elif="{{!loading}}" class="empty-order-card">
+    <view class="empty-icon">🍲</view>
+    <view class="empty-title">当前暂无进行中的配送订单</view>
+    <view class="empty-desc">临天八弄每日两炉，下午 16:30 准时开送！</view>
+    <button class="btn-go-menu btn-press" bindtap="navToMenu">挑选鲜出老卤</button>
+  </view>
+
+  <!-- 3. 历史订单列表 -->
+  <view class="history-section" wx:if="{{historyOrders.length > 0}}">
+    <view class="history-title">历史卤味订单</view>
+    <view wx:for="{{historyOrders}}" wx:key="id" class="history-order-card">
+      <view class="history-top-row">
+        <text class="history-date">{{item.create_time ? item.create_time : '近期'}}</text>
+        <text class="history-status">已送达完成</text>
+      </view>
+      <view class="history-dish-names">{{item.summary_text}}</view>
+      <view class="history-bottom-row">
+        <text class="history-type">{{item.delivery_type === 1 ? '作坊自送' : '到店自提'}}</text>
+        <text class="history-amount">实付 ¥{{item.final_pay_amount}}</text>
+      </view>
+    </view>
+  </view>
+
+</view>

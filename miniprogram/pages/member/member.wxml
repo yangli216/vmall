@@ -1,0 +1,172 @@
+<!-- miniprogram/pages/member/member.wxml -->
+<view class="container">
+
+  <!-- 1. 会员卡片主视觉 (香槟金与微暖象牙白) -->
+  <view class="member-hero-card {{isMember ? 'vip' : 'normal'}}">
+    <view class="card-bg-pattern"></view>
+    <view class="card-top">
+      <view class="user-meta-pack">
+        <view class="avatar-wrap">
+          <image class="avatar-img" src="{{userInfo.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'}}" mode="aspectFill"></image>
+          <view wx:if="{{isMember}}" class="vip-crown-badge">👑</view>
+        </view>
+        <view class="user-text-info">
+          <view class="nickname-row">
+            <text class="user-nickname">{{userInfo.nickname || '潘小兜客官'}}</text>
+            <view class="member-tag {{isMember ? 'vip-pill' : 'normal-pill'}}">
+              {{isMember ? '尊享会员 · 8.8折' : '普通客官'}}
+            </view>
+          </view>
+          <view class="bind-referrer-hint" wx:if="{{userInfo.referrer_code}}">
+            已由推荐人【{{userInfo.referrer_code}}】邀请绑定
+          </view>
+          <view class="bind-referrer-hint" wx:else>
+            临安锦城手工老卤 · 鲜卤现捞
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 会员特权与消费门槛进度 -->
+    <view class="member-level-progress" wx:if="{{!isMember}}">
+      <view class="progress-info-row">
+        <text class="progress-title">距离升级成为尊享会员</text>
+        <text class="progress-val">累计 ¥{{userInfo.total_consumption || '0.00'}} / ¥{{config.MEMBER_ENTRY_THRESHOLD || '68.00'}}</text>
+      </view>
+      <view class="progress-bar-track">
+        <view class="progress-bar-fill" style="width: {{progressPercent}}%"></view>
+      </view>
+      <view class="upgrade-action-row" wx:if="{{config.MEMBER_ENTRY_MODE === 'FREE'}}">
+        <text class="free-tip">🎉 当前作坊开启「新客免费升级」活动</text>
+        <button class="btn-free-upgrade" bindtap="activateFreeMember">立即免费成为会员</button>
+      </view>
+    </view>
+    <view class="member-vip-valid" wx:else>
+      <text class="valid-text">✨ 会员权益永久有效，每次点餐享 8.8 折特惠</text>
+    </view>
+  </view>
+
+  <!-- 2. 双积分账户看板 -->
+  <view class="points-board-grid">
+    <!-- 普通积分 -->
+    <view class="point-account-card">
+      <view class="point-card-header">
+        <text class="point-name">🪙 普通积分</text>
+        <text class="point-desc">消费满赠</text>
+      </view>
+      <view class="point-value-row">
+        <text class="point-num">{{userInfo.normal_points || 0}}</text>
+        <text class="point-unit">分</text>
+      </view>
+      <view class="point-rule-tip">
+        每消费¥1赠1分 · 满100分减¥5
+      </view>
+    </view>
+
+    <!-- 红包积分 -->
+    <view class="point-account-card red-theme">
+      <view class="point-card-header">
+        <text class="point-name red">🧧 红包积分</text>
+        <text class="point-desc red">冲抵货款</text>
+      </view>
+      <view class="point-value-row">
+        <text class="point-num red">¥{{userInfo.red_packet_points || '0.00'}}</text>
+      </view>
+      <view class="point-rule-tip">
+        推荐好友微信实付 3% 自动返利 · 1:1抵现
+      </view>
+    </view>
+  </view>
+
+  <!-- 3. 会员专享四大特权 -->
+  <view class="section-card">
+    <view class="section-title">
+      <text class="title-h3">尊享会员权益</text>
+      <text class="title-sub">作坊匠心回馈老街坊</text>
+    </view>
+    <view class="privilege-grid">
+      <view class="priv-item">
+        <view class="priv-icon-box">🏷️</view>
+        <view class="priv-info">
+          <view class="priv-name">全场 8.8 折</view>
+          <view class="priv-sub">老卤牛肉/鸭翅全线享折扣</view>
+        </view>
+      </view>
+      <view class="priv-item">
+        <view class="priv-icon-box">🎁</view>
+        <view class="priv-info">
+          <view class="priv-name">双重积分权益</view>
+          <view class="priv-sub">普通积分满减 + 红包抵现</view>
+        </view>
+      </view>
+      <view class="priv-item">
+        <view class="priv-icon-box">🤝</view>
+        <view class="priv-info">
+          <view class="priv-name">3% 推荐返佣</view>
+          <view class="priv-sub">好友实付金额直接计入红包</view>
+        </view>
+      </view>
+      <view class="priv-item">
+        <view class="priv-icon-box">🛵</view>
+        <view class="priv-info">
+          <view class="priv-name">傍晚热温直达</view>
+          <view class="priv-sub">潘师傅自送优先配载保温箱</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 4. 会员状态操作管理 -->
+  <view class="section-card action-card">
+    <view class="menu-action-item" bindtap="navToPromote">
+      <view class="action-left">
+        <text class="action-emoji">📣</text>
+        <view class="action-text">
+          <view class="action-title">我的邀请码与推广返利</view>
+          <view class="action-sub">分享好友点单，赚取 3% 红包积分</view>
+        </view>
+      </view>
+      <view class="arrow-right">></view>
+    </view>
+
+    <view class="menu-action-item border-top" bindtap="contactShop">
+      <view class="action-left">
+        <text class="action-emoji">📞</text>
+        <view class="action-text">
+          <view class="action-title">联系掌柜潘师傅</view>
+          <view class="action-sub">锦城街道临天八弄36号 · 13735518290</view>
+        </view>
+      </view>
+      <view class="arrow-right">></view>
+    </view>
+
+    <view class="menu-action-item border-top" bindtap="navToAdmin">
+      <view class="action-left">
+        <text class="action-emoji">⚙️</text>
+        <view class="action-text">
+          <view class="action-title">作坊后台运营控制台</view>
+          <view class="action-sub">卤味上下架、防刷门槛与订单调度</view>
+        </view>
+      </view>
+      <view class="arrow-right">></view>
+    </view>
+
+    <!-- 会员退订入口 (满足用户需求：支持注销退出恢复为普通用户) -->
+    <view class="menu-action-item border-top" wx:if="{{isMember}}" bindtap="confirmExitMember">
+      <view class="action-left">
+        <text class="action-emoji">⚠️</text>
+        <view class="action-text">
+          <view class="action-title cancel-text">注销 / 退出会员身份</view>
+          <view class="action-sub">退出后不再享受8.8折与推荐返利，仅保留普通积分</view>
+        </view>
+      </view>
+      <view class="arrow-right">></view>
+    </view>
+  </view>
+
+  <!-- 5. 底部版权与食品经营资质 -->
+  <view class="member-footer-info">
+    <text>杭州临安潘小兜食品小作坊（个体工商户）\n食品经营许可证：JY13301850326102 (含网络经营)</text>
+  </view>
+
+</view>

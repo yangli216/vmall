@@ -1,0 +1,377 @@
+/* miniprogram/pages/member/member.wxss */
+.container {
+  padding: 24rpx;
+  background-color: #F8F9FA;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-bottom: 80rpx;
+}
+
+/* 1. 会员卡片主视觉 */
+.member-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  background: #FFFFFF;
+  border: 1.5rpx solid rgba(217, 72, 15, 0.12);
+  box-shadow: 0 10rpx 28rpx rgba(180, 83, 9, 0.06);
+  margin-bottom: 24rpx;
+}
+
+.member-hero-card.vip {
+  background: linear-gradient(135deg, #FFFDF8 0%, #FFF8EE 100%);
+  border: 1.5rpx solid rgba(180, 83, 9, 0.25);
+  box-shadow: 0 12rpx 32rpx rgba(180, 83, 9, 0.10);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-meta-pack {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.avatar-wrap {
+  position: relative;
+  width: 108rpx;
+  height: 108rpx;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 54rpx;
+  background-color: #F1F3F5;
+  border: 4rpx solid #FFFFFF;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.vip-crown-badge {
+  position: absolute;
+  top: -12rpx;
+  right: -8rpx;
+  font-size: 32rpx;
+}
+
+.user-text-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.nickname-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.user-nickname {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.member-tag {
+  font-size: 20rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 12rpx;
+  font-weight: 600;
+}
+
+.member-tag.vip-pill {
+  background: linear-gradient(135deg, #B45309, #D9480F);
+  color: #FFFFFF;
+}
+
+.member-tag.normal-pill {
+  background: #E9ECEF;
+  color: #495057;
+}
+
+.bind-referrer-hint {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+
+/* 进度条 */
+.member-level-progress {
+  margin-top: 28rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx dashed rgba(0, 0, 0, 0.08);
+}
+
+.progress-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 22rpx;
+  margin-bottom: 12rpx;
+}
+
+.progress-title {
+  color: #4B5563;
+}
+
+.progress-val {
+  font-weight: 700;
+  color: #D9480F;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 12rpx;
+  background-color: #E5E7EB;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F59E0B, #D9480F);
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+}
+
+.upgrade-action-row {
+  margin-top: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.free-tip {
+  font-size: 22rpx;
+  color: #B45309;
+}
+
+.btn-free-upgrade {
+  font-size: 22rpx;
+  background: linear-gradient(135deg, #D9480F, #B45309);
+  color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 8rpx 24rpx;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.member-vip-valid {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx dashed rgba(180, 83, 9, 0.2);
+}
+
+.valid-text {
+  font-size: 22rpx;
+  color: #92400E;
+  font-weight: 500;
+}
+
+/* 2. 双积分账户看板 */
+.points-board-grid {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.point-account-card {
+  flex: 1;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+}
+
+.point-account-card.red-theme {
+  border-color: rgba(217, 72, 15, 0.2);
+  background: #FFFAF8;
+}
+
+.point-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.point-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.point-name.red {
+  color: #D9480F;
+}
+
+.point-desc {
+  font-size: 20rpx;
+  color: #9CA3AF;
+}
+
+.point-desc.red {
+  color: #F87171;
+}
+
+.point-value-row {
+  margin: 10rpx 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6rpx;
+}
+
+.point-num {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: #111827;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.point-num.red {
+  color: #D9480F;
+}
+
+.point-unit {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+
+.point-rule-tip {
+  font-size: 20rpx;
+  color: #6B7280;
+  line-height: 1.4;
+  margin-top: auto;
+}
+
+/* 3. 会员专享四大特权 */
+.section-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 28rpx 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid #E5E7EB;
+}
+
+.section-title {
+  margin-bottom: 24rpx;
+}
+
+.title-h3 {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1F2937;
+  margin-right: 12rpx;
+}
+
+.title-sub {
+  font-size: 22rpx;
+  color: #9CA3AF;
+}
+
+.privilege-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+}
+
+.priv-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: #F9FAFB;
+  padding: 20rpx 16rpx;
+  border-radius: 16rpx;
+}
+
+.priv-icon-box {
+  font-size: 40rpx;
+  width: 56rpx;
+  text-align: center;
+}
+
+.priv-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.priv-name {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.priv-sub {
+  font-size: 20rpx;
+  color: #6B7280;
+  margin-top: 4rpx;
+}
+
+/* 4. 操作列表卡片 */
+.action-card {
+  padding: 10rpx 24rpx;
+}
+
+.menu-action-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 0;
+}
+
+.menu-action-item.border-top {
+  border-top: 1rpx solid #F3F4F6;
+}
+
+.action-left {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.action-emoji {
+  font-size: 36rpx;
+}
+
+.action-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.action-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.action-title.cancel-text {
+  color: #DC2626;
+}
+
+.action-sub {
+  font-size: 22rpx;
+  color: #9CA3AF;
+  margin-top: 4rpx;
+}
+
+.arrow-right {
+  font-size: 28rpx;
+  color: #D1D5DB;
+}
+
+/* 5. 底部资质 */
+.member-footer-info {
+  text-align: center;
+  font-size: 20rpx;
+  color: #9CA3AF;
+  line-height: 1.6;
+  margin-top: 20rpx;
+}

@@ -1,0 +1,198 @@
+<!-- miniprogram/pages/admin/admin.wxml -->
+<view class="container">
+
+  <!-- 1. 顶部工坊运营概要 -->
+  <view class="admin-header-card">
+    <view class="header-info">
+      <view class="shop-badge">临天八弄作坊掌柜端</view>
+      <view class="admin-shop-name">潘小兜老卤 · 运营调度台</view>
+      <view class="admin-address-txt">实体资质：JY13301850326102 (含网络经营)</view>
+    </view>
+  </view>
+
+  <!-- 2. 卤味菜品上下架与沽清管理 (用户核心提问：卤味动态管理) -->
+  <view class="section-card">
+    <view class="section-header-row">
+      <view class="header-left">
+        <text class="section-h2">🍲 卤味菜品上架与沽清</text>
+        <text class="section-sub">支持实时一键下架/沽清与添加新品</text>
+      </view>
+      <button class="btn-add-dish btn-press" bindtap="openAddModal">+ 新增菜品</button>
+    </view>
+
+    <view class="dish-manage-list">
+      <view wx:for="{{dishes}}" wx:key="id" class="manage-dish-item">
+        <image class="manage-dish-img" src="{{item.cover_img}}" mode="aspectFill"></image>
+        <view class="manage-dish-info">
+          <view class="manage-dish-title-row">
+            <text class="manage-dish-name">{{item.title}}</text>
+            <text class="manage-dish-tag">{{item.badge}}</text>
+          </view>
+          <view class="manage-dish-price">
+            原价: ¥{{item.origin_price}} | 会员: <text class="red">¥{{item.member_price}}</text>
+          </view>
+        </view>
+        <view class="manage-dish-action">
+          <text class="status-label {{item.status === 1 ? 'online' : 'soldout'}}">
+            {{item.status === 1 ? '在售中' : '已沽清'}}
+          </text>
+          <switch 
+            checked="{{item.status === 1}}" 
+            color="#07C160" 
+            bindchange="toggleProductStatus" 
+            data-id="{{item.id}}" 
+            data-index="{{index}}"
+          />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 3. 会员与防刷返利核心参数配置 (支持后台灵活修改) -->
+  <view class="section-card">
+    <view class="section-header-row">
+      <view class="header-left">
+        <text class="section-h2">⚙️ 会员体系与防刷门槛设置</text>
+        <text class="section-sub">实时下发至小程序前端与订单结算引擎</text>
+      </view>
+    </view>
+
+    <!-- 会员升级门槛模式 -->
+    <view class="config-block">
+      <view class="config-label-row">
+        <text class="config-title">会员晋升门槛模式</text>
+        <view class="segment-picker">
+          <view 
+            class="seg-item {{config.MEMBER_ENTRY_MODE === 'FREE' ? 'active' : ''}}" 
+            bindtap="changeUpgradeType" 
+            data-type="FREE"
+          >
+            新客免费开卡
+          </view>
+          <view 
+            class="seg-item {{config.MEMBER_ENTRY_MODE === 'CONSUME' ? 'active' : ''}}" 
+            bindtap="changeUpgradeType" 
+            data-type="CONSUME"
+          >
+            累计消费晋级
+          </view>
+        </view>
+      </view>
+      <text class="config-desc">
+        {{config.MEMBER_ENTRY_MODE === 'FREE' ? '用户授权登录即可一键激活 8.8 折尊享会员' : '需累计消费达标方可自动升级尊享会员'}}
+      </text>
+    </view>
+
+    <!-- 累计消费门槛金额 -->
+    <view class="config-block" wx:if="{{config.MEMBER_ENTRY_MODE === 'CONSUME'}}">
+      <view class="config-label-row">
+        <text class="config-title">晋升门槛消费金额</text>
+        <text class="config-val">满 ¥{{config.MEMBER_ENTRY_THRESHOLD}}</text>
+      </view>
+      <slider 
+        min="30" 
+        max="200" 
+        step="10" 
+        value="{{config.MEMBER_ENTRY_THRESHOLD}}" 
+        activeColor="#D9480F" 
+        block-color="#D9480F" 
+        bindchange="updateThresholdSlider" 
+      />
+    </view>
+
+    <!-- 红包积分最高冲抵比例 (核心防亏损参数) -->
+    <view class="config-block border-top">
+      <view class="config-label-row">
+        <text class="config-title">红包积分单笔抵现上限比例</text>
+        <text class="config-val red">{{redDeductPercent}}%</text>
+      </view>
+      <slider 
+        min="10" 
+        max="100" 
+        step="5" 
+        value="{{redDeductPercent}}" 
+        activeColor="#D9480F" 
+        block-color="#D9480F" 
+        bindchange="updateRedRatioSlider" 
+      />
+      <text class="config-desc">
+        关键防亏设置：限制单笔订单使用红包积分抵现的最大比例（例如设置 50% 即 ¥100 订单最多可用红包抵 ¥50，剩余 ¥50 必须微信现金支付）。
+      </text>
+    </view>
+
+    <!-- 推荐好友返佣比例 -->
+    <view class="config-block border-top">
+      <view class="config-label-row">
+        <text class="config-title">推荐好友实付返佣比例</text>
+        <text class="config-val red">{{commissionPercent}}%</text>
+      </view>
+      <slider 
+        min="1" 
+        max="10" 
+        step="1" 
+        value="{{commissionPercent}}" 
+        activeColor="#B45309" 
+        block-color="#B45309" 
+        bindchange="updateCommissionSlider" 
+      />
+      <text class="config-desc">
+        核心防刷保护：仅好友纯微信实付部分计入返佣基数，好友使用红包抵扣金额 100% 剔除，不计入返佣！
+      </text>
+    </view>
+
+    <!-- 保存配置按钮 -->
+    <button class="btn-save-config btn-press" bindtap="saveAllConfigs">
+      保存全部运营参数
+    </button>
+  </view>
+
+  <!-- 4. 待出炉订单一键发车调度 -->
+  <view class="section-card">
+    <view class="section-header-row">
+      <view class="header-left">
+        <text class="section-h2">🛵 傍晚出炉出车调度</text>
+        <text class="section-sub">一键通知已付款订单进入电瓶车配送状态</text>
+      </view>
+      <button class="btn-dispatch btn-press" bindtap="dispatchAllOrders">一键全单发车</button>
+    </view>
+  </view>
+
+  <!-- 5. 新增菜品弹窗模态框 -->
+  <view class="modal-backdrop" wx:if="{{showAddModal}}">
+    <view class="modal-box">
+      <view class="modal-title-row">
+        <text class="modal-title">上架新卤味</text>
+        <view class="modal-close" bindtap="closeAddModal">✕</view>
+      </view>
+
+      <view class="modal-form">
+        <view class="form-row">
+          <text class="form-label">菜品名称</text>
+          <input class="form-input" placeholder="如：老卤虎皮鸡爪 (6只)" value="{{newDish.title}}" bindinput="onInputTitle" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">原价 (元)</text>
+          <input type="digit" class="form-input" placeholder="如：25.00" value="{{newDish.origin_price}}" bindinput="onInputOriginPrice" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">会员价 (元)</text>
+          <input type="digit" class="form-input" placeholder="如：22.00 (约8.8折)" value="{{newDish.member_price}}" bindinput="onInputMemberPrice" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">特色标签</text>
+          <input class="form-input" placeholder="如：软烂入骨 / 胶质满满" value="{{newDish.badge}}" bindinput="onInputBadge" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">风味简介</text>
+          <input class="form-input" placeholder="如：先炸后卤，虎皮吸满浓郁老卤" value="{{newDish.intro}}" bindinput="onInputIntro" />
+        </view>
+      </view>
+
+      <view class="modal-btn-row">
+        <button class="btn-cancel" bindtap="closeAddModal">取消</button>
+        <button class="btn-submit" bindtap="submitAddDish">立即上架发布</button>
+      </view>
+    </view>
+  </view>
+
+</view>

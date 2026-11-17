@@ -1,0 +1,41 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/member/member",
+    "pages/promote/promote",
+    "pages/order/order",
+    "pages/admin/admin"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTitleText": "潘小兜老卤",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#9CA3AF",
+    "selectedColor": "#D9480F",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "小兜卤味"
+      },
+      {
+        "pagePath": "pages/member/member",
+        "text": "尊享会员"
+      },
+      {
+        "pagePath": "pages/promote/promote",
+        "text": "分享赚佣"
+      },
+      {
+        "pagePath": "pages/order/order",
+        "text": "配送追踪"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

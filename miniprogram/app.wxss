@@ -1,0 +1,28 @@
+/** 全局轻盈通透新中式美学变量 **/
+page {
+  --bg-page: #F8F9FA;
+  --card-white: #FFFFFF;
+  --brand-red: #D9480F;
+  --brand-red-light: #FFF0EB;
+  --champagne-gold: #B45309;
+  --champagne-bg: #FFF9F2;
+  --champagne-border: #FDE68A;
+  --text-main: #1F2937;
+  --text-sub: #6B7280;
+  --text-light: #9CA3AF;
+  --border-soft: #F1F3F5;
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  box-sizing: border-box;
+}
+
+view, text, scroll-view {
+  box-sizing: border-box;
+}
+
+/* 按钮通用点击缩放动效 */
+.btn-press:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}

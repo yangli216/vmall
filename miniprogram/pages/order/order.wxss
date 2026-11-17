@@ -1,0 +1,427 @@
+/* miniprogram/pages/order/order.wxss */
+.container {
+  padding: 24rpx;
+  background-color: #F8F9FA;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-bottom: 80rpx;
+}
+
+/* 1. 活跃订单主卡片 */
+.active-order-card {
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  padding: 32rpx 28rpx;
+  border: 1rpx solid #E5E7EB;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.05);
+  margin-bottom: 32rpx;
+}
+
+.order-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 24rpx;
+  border-bottom: 1rpx solid #F3F4F6;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.pulse-indicator {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 8rpx;
+  background-color: #D9480F;
+  box-shadow: 0 0 0 6rpx rgba(217, 72, 15, 0.2);
+}
+
+.status-main-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #1F2937;
+}
+
+.status-badge-pill {
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+  background-color: #FFF1E6;
+  color: #D9480F;
+}
+
+/* 配送信息 */
+.delivery-hero-box {
+  background: #FFFDF9;
+  border: 1rpx solid rgba(217, 72, 15, 0.15);
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin: 24rpx 0;
+}
+
+.rider-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.rider-avatar {
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 42rpx;
+  background: #F3F4F6;
+}
+
+.rider-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.rider-name-tag {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.rider-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.rider-tag {
+  font-size: 18rpx;
+  background: #D9480F;
+  color: #FFFFFF;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  font-weight: 600;
+}
+
+.rider-desc {
+  font-size: 20rpx;
+  color: #6B7280;
+}
+
+.btn-call-rider {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #D1D5DB;
+  border-radius: 30rpx;
+  padding: 10rpx 20rpx;
+  font-size: 22rpx;
+  color: #374151;
+  font-weight: 600;
+}
+
+.delivery-track-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding-left: 10rpx;
+}
+
+.timeline-step {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: 22rpx;
+  color: #9CA3AF;
+}
+
+.timeline-step .step-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 6rpx;
+  background-color: #D1D5DB;
+}
+
+.timeline-step.active {
+  color: #D9480F;
+  font-weight: 600;
+}
+
+.timeline-step.active .step-dot {
+  background-color: #D9480F;
+  box-shadow: 0 0 0 4rpx rgba(217, 72, 15, 0.2);
+}
+
+.timeline-step.done {
+  color: #374151;
+}
+
+.timeline-step.done .step-dot {
+  background-color: #059669;
+}
+
+/* 自提码大卡片 */
+.pickup-hero-box {
+  background: #FFFDF9;
+  border: 1.5rpx dashed rgba(217, 72, 15, 0.3);
+  border-radius: 20rpx;
+  padding: 32rpx;
+  margin: 24rpx 0;
+  text-align: center;
+}
+
+.pickup-code-label {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+
+.pickup-big-code {
+  font-size: 64rpx;
+  font-weight: 900;
+  color: #D9480F;
+  letter-spacing: 12rpx;
+  margin: 16rpx 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.pickup-addr-info {
+  font-size: 22rpx;
+  color: #4B5563;
+  line-height: 1.5;
+}
+
+.addr-sub {
+  color: #9CA3AF;
+  font-size: 20rpx;
+  margin-top: 6rpx;
+}
+
+/* 菜品清单 */
+.order-items-list {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #F3F4F6;
+}
+
+.items-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.items-h4 {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.order-sn {
+  font-size: 20rpx;
+  color: #9CA3AF;
+}
+
+.dish-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10rpx 0;
+  font-size: 24rpx;
+}
+
+.item-name {
+  flex: 1;
+  color: #374151;
+}
+
+.item-qty {
+  width: 80rpx;
+  text-align: center;
+  color: #6B7280;
+}
+
+.item-price {
+  font-weight: 600;
+  color: #111827;
+}
+
+.order-remark-row {
+  margin-top: 12rpx;
+  background: #F9FAFB;
+  padding: 12rpx 16rpx;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  display: flex;
+  gap: 12rpx;
+}
+
+.remark-label {
+  color: #6B7280;
+}
+
+.remark-val {
+  color: #D9480F;
+}
+
+/* 账单卡片 */
+.order-bill-card {
+  padding-top: 20rpx;
+}
+
+.bill-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 24rpx;
+  color: #4B5563;
+  padding: 6rpx 0;
+}
+
+.bill-row.red {
+  color: #D9480F;
+}
+
+.bill-row.orange {
+  color: #B45309;
+}
+
+.bill-row.bold {
+  font-weight: 600;
+}
+
+.bill-divider {
+  height: 1rpx;
+  background-color: #E5E7EB;
+  margin: 16rpx 0;
+}
+
+.bill-row.final {
+  padding: 10rpx 0;
+}
+
+.final-txt {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.final-price {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #D9480F;
+}
+
+.rebate-note {
+  margin-top: 14rpx;
+  font-size: 20rpx;
+  color: #059669;
+  background: #ECFDF5;
+  padding: 10rpx 14rpx;
+  border-radius: 10rpx;
+}
+
+.action-footer {
+  margin-top: 28rpx;
+}
+
+.btn-confirm-receipt {
+  background: linear-gradient(135deg, #D9480F, #C23B06);
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 40rpx;
+  padding: 20rpx 0;
+  margin: 0;
+}
+
+/* 2. 空订单卡片 */
+.empty-order-card {
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  padding: 60rpx 32rpx;
+  text-align: center;
+  border: 1rpx solid #E5E7EB;
+  margin-bottom: 32rpx;
+}
+
+.empty-icon {
+  font-size: 72rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 10rpx;
+}
+
+.empty-desc {
+  font-size: 22rpx;
+  color: #9CA3AF;
+  margin-bottom: 36rpx;
+}
+
+.btn-go-menu {
+  background: linear-gradient(135deg, #D9480F, #B45309);
+  color: #FFFFFF;
+  font-size: 26rpx;
+  font-weight: 600;
+  border-radius: 40rpx;
+  padding: 16rpx 48rpx;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+/* 3. 历史订单 */
+.history-section {
+  margin-top: 24rpx;
+}
+
+.history-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1F2937;
+  margin-bottom: 16rpx;
+}
+
+.history-order-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  border: 1rpx solid #E5E7EB;
+  margin-bottom: 16rpx;
+}
+
+.history-top-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 22rpx;
+  color: #9CA3AF;
+  margin-bottom: 10rpx;
+}
+
+.history-dish-names {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 12rpx;
+}
+
+.history-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 24rpx;
+}
+
+.history-type {
+  color: #6B7280;
+}
+
+.history-amount {
+  font-weight: 700;
+  color: #111827;
+}

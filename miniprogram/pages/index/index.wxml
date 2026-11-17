@@ -1,0 +1,206 @@
+<view class="container">
+
+  <!-- 1. 头部一体化卡片 -->
+  <view class="header-unified-card">
+    <view class="header-top-line">
+      <view class="shop-name-block">
+        <view class="shop-title">潘小兜老卤小作坊</view>
+        <view class="shop-sub">临天八弄手工慢卤 · 每日两炉现做</view>
+      </view>
+      <!-- 配送方式切换 -->
+      <view class="segmented-control">
+        <view class="segment-btn {{deliveryType === 1 ? 'active' : ''}}" bindtap="changeDelType" data-type="1">作坊自送</view>
+        <view class="segment-btn {{deliveryType === 2 ? 'active' : ''}}" bindtap="changeDelType" data-type="2">到店自提</view>
+      </view>
+    </view>
+
+    <!-- 出炉预约条 -->
+    <view class="header-schedule-box">
+      <view class="schedule-left">
+        <view class="pulse-orange-dot"></view>
+        <text>今日傍晚批次 <text class="highlight-time">16:30</text> 出锅准时开送</text>
+      </view>
+      <text class="schedule-link">预约出炉 ></text>
+    </view>
+
+    <!-- 配送/自提地址条 -->
+    <view class="address-strip">
+      <view class="address-loc-group">
+        <view class="loc-icon-circle">📍</view>
+        <view class="address-bold">{{deliveryType === 1 ? destAddress : '潘小兜作坊自提点'}}</view>
+        <view class="address-hint">{{deliveryType === 1 ? '距临天八弄作坊 1.5km' : '临天八弄36号实体工坊'}}</view>
+      </view>
+      <view class="address-edit-btn" bindtap="editAddress">修改</view>
+    </view>
+  </view>
+
+  <!-- 2. 香槟金尊享会员卡通栏 -->
+  <view class="champagne-vip-bar btn-press" bindtap="navToMember">
+    <view class="vip-left-pack">
+      <view class="vip-star-gold">👑</view>
+      <view class="vip-text-pack">
+        <view class="vip-title">潘小兜会员 · 全场专享 8.8 折</view>
+        <view class="vip-desc">当前门槛：累计消费满 ¥68 自动升级</view>
+      </view>
+    </view>
+    <view class="vip-enter-pill">去查看 ></view>
+  </view>
+
+  <!-- 3. 分类胶囊 -->
+  <scroll-view scroll-x class="modern-category-row" enable-flex>
+    <view 
+      wx:for="{{categories}}" 
+      wx:key="id" 
+      class="cat-capsule {{currentCatId === item.id ? 'active' : ''}}"
+      bindtap="selectCategory"
+      data-id="{{item.id}}"
+    >
+      {{item.name}}
+    </view>
+  </scroll-view>
+
+  <!-- 4. 卤味商品列表 (支持动态上下架与售罄遮罩) -->
+  <view class="menu-feed">
+    <view wx:if="{{dishes.length === 0 && !loadingProducts}}" class="empty-dish-box">
+      <view class="empty-icon">🍲</view>
+      <view class="empty-text">当前分类下暂无在售菜品</view>
+    </view>
+    <view wx:for="{{dishes}}" wx:key="id" class="dish-item-card {{item.status === 0 ? 'sold-out' : ''}}">
+      <view class="dish-img-box">
+        <image src="{{item.cover_img}}" class="dish-real-img" mode="aspectFill"></image>
+        <view class="dish-floating-badge">{{item.badge}}</view>
+        <view wx:if="{{item.status === 0}}" class="dish-soldout-overlay">今日已售罄</view>
+      </view>
+      <view class="dish-content-box">
+        <view>
+          <view class="dish-name-h3">{{item.title}}</view>
+          <view class="dish-intro-p">{{item.intro}}</view>
+          <view class="dish-tag-row">
+            <text class="tag-vip-disc">会员8.8折</text>
+            <text class="tag-points-tip">获 {{item.points}} 普通积分</text>
+          </view>
+        </view>
+        <view class="dish-bottom-action">
+          <view class="dish-price-group">
+            <text class="price-symbol">¥</text>
+            <text class="dish-price-text">{{item.member_price}}</text>
+            <text class="dish-origin-text">¥{{item.origin_price}}</text>
+          </view>
+          <view wx:if="{{item.status === 0}}" class="sold-out-text">已抢光</view>
+          <view wx:else class="btn-circle-add btn-press" bindtap="addToCart" data-dish="{{item}}">+</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 5. 官方资质备案说明 -->
+  <view class="official-license-footer">
+    <view>实体经营者：杭州临安潘小兜食品小作坊</view>
+    <view>许可证编号：JY13301850326102 (含网络经营)</view>
+    <view>工坊基地：临安区锦城街道临天八弄36号</view>
+  </view>
+
+  <!-- 6. 悬浮现代毛玻璃购物车 Dock -->
+  <view class="airy-cart-dock" wx:if="{{cartCount > 0}}">
+    <view class="cart-summary-text">
+      <text class="cart-label">预估合计:</text>
+      <text class="cart-total-num">¥{{cartTotal}}</text>
+    </view>
+    <view class="btn-dock-confirm btn-press" bindtap="openCheckoutSheet">
+      确认订单 →
+    </view>
+  </view>
+
+  <!-- 7. 结算明细半屏抽屉 (BottomSheet) -->
+  <view class="drawer-backdrop {{isDrawerOpen ? 'open' : ''}}">
+    <view class="drawer-content-sheet">
+      <view class="drawer-bar-title">
+        <text class="drawer-h2">结算明细与积分抵扣</text>
+        <view class="drawer-close" bindtap="closeCheckoutSheet">✕</view>
+      </view>
+
+      <!-- 配送信息条 -->
+      <view class="drawer-info-box">
+        <view class="info-row">
+          <text class="info-label">自送目的地:</text>
+          <text class="info-val">{{deliveryType === 1 ? destAddress : '临天八弄36号实体工坊自提'}}</text>
+        </view>
+        <view class="info-row">
+          <text class="info-label">出炉送达:</text>
+          <text class="info-val highlight">今日 16:30 傍晚出炉批次</text>
+        </view>
+      </view>
+
+      <!-- 口味备注输入 -->
+      <view class="remark-input-box">
+        <input class="remark-input" placeholder="口味备注 (如：微辣/多带点卤汁/鸭翅切小块)" bindinput="onRemarkInput" value="{{orderRemark}}" />
+      </view>
+
+      <!-- 双积分抵扣设置卡片 -->
+      <view class="deduct-light-card">
+        <!-- 普通积分 -->
+        <view class="deduct-line-item">
+          <view class="deduct-left">
+            <text class="deduct-name">🪙 普通积分满减</text>
+            <text class="deduct-sub">(可用 {{userNormalPoints}} 分)</text>
+          </view>
+          <switch checked="{{useNormalPoints}}" color="#D9480F" bindchange="toggleNormalPoints" />
+        </view>
+        <view class="deduct-tip-text">- 消耗 100 积分满减抵扣 ¥5.00</view>
+
+        <!-- 红包积分 (动态上限受后台控制) -->
+        <view class="deduct-line-item border-top">
+          <view class="deduct-left">
+            <text class="deduct-name red">🧧 红包积分冲抵现金</text>
+            <text class="deduct-sub red">(余额 ¥{{userRedPoints}})</text>
+          </view>
+          <switch checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
+        </view>
+        <view class="deduct-calc-row">
+          <text class="deduct-limit-hint">抵现金额 (上限50%):</text>
+          <view class="deduct-input-group">
+            <text class="symbol">-¥</text>
+            <input type="digit" class="red-amount-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 金额明细列表 -->
+      <view class="bill-summary-list">
+        <view class="bill-row">
+          <text>商品原价总额</text>
+          <text>¥{{calcResult.goods_origin_total || '0.00'}}</text>
+        </view>
+        <view class="bill-row red">
+          <text>会员8.8折专享优惠</text>
+          <text>-¥{{calcResult.member_discount || '0.00'}}</text>
+        </view>
+        <view class="bill-row orange" wx:if="{{useNormalPoints && calcResult.normal_deduct > 0}}">
+          <text>普通积分满减</text>
+          <text>-¥{{calcResult.normal_deduct}}</text>
+        </view>
+        <view class="bill-row red bold" wx:if="{{useRedPoints && calcResult.red_deduct > 0}}">
+          <text>红包积分冲抵货款</text>
+          <text>-¥{{calcResult.red_deduct}}</text>
+        </view>
+        <view class="bill-row">
+          <text>作坊自送补贴运费</text>
+          <text>+¥{{calcResult.delivery_fee || '0.00'}}</text>
+        </view>
+        <view class="bill-final-row">
+          <text class="final-title">微信支付实付:</text>
+          <view class="final-price-box">
+            <text class="final-price-num">¥{{calcResult.final_pay_amount || '0.00'}}</text>
+            <view class="final-rebate-hint">产生推荐返利基数: ¥{{calcResult.commission_cash_base}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 微信支付提交按钮 -->
+      <button class="btn-wxpay-submit btn-press" bindtap="submitOrderPay">
+        微信原生安全支付
+      </button>
+    </view>
+  </view>
+
+</view>
