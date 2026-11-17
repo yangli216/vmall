@@ -156,11 +156,20 @@ Page({
     });
   },
 
-  // 原生微信分享
+  // 原生微信分享给好友
   onShareAppMessage: function () {
     return {
       title: '临安锦城老卤现捞！快来潘小兜小作坊，享8.8折特惠',
       path: `/pages/index/index?referrer=${this.data.myReferralCode}`,
+      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600'
+    };
+  },
+
+  // 分享到朋友圈 (工匠精神：裂变闭环)
+  onShareTimeline: function () {
+    return {
+      title: '潘小兜老卤小作坊 · 每日两炉现卤现捞 · 全场8.8折',
+      query: `referrer=${this.data.myReferralCode}`,
       imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600'
     };
   }

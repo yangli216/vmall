@@ -146,14 +146,40 @@
     </button>
   </view>
 
-  <!-- 4. 待出炉订单一键发车调度 -->
+  <!-- 4. 待出炉订单与发车调度 -->
   <view class="section-card">
     <view class="section-header-row">
       <view class="header-left">
-        <text class="section-h2">🛵 傍晚出炉出车调度</text>
-        <text class="section-sub">一键通知已付款订单进入电瓶车配送状态</text>
+        <text class="section-h2">🛵 傍晚出炉出车调度 (待发车 {{pendingOrders.length}} 笔)</text>
+        <text class="section-sub">傍晚 16:30 准时出锅，一键通知客户电瓶车配送</text>
       </view>
-      <button class="btn-dispatch btn-press" bindtap="dispatchAllOrders">一键全单发车</button>
+      <button class="btn-dispatch btn-press" bindtap="dispatchAllOrders" wx:if="{{pendingOrders.length > 0}}">一键全单发车</button>
+    </view>
+
+    <view wx:if="{{pendingOrders.length === 0}}" class="empty-pending-box">
+      <text class="empty-hint">当前暂无待发车订单，顾客下单付款后将在此汇总展示</text>
+    </view>
+    <view wx:else class="pending-orders-feed">
+      <view wx:for="{{pendingOrders}}" wx:key="id" class="pending-order-item">
+        <view class="pending-meta-row">
+          <text class="pending-sn">单号: {{item.order_sn}}</text>
+          <text class="pending-badge">{{item.delivery_type === 1 ? '作坊自送' : '到店自提'}}</text>
+        </view>
+        <view class="pending-receiver-info" wx:if="{{item.delivery_type === 1}}">
+          <text class="bold-text">📍 {{item.receiver_address}}</text>
+          <text class="sub-text">收件人：{{item.receiver_name}} ({{item.receiver_phone}})</text>
+        </view>
+        <view class="pending-receiver-info" wx:else>
+          <text class="bold-text">🏷️ 到店自提码：{{item.pickup_code}}</text>
+        </view>
+        <view class="pending-dish-text">老卤菜品：{{item.summary_text}}</view>
+        <view class="pending-action-row">
+          <text class="pending-pay-amount">微信实付 ¥{{item.final_pay_amount}}</text>
+          <button class="btn-single-dispatch btn-press" bindtap="dispatchSingleOrder" data-id="{{item.id}}">
+            本单发车
+          </button>
+        </view>
+      </view>
     </view>
   </view>
 

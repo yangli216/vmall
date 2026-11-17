@@ -246,6 +246,102 @@
   font-weight: 600;
 }
 
+/* 待出炉订单列表 */
+.empty-pending-box {
+  text-align: center;
+  padding: 30rpx 0;
+}
+
+.empty-hint {
+  font-size: 22rpx;
+  color: #9CA3AF;
+}
+
+.pending-orders-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 10rpx;
+}
+
+.pending-order-item {
+  background: #F9FAFB;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  border: 1rpx solid #E5E7EB;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.pending-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 20rpx;
+}
+
+.pending-sn {
+  color: #6B7280;
+}
+
+.pending-badge {
+  background: #FFF1E6;
+  color: #D9480F;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  font-weight: 600;
+}
+
+.pending-receiver-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 22rpx;
+  gap: 4rpx;
+}
+
+.pending-receiver-info .bold-text {
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.pending-receiver-info .sub-text {
+  color: #4B5563;
+}
+
+.pending-dish-text {
+  font-size: 22rpx;
+  color: #B45309;
+  background: #FFFBEB;
+  padding: 6rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.pending-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8rpx;
+  padding-top: 8rpx;
+  border-top: 1rpx dashed #E5E7EB;
+}
+
+.pending-pay-amount {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.btn-single-dispatch {
+  font-size: 22rpx;
+  background: #059669;
+  color: #FFFFFF;
+  border-radius: 14rpx;
+  padding: 6rpx 20rpx;
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* 模态框 */
 .modal-backdrop {
   position: fixed;

@@ -91,6 +91,46 @@ Page({
     });
   },
 
+  // 客户主动取消订单并申请退款
+  cancelActiveOrder: function () {
+    const that = this;
+    if (!this.data.activeOrder) return;
+    const order = this.data.activeOrder;
+
+    const tipContent = order.order_status === 10
+      ? '确认取消该待支付订单？已抵扣积分将自动退回您的账户。'
+      : '确认在出锅发车前申请取消订单？已支付微信款项将原路退回，抵扣积分自动返还。';
+
+    wx.showModal({
+      title: '取消订单确认',
+      content: tipContent,
+      confirmText: '确认取消',
+      confirmColor: '#DC2626',
+      cancelText: '暂不取消',
+      success: (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '正在取消...' });
+          app.callContainer({
+            path: '/api/order/cancel',
+            method: 'POST',
+            data: { order_id: order.id }
+          }).then(apiRes => {
+            wx.hideLoading();
+            if (apiRes && apiRes.code === 0) {
+              wx.showToast({ title: '订单已取消，积分已返还', icon: 'success' });
+              that.fetchOrders();
+            } else {
+              wx.showToast({ title: apiRes.msg || '取消失败', icon: 'none' });
+            }
+          }).catch(() => {
+            wx.hideLoading();
+            wx.showToast({ title: '取消请求网络异常', icon: 'none' });
+          });
+        }
+      }
+    });
+  },
+
   // 联系掌柜潘师傅
   callPanMaster: function () {
     const phone = (this.data.activeOrder && this.data.activeOrder.delivery_person_phone) || '13735518290';

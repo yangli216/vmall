@@ -5,6 +5,7 @@ Page({
   data: {
     loading: true,
     dishes: [],
+    pendingOrders: [],
     config: {
       MEMBER_ENTRY_MODE: 'CONSUME',
       MEMBER_ENTRY_THRESHOLD: 68,
@@ -26,10 +27,12 @@ Page({
   onLoad: function () {
     this.loadDishes();
     this.loadConfigs();
+    this.loadPendingOrders();
   },
 
   onPullDownRefresh: function () {
     this.loadDishes();
+    this.loadPendingOrders();
     this.loadConfigs(() => {
       wx.stopPullDownRefresh();
     });
@@ -54,6 +57,19 @@ Page({
       wx.showToast({ title: '加载菜品失败', icon: 'none' });
       if (cb) cb();
     });
+  },
+
+  // 获取待备餐发车订单 (status = 20)
+  loadPendingOrders: function () {
+    const that = this;
+    app.callContainer({
+      path: '/api/order/list?status=20',
+      method: 'GET'
+    }).then(res => {
+      if (res && res.code === 0 && Array.isArray(res.data)) {
+        that.setData({ pendingOrders: res.data });
+      }
+    }).catch(() => {});
   },
 
   // 获取真实后台运营配置
@@ -110,11 +126,10 @@ Page({
         that.setData({ dishes });
       } else {
         wx.showToast({ title: res.msg || '切换失败', icon: 'none' });
-        // 恢复原有开关状态
         const dishes = [...that.data.dishes];
         that.setData({ dishes });
       }
-    }).catch(err => {
+    }).catch(() => {
       wx.showToast({ title: '操作失败，请重试', icon: 'none' });
       const dishes = [...that.data.dishes];
       that.setData({ dishes });
@@ -182,23 +197,47 @@ Page({
       wx.hideLoading();
       wx.showToast({ title: '运营配置已生效！', icon: 'success' });
       that.loadConfigs();
-    }).catch(err => {
+    }).catch(() => {
       wx.hideLoading();
       wx.showToast({ title: '保存配置失败，请重试', icon: 'none' });
     });
   },
 
-  // 调度一键发车 (真实批量更新数据库待配送订单)
+  // 单独一单发车
+  dispatchSingleOrder: function (e) {
+    const that = this;
+    const orderId = e.currentTarget.dataset.id;
+    wx.showLoading({ title: '正在派发...' });
+
+    app.callContainer({
+      path: '/api/admin/order/dispatch',
+      method: 'POST',
+      data: { order_id: orderId }
+    }).then(res => {
+      wx.hideLoading();
+      if (res && res.code === 0) {
+        wx.showToast({ title: '该单已发车！', icon: 'success' });
+        that.loadPendingOrders();
+      } else {
+        wx.showToast({ title: res.msg || '派发失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.hideLoading();
+      wx.showToast({ title: '派发请求失败', icon: 'none' });
+    });
+  },
+
+  // 调度一键全单发车
   dispatchAllOrders: function () {
     const that = this;
     wx.showModal({
       title: '确认一键全单发车？',
-      content: '今日傍晚 16:30 出炉批次已准备就绪，潘师傅将立即骑行电瓶车出发行车配送，所有待出锅订单将实时流转为「配送中」。',
+      content: `今日傍晚 16:30 出炉批次已准备就绪，当前共 ${this.data.pendingOrders.length} 笔订单，潘师傅将立即骑行电瓶车出发行车配送，所有订单实时流转为「配送中」。`,
       confirmText: '立即发车',
       confirmColor: '#059669',
       success: (res) => {
         if (res.confirm) {
-          wx.showLoading({ title: '正在派发订单...' });
+          wx.showLoading({ title: '正在派发全部订单...' });
           app.callContainer({
             path: '/api/admin/order/dispatch',
             method: 'POST',
@@ -206,11 +245,12 @@ Page({
           }).then(apiRes => {
             wx.hideLoading();
             if (apiRes && apiRes.code === 0) {
-              wx.showToast({ title: '全单发车成功！', icon: 'success' });
+              wx.showToast({ title: apiRes.msg || '全单发车成功！', icon: 'success' });
+              that.loadPendingOrders();
             } else {
               wx.showToast({ title: apiRes.msg || '调度失败', icon: 'none' });
             }
-          }).catch(err => {
+          }).catch(() => {
             wx.hideLoading();
             wx.showToast({ title: '发车调度异常', icon: 'none' });
           });
@@ -291,7 +331,7 @@ Page({
       } else {
         wx.showToast({ title: res.msg || '上架失败', icon: 'none' });
       }
-    }).catch(err => {
+    }).catch(() => {
       wx.hideLoading();
       wx.showToast({ title: '上架请求异常', icon: 'none' });
     });

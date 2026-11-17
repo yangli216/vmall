@@ -1,5 +1,5 @@
 .container {
-  padding-bottom: 120rpx;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
 }
 
 /* 头部一体化卡片 */
@@ -402,7 +402,7 @@
 /* 浮动 Dock */
 .airy-cart-dock {
   position: fixed;
-  bottom: 40rpx;
+  bottom: calc(24rpx + env(safe-area-inset-bottom));
   left: 32rpx;
   right: 32rpx;
   background: rgba(255, 255, 255, 0.95);
@@ -468,7 +468,7 @@
   background: #FFFFFF;
   border-top-left-radius: 48rpx;
   border-top-right-radius: 48rpx;
-  padding: 36rpx 32rpx 50rpx;
+  padding: 36rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
   max-height: 85vh;
   overflow-y: auto;
   transform: translateY(100%);

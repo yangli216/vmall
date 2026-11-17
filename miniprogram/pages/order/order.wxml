@@ -116,6 +116,17 @@
       <button class="btn-confirm-receipt btn-press" bindtap="payActiveOrder">
         立即完成微信支付 (¥{{activeOrder.final_pay_amount}})
       </button>
+      <button class="btn-cancel-order btn-press" bindtap="cancelActiveOrder">
+        取消未支付订单
+      </button>
+    </view>
+    <view class="action-footer" wx:elif="{{activeOrder.order_status === 20}}">
+      <view class="cooking-hint-box">
+        <text>🍲 老卤出锅配载中，潘师傅即将封盒装车</text>
+      </view>
+      <button class="btn-cancel-order btn-press" bindtap="cancelActiveOrder">
+        出锅前取消并申请退款
+      </button>
     </view>
     <view class="action-footer" wx:elif="{{activeOrder.order_status === 30}}">
       <button class="btn-confirm-receipt btn-press" bindtap="confirmDelivered">

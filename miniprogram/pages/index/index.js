@@ -138,6 +138,16 @@ Page({
     });
   },
 
+  // 图片容错回退
+  onImageError: function (e) {
+    const index = e.currentTarget.dataset.index;
+    const dishes = [...this.data.dishes];
+    if (dishes[index]) {
+      dishes[index].cover_img = 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400';
+      this.setData({ dishes });
+    }
+  },
+
   // 切换配送与自提
   changeDelType: function (e) {
     const type = parseInt(e.currentTarget.dataset.type, 10);
@@ -312,9 +322,14 @@ Page({
     });
   },
 
-  // 输入红包抵扣金额
+  // 输入红包抵扣金额 (工匠精神：过滤非法字符与多余小数点)
   onRedAmountChange: function (e) {
-    this.setData({ inputRedAmount: e.detail.value }, () => {
+    let raw = e.detail.value.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    if (parts.length > 2) {
+      raw = parts[0] + '.' + parts.slice(1).join('');
+    }
+    this.setData({ inputRedAmount: raw }, () => {
       this.calculateBill();
     });
   },
@@ -450,5 +465,22 @@ Page({
     wx.switchTab({
       url: '/pages/member/member'
     });
+  },
+
+  // 原生微信分享给好友
+  onShareAppMessage: function () {
+    return {
+      title: '潘小兜老卤小作坊 · 临天八弄现做现捞，全场8.8折！',
+      path: '/pages/index/index',
+      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600'
+    };
+  },
+
+  // 分享到朋友圈
+  onShareTimeline: function () {
+    return {
+      title: '潘小兜老卤小作坊 · 每日两炉现卤现捞 · 临安锦城自送',
+      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600'
+    };
   }
 });

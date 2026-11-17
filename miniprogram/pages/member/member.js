@@ -43,7 +43,7 @@ Page({
         const isMem = u.is_member === 1;
         const total = parseFloat(u.total_consumption) || 0;
         const threshold = parseFloat(that.data.config.MEMBER_ENTRY_THRESHOLD || '68.00');
-        const percent = Math.min(100, Math.floor((total / threshold) * 100));
+        const percent = threshold > 0 ? Math.min(100, Math.floor((total / threshold) * 100)) : 100;
 
         that.setData({
           userInfo: u,

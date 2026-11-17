@@ -74,7 +74,7 @@
 
     <view wx:for="{{dishes}}" wx:key="id" class="dish-item-card {{item.status === 0 ? 'sold-out' : ''}}">
       <view class="dish-img-box">
-        <image src="{{item.cover_img}}" class="dish-real-img" mode="aspectFill"></image>
+        <image src="{{item.cover_img}}" class="dish-real-img" mode="aspectFill" binderror="onImageError" data-index="{{index}}"></image>
         <view class="dish-floating-badge">{{item.badge}}</view>
         <view wx:if="{{item.status === 0}}" class="dish-soldout-overlay">今日已售罄</view>
       </view>

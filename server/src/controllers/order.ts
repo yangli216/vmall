@@ -1,5 +1,6 @@
 import { Context } from 'koa';
-import { query } from '../db';
+import { query, withTransaction } from '../db';
+import { PoolConnection } from 'mysql2/promise';
 
 // 辅助方法：读取系统配置项
 async function getConfigValue(key: string, defaultVal: string): Promise<string> {
@@ -147,19 +148,17 @@ export async function calculateOrder(ctx: Context) {
 }
 
 /**
- * 提交并创建订单 (服务端强制重算，防篡改)
+ * 提交并创建订单 (工匠精神：全事务+行锁并发保护)
  */
 export async function createOrder(ctx: Context) {
   const openid = (ctx.headers['x-wx-openid'] as string) || (ctx.query.openid as string);
   const body = ctx.request.body as any;
 
-  const users: any = await query('SELECT * FROM t_user WHERE openid = ? LIMIT 1', [openid]);
-  if (users.length === 0) {
+  if (!openid) {
     ctx.status = 401;
     ctx.body = { code: 401, msg: '未识别用户身份' };
     return;
   }
-  const user = users[0];
 
   if (!body.items || body.items.length === 0) {
     ctx.status = 400;
@@ -167,135 +166,251 @@ export async function createOrder(ctx: Context) {
     return;
   }
 
-  // 服务端重新严格算价，确保不会被客户端篡改
-  const financials = await computeOrderFinancials({
-    userId: user.id,
-    isMember: user.is_member === 1,
-    userNormalPoints: user.normal_points || 0,
-    userRedPoints: Number(user.red_packet_points || 0),
-    items: body.items,
-    deliveryType: body.delivery_type || 1,
-    useNormalPoints: body.use_normal_points,
-    useRedPacketPoints: body.use_red_packet_points,
-    customRedAmount: body.custom_red_amount
-  });
+  try {
+    const orderData = await withTransaction(async (conn: PoolConnection) => {
+      // 1. 行级排他锁查询用户当前实际积分余额，防止并发双花
+      const [userRows]: any = await conn.execute('SELECT * FROM t_user WHERE openid = ? FOR UPDATE', [openid]);
+      if (userRows.length === 0) {
+        throw new Error('用户档案不存在');
+      }
+      const user = userRows[0];
 
-  const orderSn = `PXD${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
-  const pickupCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4位自提码
-  const address = body.receiver_address || body.delivery_address || '';
-  const receiverName = body.receiver_name || '';
-  const receiverPhone = body.receiver_phone || '';
+      // 2. 服务端防篡改算价
+      const financials = await computeOrderFinancials({
+        userId: user.id,
+        isMember: user.is_member === 1,
+        userNormalPoints: user.normal_points || 0,
+        userRedPoints: Number(user.red_packet_points || 0),
+        items: body.items,
+        deliveryType: body.delivery_type || 1,
+        useNormalPoints: body.use_normal_points,
+        useRedPacketPoints: body.use_red_packet_points,
+        customRedAmount: body.custom_red_amount
+      });
 
-  // 插入主表 (初始状态 10: 待付款)
-  const res: any = await query(
-    `INSERT INTO t_order (
-      order_sn, user_id, delivery_type, delivery_address, receiver_name, receiver_phone, pickup_code, expect_time_slot, order_remark,
-      goods_total_amount, member_discount_amount, normal_points_deduct, used_normal_points,
-      red_packet_deduct, used_red_packet_points, delivery_fee, pay_amount, order_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 10)`,
-    [
-      orderSn, user.id, body.delivery_type || 1, address, receiverName, receiverPhone, pickupCode,
-      body.expect_time_slot || '今日 16:30 傍晚批次', body.order_remark || '',
-      financials.goods_origin_total, financials.member_discount,
-      financials.normal_deduct, financials.used_normal_points,
-      financials.red_deduct, financials.used_red_points,
-      financials.delivery_fee, financials.final_pay_amount
-    ]
-  );
+      const orderSn = `PXD${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
+      const pickupCode = Math.floor(1000 + Math.random() * 9000).toString();
+      const address = body.receiver_address || body.delivery_address || '';
+      const receiverName = body.receiver_name || '';
+      const receiverPhone = body.receiver_phone || '';
 
-  const orderId = res.insertId;
+      // 3. 插入主订单记录 (初始状态 10: 待付款)
+      const [res]: any = await conn.execute(
+        `INSERT INTO t_order (
+          order_sn, user_id, delivery_type, delivery_address, receiver_name, receiver_phone, pickup_code, expect_time_slot, order_remark,
+          goods_total_amount, member_discount_amount, normal_points_deduct, used_normal_points,
+          red_packet_deduct, used_red_packet_points, delivery_fee, pay_amount, order_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 10)`,
+        [
+          orderSn, user.id, body.delivery_type || 1, address, receiverName, receiverPhone, pickupCode,
+          body.expect_time_slot || '今日 16:30 傍晚批次', body.order_remark || '',
+          financials.goods_origin_total, financials.member_discount,
+          financials.normal_deduct, financials.used_normal_points,
+          financials.red_deduct, financials.used_red_points,
+          financials.delivery_fee, financials.final_pay_amount
+        ]
+      );
 
-  // 插入商品子项
-  for (const item of financials.verified_items) {
-    await query(
-      `INSERT INTO t_order_item (order_id, product_id, product_title, product_img, price, quantity, subtotal)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [orderId, item.product_id, item.title, item.cover_img, item.price, item.quantity, item.subtotal]
-    );
+      const orderId = res.insertId;
+
+      // 4. 插入商品子项
+      for (const item of financials.verified_items) {
+        await conn.execute(
+          `INSERT INTO t_order_item (order_id, product_id, product_title, product_img, price, quantity, subtotal)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [orderId, item.product_id, item.title, item.cover_img, item.price, item.quantity, item.subtotal]
+        );
+      }
+
+      // 5. 扣减已锁定的积分余额
+      if (financials.used_normal_points > 0) {
+        await conn.execute(
+          'UPDATE t_user SET normal_points = GREATEST(0, normal_points - ?) WHERE id = ?',
+          [financials.used_normal_points, user.id]
+        );
+      }
+      if (Number(financials.used_red_points) > 0) {
+        await conn.execute(
+          'UPDATE t_user SET red_packet_points = GREATEST(0.00, red_packet_points - ?) WHERE id = ?',
+          [financials.used_red_points, user.id]
+        );
+      }
+
+      return {
+        order_id: orderId,
+        order_sn: orderSn,
+        pay_amount: financials.final_pay_amount,
+        pickup_code: pickupCode
+      };
+    });
+
+    ctx.body = {
+      code: 0,
+      msg: '订单创建成功',
+      data: orderData
+    };
+  } catch (err: any) {
+    ctx.status = 500;
+    ctx.body = { code: 500, msg: err.message || '下单事务执行失败' };
   }
-
-  // 扣减已消耗的积分与红包钱包
-  if (financials.used_normal_points > 0) {
-    await query('UPDATE t_user SET normal_points = GREATEST(0, normal_points - ?) WHERE id = ?', [financials.used_normal_points, user.id]);
-  }
-  if (Number(financials.used_red_points) > 0) {
-    await query('UPDATE t_user SET red_packet_points = GREATEST(0.00, red_packet_points - ?) WHERE id = ?', [financials.used_red_points, user.id]);
-  }
-
-  ctx.body = {
-    code: 0,
-    msg: '订单创建成功',
-    data: {
-      order_id: orderId,
-      order_sn: orderSn,
-      pay_amount: financials.final_pay_amount,
-      pickup_code: pickupCode
-    }
-  };
 }
 
 /**
- * 微信支付成功回调/模拟支付处理 (核心闭环：触发返佣与会员升级判定)
+ * 微信支付成功回调 (工匠精神：原子幂等更新，防重入与并发双重返利)
  */
 export async function payOrderSuccess(ctx: Context) {
   const { order_id } = ctx.request.body as { order_id: number };
 
-  const orders: any = await query('SELECT * FROM t_order WHERE id = ? AND order_status = 10', [order_id]);
-  if (orders.length === 0) {
-    ctx.body = { code: 400, msg: '订单不存在或已完成支付' };
+  if (!order_id) {
+    ctx.status = 400;
+    ctx.body = { code: 400, msg: '缺少 order_id' };
     return;
   }
-  const order = orders[0];
 
-  // 1. 更新订单为待备餐/已付款 (20)
-  await query('UPDATE t_order SET order_status = 20, pay_time = NOW() WHERE id = ?', [order_id]);
-
-  // 2. 累加买家的消费金额和普通消费积分 (1元=1分)
-  const users: any = await query('SELECT * FROM t_user WHERE id = ?', [order.user_id]);
-  const buyer = users[0];
-  const cashPay = Number(order.pay_amount);
-
-  await query(
-    'UPDATE t_user SET total_consume_amount = total_consume_amount + ?, normal_points = normal_points + ? WHERE id = ?',
-    [cashPay, Math.floor(cashPay), buyer.id]
-  );
-
-  // 3. 检查买家是否达到满额升级会员条件 (例如满68元自动晋级)
-  const gateMode = await getConfigValue('MEMBER_ENTRY_MODE', 'CONSUME');
-  const gateThreshold = parseFloat(await getConfigValue('MEMBER_ENTRY_THRESHOLD', '68.00'));
-
-  if (gateMode === 'CONSUME' && buyer.is_member === 0) {
-    const updatedUser: any = await query('SELECT total_consume_amount FROM t_user WHERE id = ?', [buyer.id]);
-    if (Number(updatedUser[0].total_consume_amount) >= gateThreshold) {
-      await query('UPDATE t_user SET is_member = 1 WHERE id = ?', [buyer.id]);
-    }
-  }
-
-  // 4. 核心风控返佣：核发推荐人 3% 裂变返利红包
-  // 规则：新会员自身用红包抵扣部分绝不计入！仅扣除运费后的纯现金参与核算
-  if (buyer.referrer_id) {
-    const commissionRate = parseFloat(await getConfigValue('COMMISSION_RATE', '0.03'));
-    const commissionCashBase = Math.max(0, Number((cashPay - Number(order.delivery_fee)).toFixed(2)));
-
-    if (commissionCashBase > 0) {
-      const rewardPoints = Number((commissionCashBase * commissionRate).toFixed(2));
-
-      // 记入返佣流水表
-      await query(
-        `INSERT INTO t_commission_flow (referrer_user_id, buyer_user_id, order_id, order_cash_base, commission_rate, reward_red_points, status)
-         VALUES (?, ?, ?, ?, ?, ?, 1)`,
-        [buyer.referrer_id, buyer.id, order_id, commissionCashBase, commissionRate, rewardPoints]
+  try {
+    const result = await withTransaction(async (conn: PoolConnection) => {
+      // 1. 原子幂等翻转状态：仅当当前状态为 10(待付款) 时更新为 20(已付款/待出锅)
+      const [updateRes]: any = await conn.execute(
+        'UPDATE t_order SET order_status = 20, pay_time = NOW() WHERE id = ? AND order_status = 10',
+        [order_id]
       );
 
-      // 实时注入推荐人的红包积分钱包
-      await query(
-        'UPDATE t_user SET red_packet_points = red_packet_points + ? WHERE id = ?',
-        [rewardPoints, buyer.referrer_id]
+      // 若影响行数为 0，说明该订单已被其他回调或流程处理过，直接幂等返回成功
+      if (updateRes.affectedRows === 0) {
+        return { msg: '订单已支付完成，无需重复处理' };
+      }
+
+      // 2. 查询该订单与买家信息
+      const [orderRows]: any = await conn.execute('SELECT * FROM t_order WHERE id = ?', [order_id]);
+      const order = orderRows[0];
+
+      const [userRows]: any = await conn.execute('SELECT * FROM t_user WHERE id = ? FOR UPDATE', [order.user_id]);
+      const buyer = userRows[0];
+      const cashPay = Number(order.pay_amount || 0);
+
+      // 3. 累加买家实际消费额和普通积分
+      await conn.execute(
+        'UPDATE t_user SET total_consume_amount = total_consume_amount + ?, normal_points = normal_points + ? WHERE id = ?',
+        [cashPay, Math.floor(cashPay), buyer.id]
       );
-    }
+
+      // 4. 会员消费满额自动晋级判定
+      const gateMode = await getConfigValue('MEMBER_ENTRY_MODE', 'CONSUME');
+      const gateThreshold = parseFloat(await getConfigValue('MEMBER_ENTRY_THRESHOLD', '68.00'));
+
+      if (gateMode === 'CONSUME' && buyer.is_member === 0) {
+        const [consumeRows]: any = await conn.execute('SELECT total_consume_amount FROM t_user WHERE id = ?', [buyer.id]);
+        if (Number(consumeRows[0].total_consume_amount) >= gateThreshold) {
+          await conn.execute('UPDATE t_user SET is_member = 1 WHERE id = ?', [buyer.id]);
+        }
+      }
+
+      // 5. 防刷推荐人返利结算 (严格扣除红包抵扣与运费)
+      if (buyer.referrer_id) {
+        const commissionRate = parseFloat(await getConfigValue('COMMISSION_RATE', '0.03'));
+        const commissionCashBase = Math.max(0, Number((cashPay - Number(order.delivery_fee || 0)).toFixed(2)));
+        const rewardPoints = Number((commissionCashBase * commissionRate).toFixed(2));
+
+        if (rewardPoints > 0) {
+          // 写入返利流水表
+          await conn.execute(
+            `INSERT INTO t_commission_flow (referrer_user_id, buyer_user_id, order_id, order_cash_base, commission_rate, reward_red_points, status)
+             VALUES (?, ?, ?, ?, ?, ?, 1)`,
+            [buyer.referrer_id, buyer.id, order_id, commissionCashBase, commissionRate, rewardPoints]
+          );
+
+          // 增加推荐人红包积分钱包
+          await conn.execute(
+            'UPDATE t_user SET red_packet_points = red_packet_points + ? WHERE id = ?',
+            [rewardPoints, buyer.referrer_id]
+          );
+        }
+      }
+
+      return { msg: '支付结算成功，已进入潘小兜作坊备餐队列' };
+    });
+
+    ctx.body = { code: 0, msg: result.msg };
+  } catch (err: any) {
+    ctx.status = 500;
+    ctx.body = { code: 500, msg: err.message || '支付回调结算异常' };
+  }
+}
+
+/**
+ * 订单取消与退款 (工匠精神：全状态回滚，返还原扣积分)
+ */
+export async function cancelOrder(ctx: Context) {
+  const openid = (ctx.headers['x-wx-openid'] as string) || (ctx.query.openid as string);
+  const { order_id } = ctx.request.body as { order_id: number };
+
+  if (!order_id) {
+    ctx.status = 400;
+    ctx.body = { code: 400, msg: '缺少 order_id' };
+    return;
   }
 
-  ctx.body = { code: 0, msg: '支付成功，已进入潘小兜作坊备餐队列' };
+  try {
+    const result = await withTransaction(async (conn: PoolConnection) => {
+      // 只能取消待付款(10)或未发车的已付款(20)订单
+      const [orderRows]: any = await conn.execute(
+        'SELECT * FROM t_order WHERE id = ? AND order_status IN (10, 20) FOR UPDATE',
+        [order_id]
+      );
+
+      if (orderRows.length === 0) {
+        throw new Error('订单不可取消或已发车配送');
+      }
+      const order = orderRows[0];
+
+      // 将订单置为 50: 已取消/已退款
+      await conn.execute('UPDATE t_order SET order_status = 50 WHERE id = ?', [order_id]);
+
+      // 原路回滚使用的普通积分与红包积分
+      if (order.used_normal_points > 0) {
+        await conn.execute(
+          'UPDATE t_user SET normal_points = normal_points + ? WHERE id = ?',
+          [order.used_normal_points, order.user_id]
+        );
+      }
+      if (Number(order.used_red_packet_points) > 0) {
+        await conn.execute(
+          'UPDATE t_user SET red_packet_points = red_packet_points + ? WHERE id = ?',
+          [order.used_red_packet_points, order.user_id]
+        );
+      }
+
+      // 如果是已付款订单(20)，回退买家累计消费并冲正推荐人返佣
+      if (order.order_status === 20) {
+        const cashPay = Number(order.pay_amount || 0);
+        await conn.execute(
+          'UPDATE t_user SET total_consume_amount = GREATEST(0.00, total_consume_amount - ?), normal_points = GREATEST(0, normal_points - ?) WHERE id = ?',
+          [cashPay, Math.floor(cashPay), order.user_id]
+        );
+
+        // 冲正推荐佣金
+        const [flowRows]: any = await conn.execute(
+          'SELECT * FROM t_commission_flow WHERE order_id = ? AND status = 1 FOR UPDATE',
+          [order_id]
+        );
+        if (flowRows.length > 0) {
+          const flow = flowRows[0];
+          await conn.execute('UPDATE t_commission_flow SET status = 2 WHERE id = ?', [flow.id]);
+          await conn.execute(
+            'UPDATE t_user SET red_packet_points = GREATEST(0.00, red_packet_points - ?) WHERE id = ?',
+            [flow.reward_red_points, flow.referrer_user_id]
+          );
+        }
+      }
+
+      return { msg: '订单已成功取消，积分已原路返还' };
+    });
+
+    ctx.body = { code: 0, msg: result.msg };
+  } catch (err: any) {
+    ctx.status = 400;
+    ctx.body = { code: 400, msg: err.message || '取消订单失败' };
+  }
 }
 
 /**
@@ -311,15 +426,19 @@ export async function dispatchDelivery(ctx: Context) {
   const params: any[] = [delivery_person_name || defaultName, delivery_person_phone || defaultPhone];
 
   if (order_id) {
-    updateSql += ' WHERE id = ?';
+    updateSql += ' WHERE id = ? AND order_status = 20';
     params.push(order_id);
   } else {
-    // 若未指定单一 order_id，则将所有已支付待备餐订单 (status=20) 批量置为发车配送
+    // 批量全单发车：将所有已支付待备餐订单 (status=20) 批量置为发车配送
     updateSql += ' WHERE order_status = 20';
   }
 
-  await query(updateSql, params);
-  ctx.body = { code: 0, msg: '已派单！潘师傅正在电瓶车送餐路上' };
+  const res: any = await query(updateSql, params);
+  ctx.body = {
+    code: 0,
+    msg: `发车成功！已派发 ${res.affectedRows || 0} 笔订单，潘师傅正在骑行配送中`,
+    data: { affected_rows: res.affectedRows }
+  };
 }
 
 /**
@@ -334,7 +453,7 @@ export async function completeOrder(ctx: Context) {
   }
 
   await query('UPDATE t_order SET order_status = 40 WHERE id = ?', [order_id]);
-  ctx.body = { code: 0, msg: '订单已完成' };
+  ctx.body = { code: 0, msg: '订单已送达完成' };
 }
 
 /**
@@ -363,19 +482,26 @@ export async function getOrderList(ctx: Context) {
     const items: any = await query('SELECT * FROM t_order_item WHERE order_id = ?', [o.id]);
     o.items = items;
 
-    // 格式化价格字段为标准两位小数
-    o.goods_origin_total = Number(o.goods_total_amount).toFixed(2);
-    o.member_discount = Number(o.member_discount_amount).toFixed(2);
-    o.normal_deduct = Number(o.normal_points_deduct).toFixed(2);
-    o.red_deduct = Number(o.red_packet_deduct).toFixed(2);
-    o.delivery_fee = Number(o.delivery_fee).toFixed(2);
-    o.final_pay_amount = Number(o.pay_amount).toFixed(2);
-    o.receiver_address = o.delivery_address;
+    o.goods_origin_total = Number(o.goods_total_amount || 0).toFixed(2);
+    o.member_discount = Number(o.member_discount_amount || 0).toFixed(2);
+    o.normal_deduct = Number(o.normal_points_deduct || 0).toFixed(2);
+    o.red_deduct = Number(o.red_packet_deduct || 0).toFixed(2);
+    o.delivery_fee = Number(o.delivery_fee || 0).toFixed(2);
+    o.final_pay_amount = Number(o.pay_amount || 0).toFixed(2);
+    o.receiver_address = o.delivery_address || '';
+    o.receiver_name = o.receiver_name || '';
+    o.receiver_phone = o.receiver_phone || '';
 
-    // 摘要菜品文字 (用于历史订单列表简明展示)
+    // 格式化创建时间为便于阅读的字符串 (如 2026-11-17 16:30)
+    if (o.create_time) {
+      const dt = new Date(o.create_time);
+      o.create_time_formatted = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+    } else {
+      o.create_time_formatted = '近期';
+    }
+
     o.summary_text = items.map((i: any) => `${i.product_title} x${i.quantity}`).join(', ');
 
-    // 查询为推荐人贡献的返佣
     const flows: any = await query('SELECT reward_red_points FROM t_commission_flow WHERE order_id = ? LIMIT 1', [o.id]);
     o.commission_rebated = flows.length > 0 ? Number(flows[0].reward_red_points).toFixed(2) : '0.00';
   }
