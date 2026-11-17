@@ -6,6 +6,14 @@ Page({
     loading: true,
     dishes: [],
     pendingOrders: [],
+    members: [],
+    memberSummary: {
+      total_users: 0,
+      total_vip_members: 0,
+      all_time_consumption: '0.00',
+      total_outstanding_red_points: '0.00'
+    },
+    memberKeyword: '',
     config: {
       MEMBER_ENTRY_MODE: 'CONSUME',
       MEMBER_ENTRY_THRESHOLD: 68,
@@ -27,6 +35,17 @@ Page({
       member_price: '',
       badge: '今日现捞',
       intro: ''
+    },
+    showPointsModal: false,
+    showReferrerModal: false,
+    currentMember: null,
+    pointsForm: {
+      adjust_type: 'NORMAL_POINT',
+      amount: '',
+      reason: ''
+    },
+    referrerForm: {
+      invite_code: ''
     }
   },
 
@@ -46,6 +65,7 @@ Page({
         that.loadDishes();
         that.loadConfigs();
         that.loadPendingOrders();
+        that.loadMembers();
       } else {
         wx.showModal({
           title: '作坊掌柜专属通道',
@@ -67,6 +87,7 @@ Page({
   onPullDownRefresh: function () {
     this.loadDishes();
     this.loadPendingOrders();
+    this.loadMembers();
     this.loadConfigs(() => {
       wx.stopPullDownRefresh();
     });
@@ -428,6 +449,212 @@ Page({
           });
         }
       }
+    });
+  },
+
+  // ==================== 掌柜会员管理专属模块 ====================
+
+  // 加载会员列表
+  loadMembers: function (cb) {
+    const that = this;
+    const kw = (that.data.memberKeyword || '').trim();
+    let url = '/api/admin/members';
+    if (kw) {
+      url += '?keyword=' + encodeURIComponent(kw);
+    }
+
+    app.callContainer({
+      path: url,
+      method: 'GET'
+    }).then(res => {
+      if (res && res.code === 0 && res.data) {
+        that.setData({
+          members: res.data.list || [],
+          memberSummary: res.data.summary || that.data.memberSummary
+        });
+      }
+      if (cb) cb();
+    }).catch(err => {
+      console.error('[Load Members Error]', err);
+      if (cb) cb();
+    });
+  },
+
+  onInputMemberKeyword: function (e) {
+    this.setData({ memberKeyword: e.detail.value });
+  },
+
+  searchMembers: function () {
+    this.loadMembers();
+  },
+
+  clearMemberSearch: function () {
+    this.setData({ memberKeyword: '' });
+    this.loadMembers();
+  },
+
+  // 掌柜一键开通/撤销会员身份
+  toggleMemberStatus: function (e) {
+    const that = this;
+    const member = e.currentTarget.dataset.member;
+    const targetStatus = member.is_member === 1 ? 0 : 1;
+    const actionTxt = targetStatus === 1 ? '开通尊享会员(8.8折特权)' : '撤销会员身份(清空红包)';
+
+    wx.showModal({
+      title: '确认调整会员身份？',
+      content: `确定为顾客【${member.nickname}】${actionTxt}吗？`,
+      confirmText: '确定变更',
+      confirmColor: targetStatus === 1 ? '#D9480F' : '#DC2626',
+      success: (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: '处理中...' });
+          app.callContainer({
+            path: '/api/admin/member/update-status',
+            method: 'POST',
+            data: {
+              user_id: member.id,
+              is_member: targetStatus
+            }
+          }).then(apiRes => {
+            wx.hideLoading();
+            if (apiRes && apiRes.code === 0) {
+              wx.showToast({ title: apiRes.msg || '调整成功', icon: 'success' });
+              that.loadMembers();
+            } else {
+              wx.showToast({ title: apiRes.msg || '操作失败', icon: 'none' });
+            }
+          }).catch(() => {
+            wx.hideLoading();
+            wx.showToast({ title: '网络异常', icon: 'none' });
+          });
+        }
+      }
+    });
+  },
+
+  // 打开积分调整模态框
+  openPointsModal: function (e) {
+    const member = e.currentTarget.dataset.member;
+    this.setData({
+      currentMember: member,
+      showPointsModal: true,
+      pointsForm: {
+        adjust_type: 'NORMAL_POINT',
+        amount: '',
+        reason: '老客回馈/线下消费补录'
+      }
+    });
+  },
+
+  closePointsModal: function () {
+    this.setData({ showPointsModal: false, currentMember: null });
+  },
+
+  onSelectPointsType: function (e) {
+    const t = e.currentTarget.dataset.type;
+    this.setData({ 'pointsForm.adjust_type': t });
+  },
+
+  onInputPointsAmount: function (e) {
+    this.setData({ 'pointsForm.amount': e.detail.value });
+  },
+
+  onInputPointsReason: function (e) {
+    this.setData({ 'pointsForm.reason': e.detail.value });
+  },
+
+  // 提交人工积分/红包调整
+  submitAdjustPoints: function () {
+    const that = this;
+    const form = that.data.pointsForm;
+    const member = that.data.currentMember;
+    const amt = parseFloat(form.amount);
+
+    if (isNaN(amt) || amt === 0) {
+      wx.showToast({ title: '请输入有效变动数值(可填负数)', icon: 'none' });
+      return;
+    }
+    if (!form.reason || !form.reason.trim()) {
+      wx.showToast({ title: '请输入调整原因备注', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '正在提交调整...' });
+    app.callContainer({
+      path: '/api/admin/member/adjust-points',
+      method: 'POST',
+      data: {
+        user_id: member.id,
+        adjust_type: form.adjust_type,
+        amount: amt,
+        reason: form.reason.trim()
+      }
+    }).then(res => {
+      wx.hideLoading();
+      if (res && res.code === 0) {
+        wx.showToast({ title: '资产调整成功！', icon: 'success' });
+        that.closePointsModal();
+        that.loadMembers();
+      } else {
+        wx.showToast({ title: res.msg || '调整失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.hideLoading();
+      wx.showToast({ title: '网络异常', icon: 'none' });
+    });
+  },
+
+  // 打开补录推荐人模态框
+  openReferrerModal: function (e) {
+    const member = e.currentTarget.dataset.member;
+    this.setData({
+      currentMember: member,
+      showReferrerModal: true,
+      referrerForm: {
+        invite_code: member.referrer_code || ''
+      }
+    });
+  },
+
+  closeReferrerModal: function () {
+    this.setData({ showReferrerModal: false, currentMember: null });
+  },
+
+  onInputReferrerCode: function (e) {
+    this.setData({ 'referrerForm.invite_code': e.detail.value });
+  },
+
+  // 提交补录推荐人
+  submitBindReferrer: function () {
+    const that = this;
+    const member = that.data.currentMember;
+    const code = (that.data.referrerForm.invite_code || '').trim();
+
+    if (!code) {
+      wx.showToast({ title: '请输入推荐人邀请码', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '正在绑定...' });
+    app.callContainer({
+      path: '/api/admin/member/bind-referrer',
+      method: 'POST',
+      data: {
+        user_id: member.id,
+        referrer_invite_code: code
+      }
+    }).then(res => {
+      wx.hideLoading();
+      if (res && res.code === 0) {
+        wx.showToast({ title: '绑定成功！', icon: 'success' });
+        that.closeReferrerModal();
+        that.loadMembers();
+      } else {
+        wx.showToast({ title: res.msg || '绑定失败', icon: 'none' });
+      }
+    }).catch(() => {
+      wx.hideLoading();
+      wx.showToast({ title: '网络异常', icon: 'none' });
     });
   }
 });

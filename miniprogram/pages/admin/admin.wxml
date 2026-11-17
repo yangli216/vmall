@@ -209,7 +209,114 @@
     </view>
   </view>
 
-  <!-- 5. 新增/编辑菜品弹窗模态框 -->
+  <!-- 5. 会员全景花名册与特权管理 (掌柜私域核心) -->
+  <view class="section-card">
+    <view class="section-header-row">
+      <view class="header-left">
+        <text class="section-h2">👥 会员花名册与特权管理 (共{{members.length}}位)</text>
+        <text class="section-sub">支持人工开通/撤销会员、增减积分红包、补录推荐人</text>
+      </view>
+    </view>
+
+    <!-- 会员资产概览四格看板 -->
+    <view class="member-stats-grid">
+      <view class="m-stat-box">
+        <text class="m-stat-num">{{memberSummary.total_users || 0}}</text>
+        <text class="m-stat-lbl">总建档客官(人)</text>
+      </view>
+      <view class="m-stat-box">
+        <text class="m-stat-num highlight">{{memberSummary.total_vip_members || 0}}</text>
+        <text class="m-stat-lbl">尊享会员(8.8折)</text>
+      </view>
+      <view class="m-stat-box">
+        <text class="m-stat-num">¥{{memberSummary.all_time_consumption || '0.00'}}</text>
+        <text class="m-stat-lbl">老客累计消费</text>
+      </view>
+      <view class="m-stat-box">
+        <text class="m-stat-num red">¥{{memberSummary.total_outstanding_red_points || '0.00'}}</text>
+        <text class="m-stat-lbl">在外红包池(元)</text>
+      </view>
+    </view>
+
+    <!-- 会员搜索栏 -->
+    <view class="member-search-bar">
+      <input 
+        class="member-search-input" 
+        placeholder="搜索食客姓名 / 手机号 / 会员卡号 / 邀请码" 
+        value="{{memberKeyword}}" 
+        bindinput="onInputMemberKeyword" 
+        bindconfirm="searchMembers"
+      />
+      <button class="btn-search-member btn-press" bindtap="searchMembers">搜索</button>
+      <button class="btn-clear-member" bindtap="clearMemberSearch" wx:if="{{memberKeyword}}">重置</button>
+    </view>
+
+    <!-- 会员列表 -->
+    <view class="member-cards-feed">
+      <view wx:if="{{members.length === 0}}" class="empty-pending-box">
+        <text class="empty-hint">暂未找到匹配的会员记录</text>
+      </view>
+
+      <view wx:for="{{members}}" wx:key="id" class="admin-member-card">
+        <view class="m-card-top">
+          <image class="m-avatar" src="{{item.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}}" mode="aspectFill"></image>
+          <view class="m-profile-info">
+            <view class="m-name-line">
+              <text class="m-nickname">{{item.nickname || '临安食客'}}</text>
+              <text class="m-status-pill {{item.is_member === 1 ? 'vip' : 'normal'}}">
+                {{item.is_member === 1 ? '尊享会员 · 8.8折' : '普通客官'}}
+              </text>
+            </view>
+            <view class="m-sub-line">
+              <text class="m-card-sn">卡号: {{item.member_card_no || '暂无'}}</text>
+              <text class="m-phone">{{item.phone ? item.phone : '未授权手机'}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 财务与裂变数据指标 -->
+        <view class="m-metrics-strip">
+          <view class="m-metric-item">
+            <text class="metric-val">¥{{item.total_consume_amount}}</text>
+            <text class="metric-label">累计消费({{item.paid_order_count || 0}}单)</text>
+          </view>
+          <view class="m-metric-item">
+            <text class="metric-val">{{item.normal_points}}</text>
+            <text class="metric-label">普通积分</text>
+          </view>
+          <view class="m-metric-item">
+            <text class="metric-val red">¥{{item.red_packet_points}}</text>
+            <text class="metric-label">红包积分(可抵现)</text>
+          </view>
+          <view class="m-metric-item">
+            <text class="metric-val">{{item.referral_count || 0}}人</text>
+            <text class="metric-label">名下裂变好友</text>
+          </view>
+        </view>
+
+        <view class="m-referrer-bar">
+          <text class="ref-label">推荐人: </text>
+          <text class="ref-val" wx:if="{{item.referrer_name}}">{{item.referrer_name}} ({{item.referrer_code}})</text>
+          <text class="ref-empty" wx:else>自主进店 (无推荐人)</text>
+        </view>
+
+        <!-- 掌柜特权快捷操作条 -->
+        <view class="m-actions-row">
+          <button class="m-action-btn {{item.is_member === 1 ? 'btn-revoke' : 'btn-grant'}}" bindtap="toggleMemberStatus" data-member="{{item}}">
+            {{item.is_member === 1 ? '撤销会员身份' : '👑 升级尊享会员'}}
+          </button>
+          <button class="m-action-btn btn-points" bindtap="openPointsModal" data-member="{{item}}">
+            🎁 调积分/红包
+          </button>
+          <button class="m-action-btn btn-bind-ref" bindtap="openReferrerModal" data-member="{{item}}">
+            🔗 补录推荐人
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 6. 新增/编辑菜品弹窗模态框 -->
   <view class="modal-backdrop" wx:if="{{showAddModal}}">
     <view class="modal-box">
       <view class="modal-title-row">
@@ -243,6 +350,65 @@
       <view class="modal-btn-row">
         <button class="btn-cancel" bindtap="closeAddModal">取消</button>
         <button class="btn-submit" bindtap="submitDishForm">{{isEditingDish ? '保存修改' : '立即发布上架'}}</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 7. 人工调整积分/红包弹窗 -->
+  <view class="modal-backdrop" wx:if="{{showPointsModal}}">
+    <view class="modal-box">
+      <view class="modal-title-row">
+        <text class="modal-title">调整食客资产【{{currentMember.nickname}}】</text>
+        <view class="modal-close" bindtap="closePointsModal">✕</view>
+      </view>
+
+      <view class="modal-form">
+        <view class="form-row">
+          <text class="form-label">调整资产账户</text>
+          <view class="seg-type-row">
+            <view class="seg-item {{pointsForm.adjust_type === 'NORMAL_POINT' ? 'active' : ''}}" bindtap="onSelectPointsType" data-type="NORMAL_POINT">
+              普通积分 (当前: {{currentMember.normal_points}})
+            </view>
+            <view class="seg-item {{pointsForm.adjust_type === 'RED_PACKET' ? 'active' : ''}}" bindtap="onSelectPointsType" data-type="RED_PACKET">
+              红包积分 (当前: ¥{{currentMember.red_packet_points}})
+            </view>
+          </view>
+        </view>
+        <view class="form-row">
+          <text class="form-label">变动数值 (正数赠送，负数扣减)</text>
+          <input type="digit" class="form-input" placeholder="如: 50 或 -20" value="{{pointsForm.amount}}" bindinput="onInputPointsAmount" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">调整原因 (必填审计备注)</text>
+          <input class="form-input" placeholder="如：老客生日礼遇 / 线下熟客手工转账录入" value="{{pointsForm.reason}}" bindinput="onInputPointsReason" />
+        </view>
+      </view>
+
+      <view class="modal-btn-row">
+        <button class="btn-cancel" bindtap="closePointsModal">取消</button>
+        <button class="btn-submit" bindtap="submitAdjustPoints">确认调整入账</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 8. 补录/修正推荐人弹窗 -->
+  <view class="modal-backdrop" wx:if="{{showReferrerModal}}">
+    <view class="modal-box">
+      <view class="modal-title-row">
+        <text class="modal-title">补录推荐人【{{currentMember.nickname}}】</text>
+        <view class="modal-close" bindtap="closeReferrerModal">✕</view>
+      </view>
+
+      <view class="modal-form">
+        <view class="form-row">
+          <text class="form-label">推荐人邀请码 (如 PXD-8802)</text>
+          <input class="form-input" placeholder="请输入上级老客的专属邀请码" value="{{referrerForm.invite_code}}" bindinput="onInputReferrerCode" />
+        </view>
+      </view>
+
+      <view class="modal-btn-row">
+        <button class="btn-cancel" bindtap="closeReferrerModal">取消</button>
+        <button class="btn-submit" bindtap="submitBindReferrer">确认绑定并关联</button>
       </view>
     </view>
   </view>

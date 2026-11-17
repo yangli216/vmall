@@ -431,3 +431,272 @@
   border-radius: 20rpx;
   font-weight: 600;
 }
+
+/* ================= 掌柜会员管理专属样式 ================= */
+.member-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.m-stat-box {
+  background: #F9FAFB;
+  border: 1rpx solid #E5E7EB;
+  border-radius: 16rpx;
+  padding: 16rpx 8rpx;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.m-stat-num {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: #1F2937;
+}
+
+.m-stat-num.highlight {
+  color: #D97706;
+}
+
+.m-stat-num.red {
+  color: #D9480F;
+}
+
+.m-stat-lbl {
+  font-size: 18rpx;
+  color: #6B7280;
+}
+
+.member-search-bar {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+  align-items: center;
+}
+
+.member-search-input {
+  flex: 1;
+  background: #F9FAFB;
+  border: 1rpx solid #E5E7EB;
+  border-radius: 16rpx;
+  padding: 12rpx 18rpx;
+  font-size: 24rpx;
+}
+
+.btn-search-member {
+  background: #D9480F;
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: 700;
+  padding: 12rpx 24rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+  line-height: normal;
+}
+
+.btn-clear-member {
+  background: #E5E7EB;
+  color: #4B5563;
+  font-size: 22rpx;
+  padding: 12rpx 18rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+  line-height: normal;
+}
+
+.member-cards-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.admin-member-card {
+  background: #FAFAFA;
+  border: 1rpx solid #E5E7EB;
+  border-radius: 20rpx;
+  padding: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.m-card-top {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.m-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  border: 2rpx solid #FDE68A;
+  background: #E5E7EB;
+  flex-shrink: 0;
+}
+
+.m-profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.m-name-line {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.m-nickname {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #1F2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.m-status-pill {
+  font-size: 19rpx;
+  font-weight: 700;
+  padding: 2rpx 10rpx;
+  border-radius: 10rpx;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.m-status-pill.vip {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1rpx solid #FDE68A;
+}
+
+.m-status-pill.normal {
+  background: #E5E7EB;
+  color: #4B5563;
+}
+
+.m-sub-line {
+  display: flex;
+  gap: 14rpx;
+  font-size: 21rpx;
+  color: #6B7280;
+  margin-top: 4rpx;
+}
+
+.m-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: #FFFFFF;
+  border-radius: 14rpx;
+  padding: 12rpx 8rpx;
+  border: 1rpx solid #F3F4F6;
+  text-align: center;
+}
+
+.m-metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.metric-val {
+  font-size: 22rpx;
+  font-weight: 800;
+  color: #1F2937;
+}
+
+.metric-val.red {
+  color: #D9480F;
+}
+
+.metric-label {
+  font-size: 18rpx;
+  color: #9CA3AF;
+}
+
+.m-referrer-bar {
+  font-size: 21rpx;
+  color: #6B7280;
+  display: flex;
+  gap: 6rpx;
+}
+
+.ref-label {
+  color: #9CA3AF;
+}
+
+.ref-val {
+  color: #B45309;
+  font-weight: 600;
+}
+
+.ref-empty {
+  color: #9CA3AF;
+}
+
+.m-actions-row {
+  display: flex;
+  gap: 10rpx;
+  justify-content: flex-end;
+  padding-top: 8rpx;
+  border-top: 1rpx dashed #E5E7EB;
+}
+
+.m-action-btn {
+  font-size: 21rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 12rpx;
+  font-weight: 700;
+  margin: 0;
+  line-height: normal;
+}
+
+.btn-grant {
+  background: #FFF7ED;
+  color: #C2410C;
+  border: 1rpx solid #FDBA74;
+}
+
+.btn-revoke {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1rpx solid #FECACA;
+}
+
+.btn-points {
+  background: #F0FDF4;
+  color: #15803D;
+  border: 1rpx solid #BBF7D0;
+}
+
+.btn-bind-ref {
+  background: #F3F4F6;
+  color: #374151;
+  border: 1rpx solid #D1D5DB;
+}
+
+.seg-type-row {
+  display: flex;
+  gap: 10rpx;
+}
+
+.seg-item {
+  flex: 1;
+  padding: 12rpx 8rpx;
+  font-size: 21rpx;
+  border-radius: 12rpx;
+  background: #F3F4F6;
+  color: #4B5563;
+  text-align: center;
+  border: 1rpx solid #E5E7EB;
+}
+
+.seg-item.active {
+  background: #FFF0EB;
+  color: #D9480F;
+  border-color: #D9480F;
+  font-weight: 700;
+}

@@ -78,6 +78,13 @@ router.get('/config/all', adminCtrl.getSystemConfigs);
 router.post('/admin/config/update', adminRequired, adminCtrl.updateSystemConfig);
 router.get('/referral/my', adminCtrl.getMyReferrals);
 
+// 5. 掌柜专属：会员全景花名册与资产管理
+router.get('/admin/members', adminRequired, adminCtrl.getMemberList);
+router.post('/admin/member/update-status', adminRequired, adminCtrl.updateMemberStatus);
+router.post('/admin/member/adjust-points', adminRequired, adminCtrl.adjustMemberPoints);
+router.post('/admin/member/bind-referrer', adminRequired, adminCtrl.bindMemberReferrer);
+router.get('/admin/member/adjust-logs', adminRequired, adminCtrl.getPointAdjustLogs);
+
 app.use(router.routes()).use(router.allowedMethods());
 
 const PORT = process.env.PORT || 80;
