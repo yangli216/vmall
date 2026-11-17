@@ -64,12 +64,6 @@ INSERT INTO `t_product` (`title`, `cover_img`, `category_id`, `category_name`, `
 ('秘制甜辣鸭翅中 (8只份装)', 'https://images.unsplash.com/photo-1527477321055-43615b62e739?w=400&q=80', 1, '招牌必吃', '微甜带辣，外皮胶质浓郁连骨头都有味，现捞出锅', '今日现出', 30.00, 26.80, 1, 90),
 ('爽口双拼素菜 (卤藕片+海带结)', 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80', 4, '爽脆下酒素', '现捞红油凉拌，爽口解腻佐餐必备', '现拌素味', 12.00, 12.00, 1, 80);
 
--- 初始示例会员种子数据 (用于后台快速演示会员画像)
-INSERT INTO `t_user` (`openid`, `phone`, `nickname`, `avatar_url`, `is_member`, `is_admin`, `member_card_no`, `invite_code`, `normal_points`, `red_packet_points`, `total_consume_amount`) VALUES
-('wx_admin_pan', '13735518290', '掌柜潘师傅', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120', 1, 1, 'NO.0001', 'PXD-8888', 500, 120.00, 1280.00),
-('wx_user_wang', '13958001122', '临安王姐', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120', 1, 0, 'NO.8802', 'PXD-8802', 180, 36.50, 156.00),
-('wx_user_zhang', '13867112233', '锦城老张', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120', 0, 0, 'NO.8803', 'PXD-8803', 42, 0.00, 42.00);
-
 -- ----------------------------
 -- 3. 用户与会员账户表
 -- ----------------------------
@@ -93,6 +87,12 @@ CREATE TABLE `t_user` (
   INDEX `idx_referrer` (`referrer_id`),
   INDEX `idx_invite_code` (`invite_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户与会员账户表';
+
+-- 初始示例会员种子数据 (用于后台快速演示会员画像)
+INSERT INTO `t_user` (`openid`, `phone`, `nickname`, `avatar_url`, `is_member`, `is_admin`, `member_card_no`, `invite_code`, `normal_points`, `red_packet_points`, `total_consume_amount`) VALUES
+('wx_admin_pan', '13735518290', '掌柜潘师傅', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120', 1, 1, 'NO.0001', 'PXD-8888', 500, 120.00, 1280.00),
+('wx_user_wang', '13958001122', '临安王姐', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120', 1, 0, 'NO.8802', 'PXD-8802', 180, 36.50, 156.00),
+('wx_user_zhang', '13867112233', '锦城老张', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120', 0, 0, 'NO.8803', 'PXD-8803', 42, 0.00, 42.00);
 
 -- ----------------------------
 -- 4. 订单主表
