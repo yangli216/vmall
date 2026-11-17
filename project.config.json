@@ -1,0 +1,16 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "projectname": "pandou-luwei-miniapp",
+  "description": "杭州临安潘小兜食品小作坊 - 微信原生小程序",
+  "appid": "wx6400b0e9c2a6e5f1",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "simulatorType": "wechat",
+  "simulatorPluginLibVersion": {},
+  "condition": {}
+}
