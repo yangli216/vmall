@@ -45,13 +45,23 @@ App({
             env: that.globalData.cloudEnvId
           },
           path: options.path,
-          header: {
+          header: Object.assign({
             'X-WX-SERVICE': that.globalData.serviceName,
             'content-type': 'application/json'
-          },
+          }, options.header || {}),
           method: options.method || 'GET',
           data: options.data || {},
-          success: res => resolve(res.data),
+          success: res => {
+            let body = res.data;
+            if (typeof body === 'string') {
+              try {
+                body = JSON.parse(body);
+              } catch (e) {
+                body = { code: res.statusCode || 500, msg: body.length < 120 ? body : '服务响应异常' };
+              }
+            }
+            resolve(body);
+          },
           fail: err => {
             console.error('[CloudContainer Call Fail]', err);
             reject(err);
@@ -63,11 +73,17 @@ App({
           url: 'http://127.0.0.1:80' + options.path,
           method: options.method || 'GET',
           data: options.data || {},
-          header: {
+          header: Object.assign({
             'content-type': 'application/json',
             'x-wx-openid': that.globalData.devOpenid
+          }, options.header || {}),
+          success: res => {
+            let body = res.data;
+            if (typeof body === 'string') {
+              try { body = JSON.parse(body); } catch (e) {}
+            }
+            resolve(body);
           },
-          success: res => resolve(res.data),
           fail: err => {
             console.warn('[Local Server Connect Error]', err);
             reject(err);

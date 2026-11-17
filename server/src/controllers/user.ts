@@ -24,8 +24,8 @@ export async function getOrCreateCurrentUser(ctx: Context) {
   );
 
   if (users.length === 0) {
-    // 新用户首次进入，自动建档
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    // 新用户首次进入，自动建档 (毫秒级防碰撞专属邀请码与会员卡号)
+    const randomSuffix = `${Date.now().toString(36).slice(-4).toUpperCase()}${Math.floor(100 + Math.random() * 900)}`;
     const invite_code = `PXD-${randomSuffix}`;
     const card_no = `NO.${randomSuffix}`;
 

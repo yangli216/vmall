@@ -13,3 +13,5 @@ server/.env
 miniprogram/.idea/
 miniprogram/.vscode/
 miniprogram/miniprogram_npm/
+project.private.config.json
+miniprogram/project.private.config.json

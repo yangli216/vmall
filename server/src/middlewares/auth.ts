@@ -27,8 +27,8 @@ export async function wechatAuth(ctx: Context, next: Next) {
   if (openid) {
     let users: any = await query('SELECT * FROM t_user WHERE openid = ? LIMIT 1', [openid]);
     if (users.length === 0) {
-      // 首次进入微信小程序，自动建档
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      // 首次进入微信小程序，自动建档 (毫秒级防碰撞专属邀请码与会员卡号)
+      const randomSuffix = `${Date.now().toString(36).slice(-4).toUpperCase()}${Math.floor(100 + Math.random() * 900)}`;
       const invite_code = `PXD-${randomSuffix}`;
       const card_no = `NO.${randomSuffix}`;
 

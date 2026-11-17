@@ -148,8 +148,8 @@
     <view class="history-title">历史卤味订单</view>
     <view wx:for="{{historyOrders}}" wx:key="id" class="history-order-card">
       <view class="history-top-row">
-        <text class="history-date">{{item.create_time ? item.create_time : '近期'}}</text>
-        <text class="history-status">已送达完成</text>
+        <text class="history-date">{{item.create_time_formatted || item.create_time || '近期'}}</text>
+        <text class="history-status {{item.order_status === 50 ? 'cancelled' : 'done'}}">{{item.order_status === 40 ? '已送达完成' : '已取消退款'}}</text>
       </view>
       <view class="history-dish-names">{{item.summary_text}}</view>
       <view class="history-bottom-row">

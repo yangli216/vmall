@@ -41,8 +41,8 @@ Page({
         const list = res.data;
         // 活跃订单：待付款(10)、待出锅备餐(20)、配送中(30)
         const active = list.find(o => o.order_status === 10 || o.order_status === 20 || o.order_status === 30);
-        // 历史订单：已完成(40)
-        const history = list.filter(o => o.order_status === 40);
+        // 历史订单：已完成(40) 或 已取消/退款(50)
+        const history = list.filter(o => o.order_status === 40 || o.order_status === 50);
 
         that.setData({
           activeOrder: active || null,
