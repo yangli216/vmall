@@ -183,16 +183,18 @@ export async function createOrder(ctx: Context) {
   const orderSn = `PXD${Date.now()}${Math.floor(100 + Math.random() * 900)}`;
   const pickupCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4位自提码
   const address = body.receiver_address || body.delivery_address || '';
+  const receiverName = body.receiver_name || '';
+  const receiverPhone = body.receiver_phone || '';
 
   // 插入主表 (初始状态 10: 待付款)
   const res: any = await query(
     `INSERT INTO t_order (
-      order_sn, user_id, delivery_type, delivery_address, pickup_code, expect_time_slot, order_remark,
+      order_sn, user_id, delivery_type, delivery_address, receiver_name, receiver_phone, pickup_code, expect_time_slot, order_remark,
       goods_total_amount, member_discount_amount, normal_points_deduct, used_normal_points,
       red_packet_deduct, used_red_packet_points, delivery_fee, pay_amount, order_status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 10)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 10)`,
     [
-      orderSn, user.id, body.delivery_type || 1, address, pickupCode,
+      orderSn, user.id, body.delivery_type || 1, address, receiverName, receiverPhone, pickupCode,
       body.expect_time_slot || '今日 16:30 傍晚批次', body.order_remark || '',
       financials.goods_origin_total, financials.member_discount,
       financials.normal_deduct, financials.used_normal_points,

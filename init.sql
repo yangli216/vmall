@@ -93,6 +93,8 @@ CREATE TABLE `t_order` (
   `user_id` BIGINT NOT NULL COMMENT '下单用户ID',
   `delivery_type` TINYINT NOT NULL COMMENT '履约方式：1作坊自送，2到店自提',
   `delivery_address` VARCHAR(255) DEFAULT '' COMMENT '收货地址(自送模式下)',
+  `receiver_name` VARCHAR(50) DEFAULT '' COMMENT '收货人姓名',
+  `receiver_phone` VARCHAR(20) DEFAULT '' COMMENT '收货人联系电话',
   `pickup_code` VARCHAR(10) DEFAULT '' COMMENT '4位数提货码(自提模式下，如6802)',
   `expect_time_slot` VARCHAR(50) DEFAULT '今日 16:30 傍晚批次' COMMENT '预约出炉送达时段',
   `order_remark` VARCHAR(255) DEFAULT '' COMMENT '口味备注(如微辣/少卤/多葱)',

@@ -1,3 +1,4 @@
+<!-- miniprogram/pages/index/index.wxml -->
 <view class="container">
 
   <!-- 1. 头部一体化卡片 -->
@@ -14,21 +15,26 @@
       </view>
     </view>
 
-    <!-- 出炉预约条 -->
+    <!-- 出炉预约条 (动态判断下午/次日批次) -->
     <view class="header-schedule-box">
       <view class="schedule-left">
         <view class="pulse-orange-dot"></view>
-        <text>今日傍晚批次 <text class="highlight-time">16:30</text> 出锅准时开送</text>
+        <text>{{currentBatchText}}</text>
       </view>
-      <text class="schedule-link">预约出炉 ></text>
+      <text class="schedule-link">作坊出炉说明 ></text>
     </view>
 
-    <!-- 配送/自提地址条 -->
+    <!-- 配送/自提地址与收件人联系条 -->
     <view class="address-strip">
       <view class="address-loc-group">
         <view class="loc-icon-circle">📍</view>
-        <view class="address-bold">{{deliveryType === 1 ? destAddress : '潘小兜作坊自提点'}}</view>
-        <view class="address-hint">{{deliveryType === 1 ? '距临天八弄作坊 1.5km' : '临天八弄36号实体工坊'}}</view>
+        <view class="address-bold">{{deliveryType === 1 ? destAddress : '潘小兜作坊自提点 (临天八弄36号)'}}</view>
+        <view class="address-hint" wx:if="{{deliveryType === 1}}">
+          收件联系人：{{receiverName}} ({{receiverPhone}})
+        </view>
+        <view class="address-hint" wx:else>
+          锦城街道临天八弄36号实体工坊 · 报手机号自提
+        </view>
       </view>
       <view class="address-edit-btn" bindtap="editAddress">修改</view>
     </view>
@@ -39,8 +45,8 @@
     <view class="vip-left-pack">
       <view class="vip-star-gold">👑</view>
       <view class="vip-text-pack">
-        <view class="vip-title">潘小兜会员 · 全场专享 8.8 折</view>
-        <view class="vip-desc">当前门槛：累计消费满 ¥68 自动升级</view>
+        <view class="vip-title">{{isMember ? '尊享老客会员 · 正在享受全场8.8折' : '潘小兜会员 · 全场专享 8.8 折'}}</view>
+        <view class="vip-desc">{{isMember ? '已享普通积分与推荐返利双特权' : '累计消费满 ¥68 自动升级或授权免费开卡'}}</view>
       </view>
     </view>
     <view class="vip-enter-pill">去查看 ></view>
@@ -59,12 +65,13 @@
     </view>
   </scroll-view>
 
-  <!-- 4. 卤味商品列表 (支持动态上下架与售罄遮罩) -->
+  <!-- 4. 卤味商品列表 (支持动态上下架、售罄遮罩与加减步进器) -->
   <view class="menu-feed">
     <view wx:if="{{dishes.length === 0 && !loadingProducts}}" class="empty-dish-box">
       <view class="empty-icon">🍲</view>
       <view class="empty-text">当前分类下暂无在售菜品</view>
     </view>
+
     <view wx:for="{{dishes}}" wx:key="id" class="dish-item-card {{item.status === 0 ? 'sold-out' : ''}}">
       <view class="dish-img-box">
         <image src="{{item.cover_img}}" class="dish-real-img" mode="aspectFill"></image>
@@ -83,11 +90,19 @@
         <view class="dish-bottom-action">
           <view class="dish-price-group">
             <text class="price-symbol">¥</text>
-            <text class="dish-price-text">{{item.member_price}}</text>
-            <text class="dish-origin-text">¥{{item.origin_price}}</text>
+            <text class="dish-price-text">{{isMember ? item.member_price : item.origin_price}}</text>
+            <text class="dish-origin-text" wx:if="{{isMember}}">¥{{item.origin_price}}</text>
           </view>
+
+          <!-- 状态判定与加减步进器 -->
           <view wx:if="{{item.status === 0}}" class="sold-out-text">已抢光</view>
-          <view wx:else class="btn-circle-add btn-press" bindtap="addToCart" data-dish="{{item}}">+</view>
+          <!-- 步进器 (精细化控制) -->
+          <view wx:elif="{{cart[item.id] && cart[item.id].quantity > 0}}" class="cart-stepper-row">
+            <view class="btn-stepper minus btn-press" catchtap="decreaseCart" data-dish="{{item}}">-</view>
+            <text class="stepper-count">{{cart[item.id].quantity}}</text>
+            <view class="btn-stepper plus btn-press" catchtap="addToCart" data-dish="{{item}}">+</view>
+          </view>
+          <view wx:else class="btn-circle-add btn-press" catchtap="addToCart" data-dish="{{item}}">+</view>
         </view>
       </view>
     </view>
@@ -102,7 +117,8 @@
 
   <!-- 6. 悬浮现代毛玻璃购物车 Dock -->
   <view class="airy-cart-dock" wx:if="{{cartCount > 0}}">
-    <view class="cart-summary-text">
+    <view class="cart-summary-text" bindtap="openCheckoutSheet">
+      <view class="dock-badge-dot">{{cartCount}}</view>
       <text class="cart-label">预估合计:</text>
       <text class="cart-total-num">¥{{cartTotal}}</text>
     </view>
@@ -125,15 +141,40 @@
           <text class="info-label">自送目的地:</text>
           <text class="info-val">{{deliveryType === 1 ? destAddress : '临天八弄36号实体工坊自提'}}</text>
         </view>
+        <view class="info-row" wx:if="{{deliveryType === 1}}">
+          <text class="info-label">收件人电话:</text>
+          <text class="info-val highlight">{{receiverName}} ({{receiverPhone}})</text>
+        </view>
         <view class="info-row">
           <text class="info-label">出炉送达:</text>
-          <text class="info-val highlight">今日 16:30 傍晚出炉批次</text>
+          <text class="info-val highlight">{{currentBatchText}}</text>
         </view>
+      </view>
+
+      <!-- 已选老卤清单明细 (支持增减与清空) -->
+      <view class="drawer-cart-list">
+        <view class="drawer-cart-title-row">
+          <text class="cart-list-title">已选老卤清单 ({{cartCount}}份)</text>
+          <text class="cart-list-clear" bindtap="clearCart">清空</text>
+        </view>
+        <scroll-view scroll-y class="drawer-cart-scroll">
+          <view wx:for="{{cartList}}" wx:key="id" class="drawer-cart-item">
+            <view class="item-meta">
+              <text class="item-name">{{item.dish.title}}</text>
+              <text class="item-unit-price">¥{{isMember ? item.dish.member_price : item.dish.origin_price}}</text>
+            </view>
+            <view class="cart-stepper-row in-drawer">
+              <view class="btn-stepper minus btn-press" catchtap="decreaseCart" data-dish="{{item.dish}}">-</view>
+              <text class="stepper-count">{{item.quantity}}</text>
+              <view class="btn-stepper plus btn-press" catchtap="addToCart" data-dish="{{item.dish}}">+</view>
+            </view>
+          </view>
+        </scroll-view>
       </view>
 
       <!-- 口味备注输入 -->
       <view class="remark-input-box">
-        <input class="remark-input" placeholder="口味备注 (如：微辣/多带点卤汁/鸭翅切小块)" bindinput="onRemarkInput" value="{{orderRemark}}" />
+        <input class="remark-input" placeholder="口味备注 (如：微辣/多带点卤汁/切薄片)" bindinput="onRemarkInput" value="{{orderRemark}}" />
       </view>
 
       <!-- 双积分抵扣设置卡片 -->
@@ -157,7 +198,7 @@
           <switch checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
         </view>
         <view class="deduct-calc-row">
-          <text class="deduct-limit-hint">抵现金额 (上限50%):</text>
+          <text class="deduct-limit-hint">抵现金额 (防亏上限50%):</text>
           <view class="deduct-input-group">
             <text class="symbol">-¥</text>
             <input type="digit" class="red-amount-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />
@@ -171,9 +212,9 @@
           <text>商品原价总额</text>
           <text>¥{{calcResult.goods_origin_total || '0.00'}}</text>
         </view>
-        <view class="bill-row red">
+        <view class="bill-row red" wx:if="{{calcResult.member_discount > 0}}">
           <text>会员8.8折专享优惠</text>
-          <text>-¥{{calcResult.member_discount || '0.00'}}</text>
+          <text>-¥{{calcResult.member_discount}}</text>
         </view>
         <view class="bill-row orange" wx:if="{{useNormalPoints && calcResult.normal_deduct > 0}}">
           <text>普通积分满减</text>

@@ -154,10 +154,37 @@ Page({
     });
   },
 
-  // 前往管理后台
+  // 前往管理后台 (轻量化掌柜口令保护)
   navToAdmin: function () {
-    wx.navigateTo({
-      url: '/pages/admin/admin'
+    const isAuthed = wx.getStorageSync('pandou_admin_authed');
+    if (isAuthed) {
+      wx.navigateTo({
+        url: '/pages/admin/admin'
+      });
+      return;
+    }
+
+    wx.showModal({
+      title: '作坊掌柜身份验证',
+      editable: true,
+      placeholderText: '请输入掌柜专属口令 (默认: 8899)',
+      confirmText: '验证进入',
+      confirmColor: '#D9480F',
+      success: (res) => {
+        if (res.confirm) {
+          if (res.content && res.content.trim() === '8899') {
+            wx.setStorageSync('pandou_admin_authed', true);
+            wx.showToast({ title: '掌柜验证通过', icon: 'success' });
+            setTimeout(() => {
+              wx.navigateTo({
+                url: '/pages/admin/admin'
+              });
+            }, 500);
+          } else {
+            wx.showToast({ title: '口令错误，仅限掌柜本人访问', icon: 'none' });
+          }
+        }
+      }
     });
   }
 });

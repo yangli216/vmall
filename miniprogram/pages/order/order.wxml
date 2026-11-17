@@ -43,6 +43,10 @@
           <view class="step-dot"></view>
           <view class="step-text">送达目的地：{{activeOrder.receiver_address}}</view>
         </view>
+        <view class="timeline-step" wx:if="{{activeOrder.receiver_phone}}">
+          <view class="step-dot"></view>
+          <view class="step-text">收件人：{{activeOrder.receiver_name}} ({{activeOrder.receiver_phone}})</view>
+        </view>
       </view>
     </view>
 

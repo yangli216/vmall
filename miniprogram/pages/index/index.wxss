@@ -721,3 +721,127 @@
   font-size: 26rpx;
   color: var(--text-light);
 }
+
+/* 步进器样式 */
+.cart-stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.btn-stepper {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 26rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.btn-stepper.minus {
+  background: #F3F4F6;
+  color: #374151;
+  border: 1rpx solid #E5E7EB;
+}
+
+.btn-stepper.plus {
+  background: linear-gradient(135deg, #D9480F, #C23B06);
+  color: #FFFFFF;
+}
+
+.stepper-count {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #111827;
+  min-width: 32rpx;
+  text-align: center;
+}
+
+/* 抽屉中的已选老卤清单 */
+.drawer-cart-list {
+  background: #F9FAFB;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 20rpx;
+  border: 1rpx solid #E5E7EB;
+}
+
+.drawer-cart-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.cart-list-title {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #374151;
+}
+
+.cart-list-clear {
+  font-size: 22rpx;
+  color: #9CA3AF;
+  padding: 4rpx 10rpx;
+}
+
+.drawer-cart-scroll {
+  max-height: 240rpx;
+}
+
+.drawer-cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+  border-bottom: 1rpx dashed #E5E7EB;
+}
+
+.drawer-cart-item:last-child {
+  border-bottom: none;
+}
+
+.item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.drawer-cart-item .item-name {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1F2937;
+}
+
+.drawer-cart-item .item-unit-price {
+  font-size: 22rpx;
+  color: #D9480F;
+  font-weight: 700;
+}
+
+.cart-stepper-row.in-drawer .btn-stepper {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 22rpx;
+  font-size: 28rpx;
+}
+
+.dock-badge-dot {
+  position: absolute;
+  top: -10rpx;
+  left: 20rpx;
+  background: #D9480F;
+  color: #FFFFFF;
+  font-size: 18rpx;
+  font-weight: 700;
+  min-width: 30rpx;
+  height: 30rpx;
+  border-radius: 15rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6rpx;
+  border: 2rpx solid #FFFFFF;
+}

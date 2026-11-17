@@ -5,6 +5,9 @@ Page({
   data: {
     deliveryType: 1, // 1: 作坊自送, 2: 到店自提
     destAddress: '临安锦城·钱王新村 2幢302',
+    receiverName: '陈女士',
+    receiverPhone: '13968028888',
+    currentBatchText: '今日 16:30 傍晚出炉批次 (现捞温热送达)',
     categories: [
       { id: 1, name: '🔥 招牌必吃' },
       { id: 2, name: '秘制酱牛肉' },
@@ -15,6 +18,7 @@ Page({
     allDishes: [],
     dishes: [],
     cart: {}, // { [dishId]: { dish, quantity } }
+    cartList: [], // 数组格式便于抽屉列表展示
     cartCount: 0,
     cartTotal: '0.00',
     isDrawerOpen: false,
@@ -38,7 +42,7 @@ Page({
   },
 
   onLoad: function (options) {
-    // 处理好友邀请码自动绑定 (扫码裂变进入)
+    this.initBatchTime();
     if (options && options.referrer) {
       this.bindReferrerFromQuery(options.referrer);
     }
@@ -51,11 +55,29 @@ Page({
   },
 
   onPullDownRefresh: function () {
+    this.initBatchTime();
     this.fetchProductList(() => {
       this.fetchUserInfo(() => {
         wx.stopPullDownRefresh();
       });
     });
+  },
+
+  // 计算当前出炉批次文案
+  initBatchTime: function () {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    // 每日傍晚批次 16:30
+    if (hours < 16 || (hours === 16 && minutes <= 30)) {
+      this.setData({
+        currentBatchText: '今日傍晚 16:30 出炉批次 (现捞保温直达)'
+      });
+    } else {
+      this.setData({
+        currentBatchText: '今日出炉已毕 · 预约明日傍晚 16:30 批次'
+      });
+    }
   },
 
   // 绑定扫码推荐人
@@ -66,12 +88,12 @@ Page({
       data: { invite_code: inviteCode }
     }).then(res => {
       if (res && res.code === 0) {
-        wx.showToast({ title: `已成功绑定推荐人`, icon: 'success' });
+        wx.showToast({ title: `已绑定推荐好友`, icon: 'success' });
       }
     }).catch(() => {});
   },
 
-  // 获取真实商品列表 (生产直连云数据库)
+  // 获取真实商品列表
   fetchProductList: function (cb) {
     const that = this;
     that.setData({ loadingProducts: true });
@@ -86,18 +108,15 @@ Page({
           allDishes: res.data,
           dishes: that.data.currentCatId === 1 ? res.data : res.data.filter(d => d.category_id === that.data.currentCatId)
         });
-      } else {
-        wx.showToast({ title: res.msg || '获取菜品失败', icon: 'none' });
       }
       if (cb) cb();
     }).catch(err => {
       that.setData({ loadingProducts: false });
-      wx.showToast({ title: '网络异常，请下拉重试', icon: 'none' });
       if (cb) cb();
     });
   },
 
-  // 获取真实用户积分、红包与会员身份
+  // 获取真实用户身份与积分
   fetchUserInfo: function (cb) {
     const that = this;
     app.callContainer({
@@ -119,7 +138,7 @@ Page({
     });
   },
 
-  // 切换作坊自送/到店自提
+  // 切换配送与自提
   changeDelType: function (e) {
     const type = parseInt(e.currentTarget.dataset.type, 10);
     this.setData({ deliveryType: type }, () => {
@@ -129,7 +148,7 @@ Page({
     });
   },
 
-  // 切换菜品分类
+  // 切换分类
   selectCategory: function (e) {
     const id = parseInt(e.currentTarget.dataset.id, 10);
     this.setData({ currentCatId: id });
@@ -141,7 +160,38 @@ Page({
     }
   },
 
-  // 加入购物车
+  // 辅助方法：重新计算购物车状态并同步数组
+  updateCartState: function (cart) {
+    let count = 0;
+    let total = 0;
+    const list = [];
+
+    Object.keys(cart).forEach(k => {
+      const item = cart[k];
+      if (item && item.quantity > 0) {
+        count += item.quantity;
+        const price = this.data.isMember ? parseFloat(item.dish.member_price) : parseFloat(item.dish.origin_price);
+        total += price * item.quantity;
+        list.push(item);
+      }
+    });
+
+    this.setData({
+      cart,
+      cartList: list,
+      cartCount: count,
+      cartTotal: total.toFixed(2)
+    });
+
+    // 如果购物车被减空，自动关闭抽屉
+    if (count === 0 && this.data.isDrawerOpen) {
+      this.setData({ isDrawerOpen: false });
+    } else if (this.data.isDrawerOpen) {
+      this.calculateBill();
+    }
+  },
+
+  // 购物车加一
   addToCart: function (e) {
     const dish = e.currentTarget.dataset.dish;
     if (dish.status === 0) {
@@ -150,26 +200,41 @@ Page({
     }
     const cart = { ...this.data.cart };
     if (!cart[dish.id]) {
-      cart[dish.id] = { dish, quantity: 1 };
+      cart[dish.id] = { id: dish.id, dish, quantity: 1 };
     } else {
       cart[dish.id].quantity += 1;
     }
 
-    let count = 0;
-    let total = 0;
-    Object.keys(cart).forEach(k => {
-      count += cart[k].quantity;
-      const price = this.data.isMember ? parseFloat(cart[k].dish.member_price) : parseFloat(cart[k].dish.origin_price);
-      total += price * cart[k].quantity;
-    });
+    this.updateCartState(cart);
+  },
 
-    this.setData({
-      cart,
-      cartCount: count,
-      cartTotal: total.toFixed(2)
-    });
+  // 购物车减一
+  decreaseCart: function (e) {
+    const dish = e.currentTarget.dataset.dish;
+    const cart = { ...this.data.cart };
+    if (!cart[dish.id]) return;
 
-    wx.showToast({ title: `已加: ${dish.title}`, icon: 'none', duration: 800 });
+    cart[dish.id].quantity -= 1;
+    if (cart[dish.id].quantity <= 0) {
+      delete cart[dish.id];
+    }
+
+    this.updateCartState(cart);
+  },
+
+  // 清空购物车
+  clearCart: function () {
+    const that = this;
+    wx.showModal({
+      title: '清空购物车',
+      content: '确认清空已挑选的全部老卤？',
+      confirmColor: '#DC2626',
+      success: (res) => {
+        if (res.confirm) {
+          that.updateCartState({});
+        }
+      }
+    });
   },
 
   // 打开结算抽屉
@@ -187,7 +252,7 @@ Page({
     this.setData({ isDrawerOpen: false });
   },
 
-  // 修改收货地址
+  // 修改收货地址与收件人联系方式
   editAddress: function () {
     const that = this;
     if (this.data.deliveryType === 2) {
@@ -202,17 +267,30 @@ Page({
     wx.chooseAddress({
       success: (res) => {
         const fullAddr = `${res.cityName}${res.countyName}${res.detailInfo}`;
-        that.setData({ destAddress: fullAddr });
+        that.setData({
+          destAddress: fullAddr,
+          receiverName: res.userName,
+          receiverPhone: res.telNumber
+        });
       },
       fail: () => {
         wx.showModal({
-          title: '修改自送地址',
+          title: '修改自送地址与联系人',
           editable: true,
-          placeholderText: '请输入临安锦城周边详细送达地址',
-          content: that.data.destAddress,
+          placeholderText: '请输入：收件人 手机号 详细地址',
+          content: `${that.data.receiverName} ${that.data.receiverPhone} ${that.data.destAddress}`,
           success: (res) => {
             if (res.confirm && res.content) {
-              that.setData({ destAddress: res.content });
+              const parts = res.content.trim().split(/\s+/);
+              if (parts.length >= 3) {
+                that.setData({
+                  receiverName: parts[0],
+                  receiverPhone: parts[1],
+                  destAddress: parts.slice(2).join(' ')
+                });
+              } else {
+                that.setData({ destAddress: res.content });
+              }
             }
           }
         });
@@ -246,13 +324,15 @@ Page({
     this.setData({ orderRemark: e.detail.value });
   },
 
-  // 调用云端进行真实订单金额与积分试算
+  // 预核算
   calculateBill: function () {
     const that = this;
     const items = Object.keys(this.data.cart).map(id => ({
       product_id: parseInt(id, 10),
       quantity: this.data.cart[id].quantity
     }));
+
+    if (items.length === 0) return;
 
     const payload = {
       items,
@@ -269,15 +349,11 @@ Page({
     }).then(res => {
       if (res && res.code === 0 && res.data) {
         that.setData({ calcResult: res.data });
-      } else {
-        wx.showToast({ title: res.msg || '核算失败', icon: 'none' });
       }
-    }).catch(err => {
-      wx.showToast({ title: '试算网络异常', icon: 'none' });
-    });
+    }).catch(() => {});
   },
 
-  // 提交订单并唤起真实支付闭环
+  // 提交并完成真实支付
   submitOrderPay: function () {
     const that = this;
     const items = Object.keys(this.data.cart).map(id => ({
@@ -286,7 +362,7 @@ Page({
     }));
 
     if (items.length === 0) {
-      wx.showToast({ title: '请选择商品', icon: 'none' });
+      wx.showToast({ title: '请挑选卤味', icon: 'none' });
       return;
     }
 
@@ -296,6 +372,9 @@ Page({
       items,
       delivery_type: this.data.deliveryType,
       receiver_address: this.data.deliveryType === 1 ? this.data.destAddress : '临天八弄36号作坊自提',
+      receiver_name: this.data.receiverName,
+      receiver_phone: this.data.receiverPhone,
+      expect_time_slot: this.data.currentBatchText,
       order_remark: this.data.orderRemark,
       use_normal_points: this.data.useNormalPoints,
       use_red_packet_points: this.data.useRedPoints,
@@ -315,13 +394,12 @@ Page({
       } else {
         wx.showToast({ title: res.msg || '创建订单失败', icon: 'none' });
       }
-    }).catch(err => {
+    }).catch(() => {
       wx.hideLoading();
-      wx.showToast({ title: '下单服务异常，请重试', icon: 'none' });
+      wx.showToast({ title: '下单网络异常', icon: 'none' });
     });
   },
 
-  // 微信原生支付确认与订单状态流转
   confirmAndPayOrder: function (orderId, payAmount) {
     const that = this;
     wx.showModal({
@@ -343,7 +421,7 @@ Page({
             } else {
               wx.showToast({ title: payRes.msg || '支付核销异常', icon: 'none' });
             }
-          }).catch(err => {
+          }).catch(() => {
             wx.hideLoading();
             wx.showToast({ title: '支付处理失败', icon: 'none' });
           });
@@ -356,6 +434,7 @@ Page({
     wx.showToast({ title: '下单成功！进入备餐', icon: 'success' });
     this.setData({
       cart: {},
+      cartList: [],
       cartCount: 0,
       cartTotal: '0.00',
       isDrawerOpen: false

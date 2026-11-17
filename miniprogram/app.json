@@ -20,19 +20,27 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "小兜卤味"
+        "text": "小兜卤味",
+        "iconPath": "images/tab_menu.png",
+        "selectedIconPath": "images/tab_menu_active.png"
       },
       {
         "pagePath": "pages/member/member",
-        "text": "尊享会员"
+        "text": "尊享会员",
+        "iconPath": "images/tab_member.png",
+        "selectedIconPath": "images/tab_member_active.png"
       },
       {
         "pagePath": "pages/promote/promote",
-        "text": "分享赚佣"
+        "text": "分享赚佣",
+        "iconPath": "images/tab_promote.png",
+        "selectedIconPath": "images/tab_promote_active.png"
       },
       {
         "pagePath": "pages/order/order",
-        "text": "配送追踪"
+        "text": "配送追踪",
+        "iconPath": "images/tab_order.png",
+        "selectedIconPath": "images/tab_order_active.png"
       }
     ]
   },
