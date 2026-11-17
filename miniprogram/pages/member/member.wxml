@@ -11,8 +11,9 @@
           <view wx:if="{{isMember}}" class="vip-crown-badge">👑</view>
         </view>
         <view class="user-text-info">
-          <view class="nickname-row">
+          <view class="nickname-row" bindtap="onEditProfile">
             <text class="user-nickname">{{userInfo.nickname || '潘小兜客官'}}</text>
+            <text style="font-size: 20rpx; color: var(--text-light); margin-right: 8rpx;">✏️</text>
             <view class="member-tag {{isMember ? 'vip-pill' : 'normal-pill'}}">
               {{isMember ? '尊享会员 · 8.8折' : '普通客官'}}
             </view>

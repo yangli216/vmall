@@ -338,7 +338,7 @@ export async function payOrderSuccess(ctx: Context) {
 }
 
 /**
- * 订单取消与退款 (工匠精神：全状态回滚，返还原扣积分)
+ * 订单取消与退款 (工匠精神：全状态回滚，返还原扣积分，严防越权取消他人订单)
  */
 export async function cancelOrder(ctx: Context) {
   const openid = (ctx.headers['x-wx-openid'] as string) || (ctx.query.openid as string);
@@ -349,6 +349,14 @@ export async function cancelOrder(ctx: Context) {
     ctx.body = { code: 400, msg: '缺少 order_id' };
     return;
   }
+
+  const users: any = await query('SELECT id, is_admin FROM t_user WHERE openid = ? LIMIT 1', [openid]);
+  if (users.length === 0) {
+    ctx.status = 401;
+    ctx.body = { code: 401, msg: '未识别微信用户身份' };
+    return;
+  }
+  const currentUser = users[0];
 
   try {
     const result = await withTransaction(async (conn: PoolConnection) => {
@@ -362,6 +370,11 @@ export async function cancelOrder(ctx: Context) {
         throw new Error('订单不可取消或已发车配送');
       }
       const order = orderRows[0];
+
+      // 防越权核心校验：必须是下单人本人，或者作坊掌柜管理员
+      if (order.user_id !== currentUser.id && currentUser.is_admin !== 1) {
+        throw new Error('权限拒绝：您无权取消他人的订单');
+      }
 
       // 将订单置为 50: 已取消/已退款
       await conn.execute('UPDATE t_order SET order_status = 50 WHERE id = ?', [order_id]);
@@ -442,13 +455,37 @@ export async function dispatchDelivery(ctx: Context) {
 }
 
 /**
- * 确认送达/完成订单 (状态变更为 40)
+ * 确认送达/完成订单 (状态变更为 40，严格鉴权)
  */
 export async function completeOrder(ctx: Context) {
+  const openid = (ctx.headers['x-wx-openid'] as string) || (ctx.query.openid as string);
   const { order_id } = ctx.request.body as { order_id: number };
   if (!order_id) {
     ctx.status = 400;
     ctx.body = { code: 400, msg: '缺少 order_id' };
+    return;
+  }
+
+  const users: any = await query('SELECT id, is_admin FROM t_user WHERE openid = ? LIMIT 1', [openid]);
+  if (users.length === 0) {
+    ctx.status = 401;
+    ctx.body = { code: 401, msg: '未识别身份' };
+    return;
+  }
+  const currentUser = users[0];
+
+  const orders: any = await query('SELECT * FROM t_order WHERE id = ? LIMIT 1', [order_id]);
+  if (orders.length === 0) {
+    ctx.status = 404;
+    ctx.body = { code: 404, msg: '订单不存在' };
+    return;
+  }
+  const order = orders[0];
+
+  // 只有掌柜本人，或该订单买家本人（确认收货/到店自提完成）有权确认
+  if (currentUser.is_admin !== 1 && order.user_id !== currentUser.id) {
+    ctx.status = 403;
+    ctx.body = { code: 403, msg: '无权操作他人订单' };
     return;
   }
 
@@ -457,21 +494,37 @@ export async function completeOrder(ctx: Context) {
 }
 
 /**
- * 获取订单列表并挂载订单商品明细
+ * 获取订单列表并挂载订单商品明细 (防越权隔离设计)
  */
 export async function getOrderList(ctx: Context) {
   const openid = (ctx.headers['x-wx-openid'] as string) || (ctx.query.openid as string);
-  const users: any = await query('SELECT id FROM t_user WHERE openid = ? LIMIT 1', [openid]);
+  const users: any = await query('SELECT id, is_admin FROM t_user WHERE openid = ? LIMIT 1', [openid]);
 
-  let sql = 'SELECT * FROM t_order';
+  if (users.length === 0) {
+    ctx.body = { code: 0, msg: 'ok', data: [] };
+    return;
+  }
+  const currentUser = users[0];
+
+  let sql = 'SELECT * FROM t_order WHERE 1=1';
   const params: any[] = [];
 
-  if (ctx.query.status) {
-    sql += ' WHERE order_status = ?';
-    params.push(ctx.query.status);
-  } else if (users.length > 0) {
-    sql += ' WHERE user_id = ?';
-    params.push(users[0].id);
+  // 严格权限分级：
+  // 1. 普通顾客：强制限定 user_id = currentUser.id，绝不暴露全店他人的订单数据！
+  // 2. 掌柜管理员：允许按 order_status 查全店流水 (如待出炉出车列表)
+  if (currentUser.is_admin !== 1) {
+    sql += ' AND user_id = ?';
+    params.push(currentUser.id);
+    if (ctx.query.status) {
+      sql += ' AND order_status = ?';
+      params.push(ctx.query.status);
+    }
+  } else {
+    // 掌柜管理员视图
+    if (ctx.query.status) {
+      sql += ' AND order_status = ?';
+      params.push(ctx.query.status);
+    }
   }
 
   sql += ' ORDER BY id DESC LIMIT 50';

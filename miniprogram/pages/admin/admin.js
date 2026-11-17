@@ -31,9 +31,37 @@ Page({
   },
 
   onLoad: function () {
-    this.loadDishes();
-    this.loadConfigs();
-    this.loadPendingOrders();
+    this.checkAdminAuth();
+  },
+
+  checkAdminAuth: function () {
+    const that = this;
+    wx.showLoading({ title: '验证权限...' });
+    app.callContainer({
+      path: '/api/user/info',
+      method: 'GET'
+    }).then(res => {
+      wx.hideLoading();
+      if (res && res.code === 0 && res.data && res.data.is_admin === 1) {
+        that.loadDishes();
+        that.loadConfigs();
+        that.loadPendingOrders();
+      } else {
+        wx.showModal({
+          title: '作坊掌柜专属通道',
+          content: '检测到当前微信未激活掌柜权限。请前往【尊享会员】中心输入口令绑定，或联系潘师傅授权。',
+          showCancel: false,
+          confirmText: '返回前台',
+          confirmColor: '#D9480F',
+          success: () => {
+            wx.navigateBack();
+          }
+        });
+      }
+    }).catch(() => {
+      wx.hideLoading();
+      wx.navigateBack();
+    });
   },
 
   onPullDownRefresh: function () {

@@ -154,10 +154,11 @@ Page({
     });
   },
 
-  // 前往管理后台 (轻量化掌柜口令保护)
+  // 前往管理后台 (微信 OpenID 与掌柜主口令双重 RBAC 守护)
   navToAdmin: function () {
-    const isAuthed = wx.getStorageSync('pandou_admin_authed');
-    if (isAuthed) {
+    const that = this;
+    // 如果后端用户数据已标识为掌柜，且本地有授权标识，直接通行
+    if (that.data.userInfo && that.data.userInfo.is_admin === 1) {
       wx.navigateTo({
         url: '/pages/admin/admin'
       });
@@ -168,21 +169,73 @@ Page({
       title: '作坊掌柜身份验证',
       editable: true,
       placeholderText: '请输入掌柜专属口令 (默认: 8899)',
-      confirmText: '验证进入',
+      confirmText: '验证绑定',
       confirmColor: '#D9480F',
       success: (res) => {
         if (res.confirm) {
-          if (res.content && res.content.trim() === '8899') {
-            wx.setStorageSync('pandou_admin_authed', true);
-            wx.showToast({ title: '掌柜验证通过', icon: 'success' });
-            setTimeout(() => {
-              wx.navigateTo({
-                url: '/pages/admin/admin'
-              });
-            }, 500);
-          } else {
-            wx.showToast({ title: '口令错误，仅限掌柜本人访问', icon: 'none' });
+          const pwd = (res.content || '').trim();
+          if (!pwd) {
+            wx.showToast({ title: '请输入口令', icon: 'none' });
+            return;
           }
+          wx.showLoading({ title: '验证中...' });
+          app.callContainer({
+            path: '/api/admin/verify',
+            method: 'POST',
+            data: { passcode: pwd }
+          }).then(apiRes => {
+            wx.hideLoading();
+            if (apiRes && apiRes.code === 0) {
+              wx.setStorageSync('pandou_admin_authed', true);
+              wx.showToast({ title: '掌柜微信已绑定！', icon: 'success' });
+              that.loadData();
+              setTimeout(() => {
+                wx.navigateTo({
+                  url: '/pages/admin/admin'
+                });
+              }, 600);
+            } else {
+              wx.showToast({ title: apiRes.msg || '口令错误，仅限掌柜本人', icon: 'none' });
+            }
+          }).catch(err => {
+            wx.hideLoading();
+            wx.showToast({ title: '验证异常，请重试', icon: 'none' });
+          });
+        }
+      }
+    });
+  },
+
+  // 更新食客微信昵称 (调用 update-profile 接口)
+  onEditProfile: function () {
+    const that = this;
+    const curName = that.data.userInfo ? that.data.userInfo.nickname : '临安食客';
+    wx.showModal({
+      title: '修改食客昵称',
+      editable: true,
+      placeholderText: '请输入新昵称',
+      content: curName,
+      confirmText: '保存',
+      confirmColor: '#D9480F',
+      success: (res) => {
+        if (res.confirm && res.content && res.content.trim()) {
+          wx.showLoading({ title: '正在保存...' });
+          app.callContainer({
+            path: '/api/user/update-profile',
+            method: 'POST',
+            data: { nickname: res.content.trim() }
+          }).then(apiRes => {
+            wx.hideLoading();
+            if (apiRes && apiRes.code === 0) {
+              wx.showToast({ title: '昵称已保存', icon: 'success' });
+              that.loadData();
+            } else {
+              wx.showToast({ title: apiRes.msg || '保存失败', icon: 'none' });
+            }
+          }).catch(() => {
+            wx.hideLoading();
+            wx.showToast({ title: '网络异常', icon: 'none' });
+          });
         }
       }
     });

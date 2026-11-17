@@ -30,8 +30,8 @@ export async function getOrCreateCurrentUser(ctx: Context) {
     const card_no = `NO.${randomSuffix}`;
 
     const insertRes: any = await query(
-      `INSERT INTO t_user (openid, nickname, invite_code, member_card_no, is_member, normal_points, red_packet_points, total_consume_amount)
-       VALUES (?, ?, ?, ?, 0, 0, 0.00, 0.00)`,
+      `INSERT INTO t_user (openid, nickname, invite_code, member_card_no, is_member, is_admin, normal_points, red_packet_points, total_consume_amount)
+       VALUES (?, ?, ?, ?, 0, 0, 0, 0.00, 0.00)`,
       [openid, `临安食客_${randomSuffix}`, invite_code, card_no]
     );
 
@@ -55,6 +55,7 @@ export async function getOrCreateCurrentUser(ctx: Context) {
       avatar_url: user.avatar_url,
       phone: user.phone,
       is_member: user.is_member,
+      is_admin: user.is_admin || 0,
       member_card_no: user.member_card_no,
       invite_code: user.invite_code,
       referrer_id: user.referrer_id,
@@ -64,6 +65,84 @@ export async function getOrCreateCurrentUser(ctx: Context) {
       red_packet_points: Number(user.red_packet_points).toFixed(2),
       total_consumption: Number(user.total_consume_amount).toFixed(2)
     }
+  };
+}
+
+/**
+ * 微信用户更新个人资料 (头像、昵称、手机号)
+ * 适配微信小程序 open-type="chooseAvatar" 与 input type="nickname"
+ */
+export async function updateProfile(ctx: Context) {
+  const openid = (ctx.headers['x-wx-openid'] as string) || (ctx.query.openid as string);
+  const { nickname, avatar_url, phone } = ctx.request.body as {
+    nickname?: string;
+    avatar_url?: string;
+    phone?: string;
+  };
+
+  if (!openid) {
+    ctx.status = 401;
+    ctx.body = { code: 401, msg: '未识别身份' };
+    return;
+  }
+
+  const updates: string[] = [];
+  const params: any[] = [];
+
+  if (typeof nickname === 'string' && nickname.trim()) {
+    updates.push('nickname = ?');
+    params.push(nickname.trim());
+  }
+  if (typeof avatar_url === 'string' && avatar_url.trim()) {
+    updates.push('avatar_url = ?');
+    params.push(avatar_url.trim());
+  }
+  if (typeof phone === 'string' && phone.trim()) {
+    updates.push('phone = ?');
+    params.push(phone.trim());
+  }
+
+  if (updates.length === 0) {
+    ctx.body = { code: 0, msg: '无信息需更新' };
+    return;
+  }
+
+  params.push(openid);
+  await query(`UPDATE t_user SET ${updates.join(', ')} WHERE openid = ?`, params);
+
+  ctx.body = { code: 0, msg: '资料已成功更新' };
+}
+
+/**
+ * 掌柜主口令身份验证与 OpenID 绑定 (RBAC 核心认证)
+ * 验证通过后将当前微信 OpenID 提升为管理员身份
+ */
+export async function verifyAdminPasscode(ctx: Context) {
+  const openid = (ctx.headers['x-wx-openid'] as string) || (ctx.query.openid as string);
+  const { passcode } = ctx.request.body as { passcode: string };
+
+  if (!openid || !passcode) {
+    ctx.status = 400;
+    ctx.body = { code: 400, msg: '缺少必要参数 (passcode)' };
+    return;
+  }
+
+  const configs: any = await query('SELECT config_value FROM t_system_config WHERE config_key = "ADMIN_PASSCODE" LIMIT 1');
+  const validPasscode = configs.length > 0 ? configs[0].config_value : '8899';
+
+  if (passcode.trim() !== validPasscode) {
+    ctx.status = 403;
+    ctx.body = { code: 403, msg: '掌柜口令验证失败，无权访问' };
+    return;
+  }
+
+  // 绑定当前 OpenID 为管理员
+  await query('UPDATE t_user SET is_admin = 1 WHERE openid = ?', [openid]);
+
+  ctx.body = {
+    code: 0,
+    msg: '掌柜身份验证成功！您的微信账号已获得作坊管理中枢权限。',
+    data: { is_admin: 1 }
   };
 }
 
@@ -129,10 +208,6 @@ export async function exitMembership(ctx: Context) {
     return;
   }
 
-  // 退会逻辑：
-  // 1. is_member 置 0 (变更为普通非会员)
-  // 2. 清空/冻结红包积分账户 (置为 0.00，不再享受返佣与提现抵扣)
-  // 3. 保留普通积分账户 (normal_points 保持原值不变)
   await query(
     'UPDATE t_user SET is_member = 0, red_packet_points = 0.00 WHERE openid = ?',
     [openid]
