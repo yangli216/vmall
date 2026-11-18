@@ -15,10 +15,20 @@ export async function getSystemConfigs(ctx: Context) {
 }
 
 /**
- * 修改某项运营参数 (门槛、抵扣比例、返利比)
+ * 修改某项运营参数 (门槛、抵扣比例、返利比，支持批量一次性更新)
  */
 export async function updateSystemConfig(ctx: Context) {
-  const { config_key, config_value } = ctx.request.body as { config_key: string; config_value: string };
+  const body = ctx.request.body as any;
+
+  if (body.configs && typeof body.configs === 'object') {
+    for (const key of Object.keys(body.configs)) {
+      await query('UPDATE t_system_config SET config_value = ? WHERE config_key = ?', [body.configs[key].toString(), key]);
+    }
+    ctx.body = { code: 0, msg: '配置已批量更新并实时生效' };
+    return;
+  }
+
+  const { config_key, config_value } = body;
 
   if (!config_key || config_value === undefined) {
     ctx.status = 400;

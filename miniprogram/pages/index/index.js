@@ -422,6 +422,7 @@ Page({
       content: `应付金额：¥${payAmount}\n(已扣减积分抵扣，严格按实付结算推荐人返佣)`,
       confirmText: '立即支付',
       confirmColor: '#07C160',
+      cancelText: '稍后支付',
       success: (res) => {
         if (res.confirm) {
           wx.showLoading({ title: '正在完成支付结算...' });
@@ -440,6 +441,21 @@ Page({
             wx.hideLoading();
             wx.showToast({ title: '支付处理失败', icon: 'none' });
           });
+        } else {
+          // 用户点击稍后支付：清空当前购物车，引导前往配送追踪页
+          that.setData({
+            cart: {},
+            cartList: [],
+            cartCount: 0,
+            cartTotal: '0.00',
+            isDrawerOpen: false
+          });
+          wx.showToast({ title: '订单已创建，请在追踪页完成支付', icon: 'none', duration: 2000 });
+          setTimeout(() => {
+            wx.switchTab({
+              url: '/pages/order/order'
+            });
+          }, 1000);
         }
       }
     });
