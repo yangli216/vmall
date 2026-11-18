@@ -4,7 +4,7 @@
   background-color: #F8F9FA;
   min-height: 100vh;
   box-sizing: border-box;
-  padding-bottom: 80rpx;
+  padding-bottom: calc(100rpx + env(safe-area-inset-bottom));
 }
 
 /* 1. 活跃订单主卡片 */
