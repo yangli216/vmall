@@ -48,7 +48,7 @@
       </view>
       <view class="upgrade-action-row" wx:if="{{config.MEMBER_ENTRY_MODE === 'FREE'}}">
         <text class="free-tip">🎉 当前作坊开启「新客免费升级」活动</text>
-        <button class="btn-free-upgrade" bindtap="activateFreeMember">立即免费成为会员</button>
+        <button class="btn-free-upgrade" bindtap="openRegisterModal">微信资料一键注册会员</button>
       </view>
       <view wx:elif="{{userInfo.member_opt_out}}">你已主动退出会员，如需重新开通请联系掌柜。</view>
       <view wx:elif="{{config.MEMBER_ENTRY_MODE === 'MANUAL'}}">当前由掌柜邀请开通会员，可联系掌柜咨询。</view>
@@ -169,6 +169,17 @@
       <view class="arrow-right">></view>
     </view>
 
+    <view class="menu-action-item border-top" bindtap="openAddressManager">
+      <view class="action-left">
+        <text class="action-emoji">📍</text>
+        <view class="action-text">
+          <view class="action-title">我的配送地址</view>
+          <view class="action-sub">{{defaultAddressSummary || '管理周边自送地址，支持微信一键导入'}}</view>
+        </view>
+      </view>
+      <view class="arrow-right">></view>
+    </view>
+
     <view class="menu-action-item border-top" bindtap="contactShop">
       <view class="action-left">
         <text class="action-emoji">📞</text>
@@ -234,6 +245,120 @@
       <view class="timeline-guide-actions">
         <button class="btn-guide-poster btn-press" bindtap="timelineGuideToPromote">前往推广中心生成海报</button>
         <button class="btn-guide-cancel btn-press" bindtap="closeTimelineGuide">我知道了</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 微信个人资料获取与会员注册弹窗 -->
+  <view class="poster-backdrop" wx:if="{{showProfileModal}}">
+    <view class="profile-modal-dialog">
+      <view class="modal-head">
+        <text class="modal-title">{{!isMember && config.MEMBER_ENTRY_MODE === 'FREE' ? '注册会员 · 授权微信信息' : '完善个人资料'}}</text>
+        <view class="modal-close" bindtap="closeProfileModal">✕</view>
+      </view>
+      <view class="profile-avatar-row">
+        <button class="btn-choose-avatar" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image class="avatar-preview" src="{{editAvatarUrl || userInfo.avatar_url || '/images/tab_member.png'}}" mode="aspectFill" />
+          <view class="avatar-cam-badge">📷</view>
+        </button>
+        <view class="avatar-pick-tip">点击一键选用微信头像</view>
+      </view>
+      <view class="profile-input-group">
+        <view class="input-item">
+          <text class="input-label">微信昵称</text>
+          <input type="nickname" class="modal-input" placeholder="点击一键填入微信昵称" value="{{editNickname}}" bindchange="onNicknameChange" bindblur="onNicknameBlur" />
+        </view>
+        <view class="input-item">
+          <text class="input-label">联系手机</text>
+          <input type="number" maxlength="11" class="modal-input" placeholder="常用手机号（自送/提货联络）" value="{{editPhone}}" bindinput="onPhoneInput" />
+        </view>
+      </view>
+      <view class="modal-footnote">信息仅用于出炉提货与周边自送联络，严格保障隐私</view>
+      <view class="modal-btn-row">
+        <button class="btn-submit-profile btn-press" loading="{{profileSubmitting}}" disabled="{{profileSubmitting}}" bindtap="submitProfileAndRegister">
+          {{!isMember && config.MEMBER_ENTRY_MODE === 'FREE' ? '同步资料并免费开通会员' : '保存微信个人资料'}}
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 配送地址管理弹窗 -->
+  <view class="poster-backdrop" wx:if="{{showAddressModal}}">
+    <view class="address-manager-dialog">
+      <view class="modal-head">
+        <text class="modal-title">我的配送地址</text>
+        <view class="modal-close" bindtap="closeAddressManager">✕</view>
+      </view>
+      <view class="address-quick-actions">
+        <button size="mini" class="btn-import-wx btn-press" bindtap="importWechatAddress">
+          <text class="btn-icon">📥</text> 从微信一键导入地址
+        </button>
+        <button size="mini" class="btn-add-new btn-press" bindtap="openAddAddressModal">
+          <text class="btn-icon">＋</text> 新增地址
+        </button>
+      </view>
+      <scroll-view scroll-y="true" class="address-scroll-list">
+        <view wx:if="{{!addressList.length}}" class="address-empty-box">
+          <text class="empty-icon">📍</text>
+          <text class="empty-text">暂无保存的配送地址</text>
+          <text class="empty-sub">支持点击上方按钮直接从微信导入</text>
+        </view>
+        <view class="address-card-item {{item.is_default ? 'is-default' : ''}}" wx:for="{{addressList}}" wx:key="id">
+          <view class="addr-item-main">
+            <view class="addr-user-line">
+              <text class="addr-user-name">{{item.name}}</text>
+              <text class="addr-user-phone">{{item.phone}}</text>
+              <text class="addr-badge-default" wx:if="{{item.is_default}}">默认</text>
+            </view>
+            <view class="addr-detail-text">{{item.area ? item.area + ' ' : ''}}{{item.detail}}</view>
+          </view>
+          <view class="addr-action-bar">
+            <view class="addr-default-trigger" data-id="{{item.id}}" bindtap="onSetDefaultAddress">
+              <text class="radio-circle {{item.is_default ? 'checked' : ''}}"></text>
+              <text class="radio-label">{{item.is_default ? '默认地址' : '设为默认'}}</text>
+            </view>
+            <view class="addr-edit-btns">
+              <text class="addr-btn-edit" data-id="{{item.id}}" bindtap="openEditAddressModal">编辑</text>
+              <text class="addr-btn-del" data-id="{{item.id}}" bindtap="onDeleteAddress">删除</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <button class="btn-dialog-done btn-press" bindtap="closeAddressManager">完成</button>
+    </view>
+  </view>
+
+  <!-- 新增/编辑配送地址表单弹窗 -->
+  <view class="poster-backdrop" wx:if="{{showAddressEditModal}}">
+    <view class="address-edit-dialog">
+      <view class="modal-head">
+        <text class="modal-title">{{addressForm.id ? '编辑配送地址' : '新增配送地址'}}</text>
+        <view class="modal-close" bindtap="closeAddressEditModal">✕</view>
+      </view>
+      <view class="address-form-box">
+        <view class="form-row">
+          <text class="form-label">收件人</text>
+          <input class="form-input" placeholder="姓名（必填）" value="{{addressForm.name}}" data-field="name" bindinput="onAddressFormInput" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">手机号码</text>
+          <input class="form-input" type="number" maxlength="11" placeholder="11位手机号（必填）" value="{{addressForm.phone}}" data-field="phone" bindinput="onAddressFormInput" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">所在小区/区域</text>
+          <input class="form-input" placeholder="如：锦城街道/春天花园" value="{{addressForm.area}}" data-field="area" bindinput="onAddressFormInput" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">详细地址</text>
+          <input class="form-input" placeholder="楼幢、门牌号（必填）" value="{{addressForm.detail}}" data-field="detail" bindinput="onAddressFormInput" />
+        </view>
+        <view class="form-row form-row-switch">
+          <text class="form-label">设为默认地址</text>
+          <switch checked="{{addressForm.is_default}}" color="#D9480F" bindchange="onAddressDefaultSwitch" />
+        </view>
+      </view>
+      <view class="modal-btn-row">
+        <button class="btn-submit-profile btn-press" loading="{{addressSaving}}" disabled="{{addressSaving}}" bindtap="saveAddressRecord">保存地址</button>
       </view>
     </view>
   </view>

@@ -1019,3 +1019,134 @@
 
 .drawer-info-box .copy-pickup-button { margin: 16rpx 0 0; padding: 12rpx 20rpx; font-size: 24rpx; line-height: 1.6; color: #8A6D51; background: #FFFCF7; border-radius: 10rpx; }
 .copy-pickup-button::after { border: 1rpx solid #E5DACB; }
+
+/* 快速选择配送地址弹窗 */
+.address-picker-dialog {
+  width: 100%;
+  max-width: 650rpx;
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  box-sizing: border-box;
+  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.16);
+}
+.address-picker-dialog .modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+.address-picker-dialog .modal-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+.address-picker-dialog .modal-close {
+  font-size: 32rpx;
+  color: #9CA3AF;
+  padding: 8rpx;
+  line-height: 1;
+}
+.address-picker-dialog .address-quick-actions {
+  display: flex;
+  margin-bottom: 20rpx;
+}
+.address-picker-dialog .btn-import-wx {
+  flex: 1;
+  background: #ECFDF5 !important;
+  color: #059669 !important;
+  border: 1rpx solid #A7F3D0 !important;
+  border-radius: 14rpx;
+  font-size: 25rpx !important;
+  font-weight: 600;
+  padding: 16rpx 10rpx !important;
+  line-height: 1.4;
+  margin: 0 !important;
+}
+.address-picker-dialog .address-scroll-list {
+  max-height: 50vh;
+  margin-bottom: 24rpx;
+}
+.address-picker-dialog .address-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 0;
+}
+.address-picker-dialog .empty-icon {
+  font-size: 52rpx;
+  margin-bottom: 10rpx;
+}
+.address-picker-dialog .empty-text {
+  font-size: 28rpx;
+  color: #4B5563;
+  font-weight: 600;
+}
+.address-picker-dialog .empty-sub {
+  font-size: 23rpx;
+  color: #9CA3AF;
+  margin-top: 6rpx;
+}
+.address-picker-dialog .address-card-item {
+  background: #F9FAFB;
+  border: 1.5rpx solid #E5E7EB;
+  border-radius: 18rpx;
+  padding: 22rpx 20rpx;
+  margin-bottom: 16rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.address-picker-dialog .address-card-item.is-default {
+  background: #FFFDF9;
+  border-color: rgba(217, 72, 15, 0.4);
+}
+.address-picker-dialog .addr-item-main {
+  flex: 1;
+  min-width: 0;
+  padding-right: 16rpx;
+}
+.address-picker-dialog .addr-user-line {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 6rpx;
+}
+.address-picker-dialog .addr-user-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+.address-picker-dialog .addr-user-phone {
+  font-size: 26rpx;
+  color: #6B7280;
+}
+.address-picker-dialog .addr-badge-default {
+  background: #FFF1E6;
+  color: #D9480F;
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+}
+.address-picker-dialog .addr-detail-text {
+  font-size: 24rpx;
+  color: #4B5563;
+  line-height: 1.4;
+}
+.address-picker-dialog .addr-select-tag {
+  flex-shrink: 0;
+  font-size: 23rpx;
+  color: #D9480F;
+  font-weight: 600;
+}
+.address-picker-dialog .btn-dialog-done {
+  background: #F3F4F6;
+  color: #4B5563;
+  font-size: 27rpx;
+  font-weight: 600;
+  border-radius: 16rpx;
+  padding: 18rpx 0;
+  width: 100%;
+  border: 0;
+}

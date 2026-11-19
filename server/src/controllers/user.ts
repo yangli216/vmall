@@ -18,7 +18,7 @@ export async function updateProfile(ctx: Context) {
   if (body.nickname !== undefined) { fields.push('nickname = ?'); params.push(text(body.nickname, '昵称', 50)); }
   if (body.avatar_url !== undefined) {
     const value = text(body.avatar_url, '头像地址', 500, false);
-    requireValue(!value || /^https:\/\//.test(value), '头像须为已上传的HTTPS图片');
+    requireValue(!value || /^(https?:\/\/|cloud:\/\/|wxfile:\/\/|http:\/\/tmp\/)/.test(value), '头像须为有效图片地址');
     fields.push('avatar_url = ?'); params.push(value);
   }
   if (body.phone !== undefined) {

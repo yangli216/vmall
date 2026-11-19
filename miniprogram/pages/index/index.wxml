@@ -43,7 +43,7 @@
           <text class="contact-value">等待备好后，出示订单自提码</text>
         </view>
       </view>
-      <view wx:if="{{deliveryType === 1}}" class="address-edit-btn" bindtap="editAddress">填写地址</view>
+      <view wx:if="{{deliveryType === 1}}" class="address-edit-btn" bindtap="openAddressPicker">选择地址</view>
     </view>
   </view>
 
@@ -165,6 +165,7 @@
           <text class="info-label">预约出炉:</text>
           <text class="info-val highlight">{{currentBatchText}}</text>
         </view>
+        <button wx:if="{{deliveryType === 1}}" size="mini" class="copy-pickup-button" bindtap="openAddressPicker">切换常用地址 / 微信导入</button>
         <button wx:if="{{deliveryType === 2}}" size="mini" class="copy-pickup-button" bindtap="copyShopAddress">复制门店自提地址</button>
       </view>
 
@@ -269,6 +270,40 @@
       <button class="btn-wxpay-submit btn-press" disabled="{{!calcReady || submitting}}" loading="{{calculating || submitting}}" bindtap="submitOrderPay">
         {{calculating ? '正在核算' : '确认订单并支付'}}
       </button>
+    </view>
+  </view>
+
+  <!-- 快速选择收货地址弹窗 -->
+  <view class="poster-backdrop" wx:if="{{showAddressPicker}}">
+    <view class="address-picker-dialog">
+      <view class="modal-head">
+        <text class="modal-title">选择配送地址</text>
+        <view class="modal-close" bindtap="closeAddressPicker">✕</view>
+      </view>
+      <view class="address-quick-actions">
+        <button size="mini" class="btn-import-wx btn-press" bindtap="importAddressFromWechat">
+          <text class="btn-icon">📥</text> 从微信一键导入新地址
+        </button>
+      </view>
+      <scroll-view scroll-y="true" class="address-scroll-list">
+        <view wx:if="{{!addressList.length}}" class="address-empty-box">
+          <text class="empty-icon">📍</text>
+          <text class="empty-text">暂无已维护的配送地址</text>
+          <text class="empty-sub">支持点击上方按钮直接从微信导入</text>
+        </view>
+        <view class="address-card-item {{item.is_default ? 'is-default' : ''}}" wx:for="{{addressList}}" wx:key="id" data-id="{{item.id}}" bindtap="selectAddress">
+          <view class="addr-item-main">
+            <view class="addr-user-line">
+              <text class="addr-user-name">{{item.name}}</text>
+              <text class="addr-user-phone">{{item.phone}}</text>
+              <text class="addr-badge-default" wx:if="{{item.is_default}}">默认</text>
+            </view>
+            <view class="addr-detail-text">{{item.area ? item.area + ' ' : ''}}{{item.detail}}</view>
+          </view>
+          <view class="addr-select-tag">点击选择 ›</view>
+        </view>
+      </scroll-view>
+      <button class="btn-dialog-done btn-press" bindtap="closeAddressPicker">取消</button>
     </view>
   </view>
 

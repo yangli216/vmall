@@ -1,6 +1,7 @@
 const app = getApp();
 const { payOrder } = require('../../utils/payment');
 const {captureReferral} = require('../../utils/referral');
+const addressUtil = require('../../utils/address');
 Page({
   data: {
     deliveryType: 2, destAddress: '', receiverName: '', receiverPhone: '', deliveryArea: '',
@@ -12,7 +13,8 @@ Page({
     currentCatId: 0, allDishes: [], dishes: [], cart: {}, cartList: [], cartCount: 0, cartTotal: '0.00', isDrawerOpen: false,
     orderRemark: '', isMember: false, myReferralCode: '', userNormalPoints: 0, userRedPoints: '0.00', useNormalPoints: false, useRedPoints: false,
     inputRedAmount: '0.00', loadingProducts: true, productError: '', calcError: '', calcReady: false, calculating: false, submitting: false,
-    redLimitPercent: 50, calcResult: {}, contactFormOpen: false
+    redLimitPercent: 50, calcResult: {}, contactFormOpen: false,
+    showAddressPicker: false, addressList: []
   },
   onLoad(options) {
     captureReferral(options);
@@ -105,14 +107,66 @@ Page({
   openCheckoutSheet() { if (!this.data.cartCount || !this.data.slots.length) return wx.showToast({ title: '请先选择批次和菜品', icon: 'none' }); this.setData({ isDrawerOpen: true }); this.calculateBill(); },
   closeCheckoutSheet() { if (!this.data.submitting) this.setData({ isDrawerOpen: false }); },
   editAddress() {
-    if(this.data.submitting)return;
+    if (this.data.submitting) return;
     if (this.data.deliveryType === 2) { this.setData({ isDrawerOpen: this.data.cartCount > 0 }); return; }
-    wx.chooseAddress({ success: r => {
-      if(this.data.submitting)return;
-      const address = `${r.provinceName}${r.cityName}${r.countyName}${r.detailInfo}`;
-      this.setData({ destAddress: address, receiverName: r.userName, receiverPhone: r.telNumber,
-        deliveryArea: this.data.deliveryAreas.find(area => address.includes(area)) || '' }); this.saveContact();
-    }, fail: () => { this.setData({ isDrawerOpen: this.data.cartCount > 0 }); wx.showToast({ title: '请在结算中填写联系人和地址', icon: 'none' }); } });
+    const list = addressUtil.getAddressList();
+    if (list.length > 0) {
+      this.openAddressPicker();
+    } else {
+      this.importAddressFromWechat();
+    }
+  },
+  openAddressPicker() {
+    if (this.data.submitting) return;
+    const list = addressUtil.getAddressList();
+    this.setData({ addressList: list, showAddressPicker: true });
+  },
+  closeAddressPicker() {
+    this.setData({ showAddressPicker: false });
+  },
+  selectAddress(e) {
+    if (this.data.submitting) return;
+    const id = e.currentTarget.dataset.id;
+    const target = this.data.addressList.find(a => a.id === id);
+    if (!target) return;
+    const address = target.detail || '';
+    const matchedArea = this.data.deliveryAreas.find(a => address.includes(a) || (target.area && target.area.includes(a))) || target.area || '';
+    this.setData({
+      destAddress: address,
+      receiverName: target.name || '',
+      receiverPhone: target.phone || '',
+      deliveryArea: matchedArea,
+      showAddressPicker: false
+    });
+    this.requestId = null;
+    this.saveContact();
+    this.invalidateBill();
+    wx.showToast({ title: '已选择地址', icon: 'success' });
+  },
+  async importAddressFromWechat() {
+    if (this.data.submitting) return;
+    try {
+      const record = await addressUtil.importFromWechat();
+      const list = addressUtil.getAddressList();
+      const address = record.detail || '';
+      const matchedArea = this.data.deliveryAreas.find(a => address.includes(a)) || record.area || '';
+      this.setData({
+        addressList: list,
+        destAddress: address,
+        receiverName: record.name,
+        receiverPhone: record.phone,
+        deliveryArea: matchedArea,
+        showAddressPicker: false
+      });
+      this.requestId = null;
+      this.saveContact();
+      this.invalidateBill();
+      wx.showToast({ title: '已导入微信地址', icon: 'success' });
+    } catch (err) {
+      if (!/cancel/i.test(err.errMsg || '')) {
+        wx.showToast({ title: '未获取到微信地址', icon: 'none' });
+      }
+    }
   },
   onContactInput(e) { if(this.data.submitting)return; const field = e.currentTarget.dataset.field; if (!['receiverName','receiverPhone','destAddress'].includes(field)) return; this.setData({ [field]: e.detail.value }); this.requestId = null; this.saveContact(); },
   onAreaChange(e) { if(this.data.submitting)return; this.setData({ deliveryArea: this.data.deliveryAreas[Number(e.detail.value)] }); this.requestId = null; this.saveContact(); },

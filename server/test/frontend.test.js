@@ -410,3 +410,85 @@ test('promote page timeline guide dialog toggles and binds pending referral for 
  assert.deepEqual(bound,['INVITE999']);
  assert.equal(storage.has('pandou_pending_referrer'),false);
 });
+test('address management utility handles CRUD, WeChat import and synchronization to contact storage',async()=>{
+ const storage=new Map();
+ const wxApi={getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,v),removeStorageSync:k=>storage.delete(k),chooseAddress:options=>{
+  options.success({userName:'李女士',telNumber:'13812345678',provinceName:'浙江省',cityName:'杭州市',countyName:'临安区',detailInfo:'锦城街道钱王街88号'});
+ }};
+ const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+ const context=vm.createContext({wx:wxApi,module:{exports:{}},require:()=>({})});
+ const file=path.join(__dirname,'../../miniprogram/utils/address.js');
+ vm.runInContext(fs.readFileSync(file,'utf8'),context);
+ const addrUtil=context.module.exports;
+
+ assert.equal(addrUtil.getAddressList().length, 0);
+ const first=addrUtil.saveAddress({name:'张先生',phone:'13900001111',area:'锦城街道',detail:'临天路10弄',is_default:true});
+ assert.equal(first.name,'张先生');
+ assert.equal(first.is_default,true);
+ assert.equal(storage.get('pandou_contact').receiverName,'张先生');
+
+ const second=addrUtil.saveAddress({name:'王阿姨',phone:'13711112222',area:'锦城街道',detail:'钱王大街200号',is_default:true});
+ assert.equal(second.is_default,true);
+ const list=addrUtil.getAddressList();
+ assert.equal(list.find(a=>a.id===first.id).is_default,false);
+ assert.equal(storage.get('pandou_contact').receiverName,'王阿姨');
+
+ addrUtil.setDefaultAddress(first.id);
+ assert.equal(addrUtil.getDefaultAddress().id,first.id);
+
+ const imported=await addrUtil.importFromWechat();
+ assert.equal(imported.name,'李女士');
+ assert.equal(imported.is_default,true);
+ assert.equal(storage.get('pandou_contact').receiverName,'李女士');
+
+ addrUtil.deleteAddress(imported.id);
+ assert.equal(addrUtil.getDefaultAddress().is_default,true);
+});
+test('member registration supports WeChat profile authorization and address management',async()=>{
+ const calls=[],toasts=[];
+ const {page}=loadPage('member',{api:async(path,method,body)=>{
+  calls.push({path,method,body});
+  if(path==='/api/user/info')return {nickname:'临安老客',avatar_url:'',is_member:0,total_consumption:'0.00'};
+  if(path==='/api/config/all')return {MEMBER_ENTRY_MODE:'FREE',MEMBER_ENTRY_THRESHOLD:'68.00'};
+  if(path==='/api/user/update-profile')return {msg:'ok'};
+  if(path==='/api/user/activate-free')return {msg:'ok'};
+  return {};
+ }},{showToast:o=>toasts.push(o.title),chooseAddress:o=>o.success({userName:'王先生',telNumber:'13500001111',provinceName:'浙江省',cityName:'杭州市',countyName:'临安区',detailInfo:'春天花园1幢'})});
+
+ await page.loadData();
+ page.openRegisterModal();
+ assert.equal(page.data.showProfileModal,true);
+ page.onChooseAvatar({detail:{avatarUrl:'https://thirdwx.qlogo.cn/mmopen/avatar.jpg'}});
+ page.onNicknameChange({detail:{value:'西径居士'}});
+ page.onPhoneInput({detail:{value:'13958001122'}});
+ assert.equal(page.data.editAvatarUrl,'https://thirdwx.qlogo.cn/mmopen/avatar.jpg');
+ assert.equal(page.data.editNickname,'西径居士');
+
+ await page.submitProfileAndRegister();
+ assert.ok(calls.some(c=>c.path==='/api/user/update-profile'&&c.body.nickname==='西径居士'));
+ assert.ok(calls.some(c=>c.path==='/api/user/activate-free'));
+ assert.equal(page.data.showProfileModal,false);
+
+ page.openAddressManager();
+ assert.equal(page.data.showAddressModal,true);
+ await page.importWechatAddress();
+ assert.ok(page.data.addressList.length>0);
+ assert.equal(page.data.addressList[0].name,'王先生');
+ page.closeAddressManager();
+ assert.equal(page.data.showAddressModal,false);
+});
+test('index checkout rapidly selects maintained address and recalculates bills',()=>{
+ const storage=new Map([['pandou_addresses',[{id:'addr_1',name:'赵六',phone:'13966667777',area:'临安锦城',detail:'锦城小区5幢101',is_default:true}]]]);
+ const {page}=loadPage('index',{},{getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,v),removeStorageSync:k=>storage.delete(k),showToast:()=>{}});
+ page.data.deliveryAreas=['锦城小区'];
+ page.openAddressPicker();
+ assert.equal(page.data.showAddressPicker,true);
+ assert.equal(page.data.addressList.length,1);
+
+ page.selectAddress({currentTarget:{dataset:{id:'addr_1'}}});
+ assert.equal(page.data.receiverName,'赵六');
+ assert.equal(page.data.receiverPhone,'13966667777');
+ assert.equal(page.data.destAddress,'锦城小区5幢101');
+ assert.equal(page.data.deliveryArea,'锦城小区');
+ assert.equal(page.data.showAddressPicker,false);
+});
