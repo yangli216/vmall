@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS t_privacy_request (
+ id BIGINT AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT NOT NULL,
+ request_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ request_hash CHAR(64) CHARACTER SET ascii NOT NULL,
+ kind VARCHAR(24) NOT NULL,
+ description VARCHAR(1000) NOT NULL,
+ status VARCHAR(16) NOT NULL DEFAULT 'OPEN',
+ resolution VARCHAR(1000) NOT NULL DEFAULT '',
+ operator_id BIGINT NULL,
+ active_user_id BIGINT GENERATED ALWAYS AS (CASE WHEN status IN ('OPEN','PROCESSING') THEN user_id ELSE NULL END) STORED,
+ create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uk_request(user_id,request_id),
+ UNIQUE KEY uk_active_user(active_user_id),
+ INDEX idx_user(user_id,id),
+ INDEX idx_status(status,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

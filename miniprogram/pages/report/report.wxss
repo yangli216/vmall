@@ -1,0 +1,14 @@
+page { background:#f7f5f2; color:#292524; }
+.page { padding:28rpx 24rpx 80rpx; }
+.title { font-size:40rpx; font-weight:700; }
+.date { background:#fff; padding:24rpx; border-radius:14rpx; margin:24rpx 0; font-size:30rpx; }
+.card { background:#fff; padding:28rpx; border-radius:20rpx; margin:24rpx 0; }
+.heading { font-size:31rpx; font-weight:600; margin-bottom:20rpx; }
+.minor { font-size:28rpx; margin-top:30rpx; }
+.row { display:flex; justify-content:space-between; align-items:flex-start; gap:18rpx; font-size:27rpx; line-height:1.7; margin:15rpx 0; }
+.row text:first-child { flex:1; } .row text:last-child { text-align:right; }
+.strong { font-weight:600; color:#a44319; }
+.notice { font-size:24rpx; color:#71645c; line-height:1.7; margin:16rpx 0; }
+.error { color:#b42318; }
+.filters { display:flex; gap:16rpx; } button { font-size:26rpx; } button.selected { background:#ba4a19; color:#fff; }
+.transaction,.benefit { border-top:1rpx solid #eee; padding:20rpx 0; font-size:26rpx; line-height:1.7; overflow-wrap:break-word; }

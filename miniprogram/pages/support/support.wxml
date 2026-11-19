@@ -1,0 +1,23 @@
+<view class="page">
+ <dev-banner />
+  <view class="notice">掌柜将通过订单预留电话与你联系。请保留餐品、包装和问题照片；需补充照片或有急事，可直接联系掌柜。退款是否完成以“我的订单”状态和微信到账结果为准。</view>
+  <view wx:if="{{error}}" class="notice error" bindtap="refresh">{{error}} · 点击重试</view>
+  <view class="card" wx:if="{{order}}">
+    <view class="title">订单 {{order.order_sn}}</view><view>{{order.summary_text}}</view>
+    <view class="meta">联系人：{{order.receiver_name}} {{order.receiver_phone}}</view>
+    <view wx:if="{{hasActive}}" class="notice">已有进行中的问题，掌柜正在处理，请在下方查看进度。</view>
+    <block wx:else>
+      <picker disabled="{{submitting}}" range="{{categories}}" range-key="label" value="{{categoryIndex}}" bindchange="changeCategory"><view class="field">问题类型：{{categories[categoryIndex].label}} ▾</view></picker>
+      <textarea disabled="{{submitting}}" maxlength="1000" value="{{description}}" placeholder="请描述具体问题，例如缺少哪道菜、质量异常或支付时间。" bindinput="onDescription" />
+      <button disabled="{{submitting || loading}}" loading="{{submitting}}" bindtap="submit">提交给掌柜</button>
+    </block>
+  </view>
+  <view class="card" wx:for="{{rows}}" wx:key="id">
+    <view class="title">{{item.category_title}} · {{item.status_title}}</view>
+    <view class="description">{{item.description}}</view><view class="meta">提交于 {{item.create_time}}</view>
+    <view class="reply" wx:if="{{item.resolution}}"><view>掌柜回复</view><view class="description">{{item.resolution}}</view><view class="meta">{{item.update_time}}</view></view>
+  </view>
+  <view wx:if="{{loading}}" class="notice">正在加载…</view>
+  <view wx:elif="{{nextCursor}}" class="notice">上拉查看更多记录</view>
+  <button wx:if="{{phone}}" bindtap="contact">电话联系掌柜</button>
+</view>

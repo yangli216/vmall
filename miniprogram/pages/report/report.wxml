@@ -1,0 +1,59 @@
+<view class="page">
+ <dev-banner />
+  <view class="title">经营日报</view>
+  <picker mode="date" value="{{date}}" bindchange="changeDate"><view class="date">{{date}} ▾</view></picker>
+  <view class="notice">按北京时间查看。资金按服务端确认支付/退款的入账日统计；预约日订单和菜品单独展示。今日数据会变化，下拉刷新。</view>
+  <view wx:if="{{summaryError}}" class="notice error" bindtap="retrySummary">{{summaryError}} · 汇总未更新，点击重试</view>
+  <view wx:if="{{summaryLoading}}" class="notice">正在汇总…</view>
+  <block wx:if="{{summary}}">
+    <view class="card">
+      <view class="heading">{{date}} 资金入账</view>
+      <view class="row"><text>确认支付</text><text>{{summary.cash.payment_orders}} 笔（零元 {{summary.cash.zero_orders}} 笔）</text></view>
+      <view class="row"><text>订单支付金额</text><text>¥{{summary.cash.nominal_paid}}</text></view>
+      <view class="row"><text>确认退款</text><text>{{summary.cash.refund_orders}} 笔 / ¥{{summary.cash.nominal_refunded}}</text></view>
+      <view class="row strong"><text>订单金额收退差额</text><text>¥{{summary.cash.nominal_net}}</text></view>
+      <view class="notice">包含配送费，已扣除门店积分抵扣；订单支付金额可能含微信优惠，不能直接当作顾客现金实付或商户结算到账。</view>
+      <view class="row"><text>已记录顾客实付</text><text>¥{{summary.cash.known_payer_paid}}</text></view>
+      <view class="row"><text>已记录顾客实退</text><text>¥{{summary.cash.known_payer_refunded}}</text></view>
+      <view wx:if="{{summary.cash.payer_amounts_complete}}" class="row strong"><text>已记录现金收退差额</text><text>¥{{summary.cash.payer_net}}</text></view>
+      <view wx:else class="notice error">实付缺失 {{summary.cash.unknown_payment_orders}} 笔，实退缺失 {{summary.cash.unknown_refund_orders}} 笔，暂不计算完整顾客现金差额；请逐笔核对微信商户记录。</view>
+      <view class="notice">以上不是利润或微信结算净到账，未扣支付手续费、原料、包装与配送等成本。</view>
+    </view>
+    <view class="card" wx:if="{{summary.coverage.legacy_orders || summary.coverage.missing_payment_time || summary.coverage.missing_refund_time}}">
+      <view class="heading">历史数据待核对</view>
+      <view class="notice">全库有历史未核验订单 {{summary.coverage.legacy_orders}} 笔、缺支付入账时间 {{summary.coverage.missing_payment_time}} 笔、缺退款入账时间 {{summary.coverage.missing_refund_time}} 笔。未将这些记录猜测计入某一天；日报可能不完整。</view>
+    </view>
+    <view class="card">
+      <view class="heading">预约 {{date}} 的当前进度</view>
+      <view class="row"><text>创建订单（含取消退款）</text><text>{{summary.fulfillment.created_orders}} 笔</text></view>
+      <view class="row"><text>待付款 / 待备餐</text><text>{{summary.fulfillment.unpaid}} / {{summary.fulfillment.preparing}}</text></view>
+      <view class="row"><text>待自提 / 配送中</text><text>{{summary.fulfillment.ready_pickup}} / {{summary.fulfillment.delivering}}</text></view>
+      <view class="row"><text>已完成</text><text>{{summary.fulfillment.completed}}</text></view>
+      <view class="row"><text>退款中 / 已退款</text><text>{{summary.fulfillment.refund_pending}} / {{summary.fulfillment.refunded}}</text></view>
+      <view class="row"><text>未付款取消 / 历史待核验</text><text>{{summary.fulfillment.cancelled_unpaid}} / {{summary.fulfillment.legacy}}</text></view>
+      <view class="notice">这是该预约日截至本次刷新的状态，不能与当日资金流水笔数直接相加。</view>
+      <view class="heading minor">有效已付款菜品 · 份数前30</view>
+      <view class="notice">包含待备餐、待取餐、配送中及已完成，剔除退款中、已退款、未付款和未核验订单。金额为成交单价小计，尚未扣普通积分和红包，不含配送费。</view>
+      <view wx:for="{{summary.products}}" wx:key="index" class="row"><text>{{item.product_title}} ×{{item.quantity}}</text><text>¥{{item.total}}</text></view>
+      <view wx:if="{{!summary.products.length}}" class="notice">暂无符合条件的菜品</view><view wx:if="{{summary.has_more_products}}" class="notice">还有其他菜品，可回工作台查看该预约日完整订单。</view>
+    </view>
+    <view class="card">
+      <view class="heading">{{date}} 积分与红包变动</view>
+      <view class="notice">按账户流水发生日汇总；预占、返还、奖励、调整与待抵回分别列示，不计入现金收入。</view>
+      <view wx:for="{{summary.benefits}}" wx:key="index" class="benefit"><view>{{item.account_title}} · {{item.event_title}}</view><view>{{item.amount}} {{item.unit}} · {{item.records}} 条流水</view></view>
+      <view wx:if="{{!summary.benefits.length}}" class="notice">暂无账户变动</view>
+    </view>
+  </block>
+  <view class="card">
+    <view class="heading">入账明细</view>
+    <view class="filters"><button size="mini" class="{{kind === 'PAYMENT' ? 'selected' : ''}}" data-kind="PAYMENT" bindtap="changeKind">支付入账</button><button size="mini" class="{{kind === 'REFUND' ? 'selected' : ''}}" data-kind="REFUND" bindtap="changeKind">退款入账</button></view>
+    <view class="notice">明细另行读取。新入账或核对结果可能使其与汇总短暂不同，请刷新核对。点击单号复制，可回工作台搜索订单。</view>
+    <view wx:if="{{detailError}}" class="notice error" bindtap="retryDetails">{{detailError}} · 点击重试</view>
+    <view class="transaction" wx:for="{{rows}}" wx:key="id">
+      <view bindtap="copyOrder" data-sn="{{item.order_sn}}">{{item.order_sn}} ›</view><view class="notice">{{item.booked_at}} · 预约 {{item.batch_date}} {{item.batch_time}}</view>
+      <view>订单金额 ¥{{item.nominal_amount}} · 顾客{{kind === 'PAYMENT' ? '实付' : '实退'}} {{item.payer_amount === null ? '待核对' : '¥' + item.payer_amount}}</view>
+    </view>
+    <view wx:if="{{!rows.length && !detailLoading && !detailError}}" class="notice">该日暂无此类入账记录</view>
+    <button wx:if="{{nextCursor}}" disabled="{{detailLoading}}" loading="{{detailLoading}}" bindtap="moreDetails">加载更多明细</button><view wx:if="{{detailLoading}}" class="notice">正在加载明细…</view>
+  </view>
+</view>

@@ -1,0 +1,1 @@
+<view wx:if="{{visible}}" class="dev-banner">本机联调 · 模拟支付不会扣款 · 独立测试数据</view>

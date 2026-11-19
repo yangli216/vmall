@@ -4,7 +4,12 @@
     "pages/member/member",
     "pages/promote/promote",
     "pages/order/order",
-    "pages/admin/admin"
+    "pages/admin/admin",
+    "pages/account/account",
+    "pages/rules/rules",
+    "pages/support/support",
+    "pages/privacy/privacy",
+    "pages/report/report"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -38,12 +43,13 @@
       },
       {
         "pagePath": "pages/order/order",
-        "text": "配送追踪",
+        "text": "我的订单",
         "iconPath": "images/tab_order.png",
         "selectedIconPath": "images/tab_order_active.png"
       }
     ]
   },
+  "usingComponents": {"dev-banner":"/components/dev-banner/dev-banner"},
   "style": "v2",
   "sitemapLocation": "sitemap.json"
 }

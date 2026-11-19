@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS t_product_image (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT,
+ operator_id BIGINT NOT NULL,
+ request_id VARCHAR(80) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+ request_hash CHAR(64) CHARACTER SET ascii NOT NULL,
+ object_key VARCHAR(100) CHARACTER SET ascii NOT NULL,
+ file_id VARCHAR(500) CHARACTER SET ascii COLLATE ascii_bin NULL,
+ state VARCHAR(12) NOT NULL DEFAULT 'PENDING',
+ byte_size INT NOT NULL DEFAULT 0,
+ width INT NOT NULL DEFAULT 0,
+ height INT NOT NULL DEFAULT 0,
+ create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE KEY uk_operator_request(operator_id,request_id),
+ UNIQUE KEY uk_file(file_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

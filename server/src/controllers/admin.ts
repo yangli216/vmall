@@ -1,43 +1,43 @@
 import { Context } from 'koa';
 import { query, withTransaction } from '../db';
 import { PoolConnection } from 'mysql2/promise';
+import { getConfigs, validateConfigs, publicConfigs, configRevision } from '../services/config';
+import { requireValue, positiveId, text } from '../domain/errors';
+import { bindReferral, exitMember } from './user';
+import { changeBalance } from '../services/ledger';
+import { fen } from '../domain/pricing';
+import { beforeId, pageRows } from '../domain/pagination';
+import { createHash } from 'crypto';
 
 /**
  * 获取所有运营参数配置
  */
 export async function getSystemConfigs(ctx: Context) {
-  const configs: any = await query('SELECT * FROM t_system_config');
-  const map: Record<string, string> = {};
-  for (const c of configs) {
-    map[c.config_key] = c.config_value;
-  }
-  ctx.body = { code: 0, msg: 'ok', data: map };
+  ctx.set('Cache-Control','no-store');
+  ctx.body = { code: 0, msg: 'ok', data: await getConfigs() };
 }
-
-/**
- * 修改某项运营参数 (门槛、抵扣比例、返利比，支持批量一次性更新)
- */
+export async function getAdminConfig(ctx:Context) {
+  const configs=await getConfigs();ctx.set('Cache-Control','no-store');
+  ctx.body={code:0,data:{configs,revision:configRevision(configs)}};
+}
 export async function updateSystemConfig(ctx: Context) {
   const body = ctx.request.body as any;
-
-  if (body.configs && typeof body.configs === 'object') {
-    for (const key of Object.keys(body.configs)) {
-      await query('UPDATE t_system_config SET config_value = ? WHERE config_key = ?', [body.configs[key].toString(), key]);
+  const updates = validateConfigs(body.configs || { [body.config_key]: body.config_value });
+  requireValue(typeof body.expected_revision==='string' && /^[a-f0-9]{64}$/.test(body.expected_revision),'请先重新读取营业设置再保存',409);
+  const result=await withTransaction(async conn => {
+    // Serialize settings edits, including cross-field checks and absent default keys.
+    const [rows]:any=await conn.execute('SELECT config_key,config_value FROM t_system_config ORDER BY config_key FOR UPDATE');
+    const current=publicConfigs(rows);
+    const unchanged=Object.entries(updates).every(([key,value])=>current[key]===value);
+    requireValue(body.expected_revision===configRevision(current) || unchanged,'营业设置已被更新，请重新读取并核对；当前填写可先保留',409);
+    const merged = { ...current, ...updates };
+    requireValue(merged.BATCH_CUTOFF_TIME <= merged.BATCH_SCHEDULE_TIME, '截单时间不能晚于出炉时间');
+    for (const [key, value] of Object.entries(updates).filter(([key,value])=>current[key]!==value)) {
+      await conn.execute('INSERT INTO t_system_config (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)', [key, value]);
     }
-    ctx.body = { code: 0, msg: '配置已批量更新并实时生效' };
-    return;
-  }
-
-  const { config_key, config_value } = body;
-
-  if (!config_key || config_value === undefined) {
-    ctx.status = 400;
-    ctx.body = { code: 400, msg: '缺少参数 (config_key 或 config_value)' };
-    return;
-  }
-
-  await query('UPDATE t_system_config SET config_value = ? WHERE config_key = ?', [config_value.toString(), config_key]);
-  ctx.body = { code: 0, msg: '配置已更新并实时生效', data: { config_key, config_value } };
+    return {configs:merged,revision:configRevision(merged)};
+  });
+  ctx.body = { code: 0, msg: '运营配置已保存',data:result };
 }
 
 /**
@@ -45,14 +45,17 @@ export async function updateSystemConfig(ctx: Context) {
  */
 export async function getMemberList(ctx: Context) {
   const { keyword, is_member } = ctx.query as { keyword?: string; is_member?: string };
+  const cursor = beforeId(ctx.query.before_id);
+  requireValue(keyword === undefined || (typeof keyword === 'string' && keyword.length <= 64), '搜索内容最多64字');
+  requireValue(is_member === undefined || ['', '0', '1'].includes(is_member), '会员筛选无效');
 
   let sql = `
-    SELECT u.id, u.openid, u.phone, u.nickname, u.avatar_url, u.is_member, u.is_admin,
+    SELECT u.id, u.phone, u.nickname, u.avatar_url, u.is_member,
            u.member_card_no, u.invite_code, u.referrer_id,
-           u.normal_points, u.red_packet_points, u.total_consume_amount, u.create_time,
+           u.normal_points, u.red_packet_points, u.normal_points_debt, u.red_packet_debt, u.total_consume_amount, u.create_time,
            r.nickname AS referrer_name, r.invite_code AS referrer_code,
            (SELECT COUNT(id) FROM t_user WHERE referrer_id = u.id) AS referral_count,
-           (SELECT COUNT(id) FROM t_order WHERE user_id = u.id AND order_status >= 20) AS paid_order_count
+           (SELECT COUNT(id) FROM t_order WHERE user_id = u.id AND order_status IN (20,25,30,40)) AS paid_order_count
     FROM t_user u
     LEFT JOIN t_user r ON u.referrer_id = r.id
     WHERE 1=1
@@ -70,15 +73,19 @@ export async function getMemberList(ctx: Context) {
     params.push(kw, kw, kw, kw);
   }
 
-  sql += ' ORDER BY u.is_member DESC, u.total_consume_amount DESC, u.id DESC LIMIT 100';
+  const where = sql.slice(sql.indexOf('WHERE 1=1'));
+  const totals: any = await query('SELECT COUNT(*) AS total FROM t_user u ' + where, params);
+  if (cursor) { sql += ' AND u.id < ?'; params.push(cursor); }
+  sql += ' ORDER BY u.id DESC LIMIT 31';
 
   const list: any = await query(sql, params);
+  const page = pageRows<any>(list);
 
-  const formatted = list.map((item: any) => ({
+  const formatted = page.list.map((item: any) => ({
     ...item,
     red_packet_points: Number(item.red_packet_points || 0).toFixed(2),
     total_consume_amount: Number(item.total_consume_amount || 0).toFixed(2),
-    create_time_formatted: item.create_time ? new Date(item.create_time).toISOString().slice(0, 10) : '近期'
+    create_time_formatted: item.create_time ? String(item.create_time).slice(0, 10) : '近期'
   }));
 
   // 统计概览指标
@@ -102,7 +109,9 @@ export async function getMemberList(ctx: Context) {
         all_time_consumption: Number(summary.all_time_consumption || 0).toFixed(2),
         total_outstanding_red_points: Number(summary.total_outstanding_red_points || 0).toFixed(2)
       },
-      list: formatted
+      list: formatted,
+      total: Number(totals[0].total),
+      next_cursor: page.next_cursor
     }
   };
 }
@@ -111,206 +120,79 @@ export async function getMemberList(ctx: Context) {
  * 掌柜后台：人工修改会员身份 (支持一键升级尊享会员或注销撤销会员)
  */
 export async function updateMemberStatus(ctx: Context) {
-  const { user_id, is_member } = ctx.request.body as { user_id: number; is_member: number };
-
-  if (!user_id || typeof is_member !== 'number') {
-    ctx.status = 400;
-    ctx.body = { code: 400, msg: '缺少参数 (user_id 或 is_member)' };
-    return;
-  }
-
-  const users: any = await query('SELECT * FROM t_user WHERE id = ? LIMIT 1', [user_id]);
-  if (users.length === 0) {
-    ctx.status = 404;
-    ctx.body = { code: 404, msg: '会员不存在' };
-    return;
-  }
-
-  if (is_member === 1) {
-    // 升级为尊享会员
-    await query('UPDATE t_user SET is_member = 1 WHERE id = ?', [user_id]);
-    ctx.body = { code: 0, msg: `已将顾客【${users[0].nickname}】设置为尊享会员，立享全场8.8折与返佣特权！` };
-  } else {
-    // 撤销会员身份：清空红包积分，保留普通积分
-    await query('UPDATE t_user SET is_member = 0, red_packet_points = 0.00 WHERE id = ?', [user_id]);
-    ctx.body = { code: 0, msg: `已撤销【${users[0].nickname}】的尊享会员身份，恢复为普通食客。` };
-  }
+  const body = ctx.request.body as any;
+  const userId = positiveId(body.user_id, '会员ID');
+  requireValue(body.is_member === 0 || body.is_member === 1, '会员状态无效');
+  await withTransaction(async conn => {
+    if (body.is_member === 1) {
+      const [result]: any = await conn.execute("UPDATE t_user SET is_member = 1, member_opt_out = 0, member_source = 'MANUAL' WHERE id = ?", [userId]);
+      requireValue(result.affectedRows, '会员不存在', 404);
+    } else await exitMember(conn, userId, ctx.state.user.id);
+  });
+  ctx.body = { code: 0, msg: '会员身份已更新' };
 }
 
 /**
  * 掌柜后台：人工调整积分与红包 (支持奖励赠送与扣减冲正，严格记入审计日志)
  */
 export async function adjustMemberPoints(ctx: Context) {
-  const { user_id, adjust_type, amount, reason } = ctx.request.body as {
-    user_id: number;
-    adjust_type: 'NORMAL_POINT' | 'RED_PACKET';
-    amount: number;
-    reason: string;
-  };
-
-  if (!user_id || !adjust_type || typeof amount !== 'number' || !reason) {
-    ctx.status = 400;
-    ctx.body = { code: 400, msg: '缺少必要参数 (user_id, adjust_type, amount, reason)' };
-    return;
-  }
-
-  try {
-    const result = await withTransaction(async (conn: PoolConnection) => {
-      const [userRows]: any = await conn.execute('SELECT * FROM t_user WHERE id = ? FOR UPDATE', [user_id]);
-      if (userRows.length === 0) {
-        throw new Error('未找到指定会员');
-      }
-      const user = userRows[0];
-
-      let beforeVal = 0;
-      let afterVal = 0;
-
-      if (adjust_type === 'NORMAL_POINT') {
-        beforeVal = user.normal_points;
-        afterVal = beforeVal + Math.round(amount);
-        if (afterVal < 0) {
-          throw new Error(`扣减超出可用普通积分(当前: ${beforeVal})`);
-        }
-        await conn.execute('UPDATE t_user SET normal_points = ? WHERE id = ?', [afterVal, user_id]);
-      } else if (adjust_type === 'RED_PACKET') {
-        beforeVal = Number(user.red_packet_points);
-        afterVal = Number((beforeVal + amount).toFixed(2));
-        if (afterVal < 0) {
-          throw new Error(`扣减超出可用红包积分(当前: ¥${beforeVal.toFixed(2)})`);
-        }
-        await conn.execute('UPDATE t_user SET red_packet_points = ? WHERE id = ?', [afterVal, user_id]);
-      } else {
-        throw new Error('无效的调整类型');
-      }
-
-      // 记入审计日志
-      await conn.execute(
-        `INSERT INTO t_point_adjust_log (user_id, adjust_type, amount, before_val, after_val, operator_name, reason)
-         VALUES (?, ?, ?, ?, ?, '掌柜潘师傅', ?)`,
-        [user_id, adjust_type, amount, beforeVal, afterVal, reason.trim()]
-      );
-
-      return {
-        nickname: user.nickname,
-        beforeVal,
-        afterVal,
-        adjust_type,
-        amount
-      };
-    });
-
-    ctx.body = {
-      code: 0,
-      msg: `成功为【${result.nickname}】${result.amount >= 0 ? '赠送补发' : '扣减冲正'} ${Math.abs(result.amount)} ${result.adjust_type === 'NORMAL_POINT' ? '普通积分' : '元红包积分'}！`,
-      data: result
-    };
-  } catch (err: any) {
-    ctx.status = 400;
-    ctx.body = { code: 400, msg: err.message || '调整失败' };
-  }
+  const body = ctx.request.body as any;
+  const userId = positiveId(body.user_id, '会员ID');
+  requireValue(['NORMAL_POINT', 'RED_PACKET'].includes(body.adjust_type), '积分类型无效');
+  requireValue(typeof body.amount === 'number' && Number.isFinite(body.amount) && body.amount !== 0, '调整数值无效');
+  if (body.adjust_type === 'NORMAL_POINT') requireValue(Number.isSafeInteger(body.amount) && Math.abs(body.amount) <= 1000000, '普通积分须为整数且不超过100万');
+  const delta = body.adjust_type === 'NORMAL_POINT' ? body.amount : fen(Math.abs(body.amount)) * Math.sign(body.amount);
+  const reason = text(body.reason, '调整原因', 255);
+  requireValue(typeof body.request_id === 'string' && /^[A-Za-z0-9_-]{16,64}$/.test(body.request_id), '缺少调整请求号，请重新打开调整窗口');
+  const hash = createHash('sha256').update(JSON.stringify({userId, kind:body.adjust_type, delta, reason})).digest('hex');
+  await withTransaction(async conn => {
+    const [inserted]: any = await conn.execute("INSERT IGNORE INTO t_admin_mutation(operator_id,request_id,action,request_hash) VALUES(?,?,'ADJUST_POINTS',?)", [ctx.state.user.id,body.request_id,hash]);
+    if (!inserted.affectedRows) {
+      const [existing]: any = await conn.execute('SELECT action,request_hash FROM t_admin_mutation WHERE operator_id=? AND request_id=? FOR UPDATE', [ctx.state.user.id,body.request_id]);
+      requireValue(existing[0]?.action === 'ADJUST_POINTS' && existing[0].request_hash === hash, '请求号已用于其他调整，请重新确认', 409);
+      return;
+    }
+    await changeBalance(conn, userId, body.adjust_type, delta, 'ADMIN_ADJUST', null, reason, ctx.state.user.id);
+  });
+  ctx.body = { code: 0, msg: '资产调整成功，已记入流水' };
 }
 
 /**
  * 掌柜后台：人工补录/修正推荐人关系 (线下老客转介绍补绑)
  */
 export async function bindMemberReferrer(ctx: Context) {
-  const { user_id, referrer_invite_code } = ctx.request.body as { user_id: number; referrer_invite_code: string };
-
-  if (!user_id || !referrer_invite_code) {
-    ctx.status = 400;
-    ctx.body = { code: 400, msg: '缺少 user_id 或 referrer_invite_code' };
-    return;
-  }
-
-  const users: any = await query('SELECT * FROM t_user WHERE id = ? LIMIT 1', [user_id]);
-  if (users.length === 0) {
-    ctx.status = 404;
-    ctx.body = { code: 404, msg: '会员不存在' };
-    return;
-  }
-  const curUser = users[0];
-
-  const referrers: any = await query('SELECT * FROM t_user WHERE invite_code = ? LIMIT 1', [referrer_invite_code.trim()]);
-  if (referrers.length === 0) {
-    ctx.status = 400;
-    ctx.body = { code: 400, msg: '未找到该推荐码对应的会员' };
-    return;
-  }
-  const referrer = referrers[0];
-
-  if (referrer.id === curUser.id) {
-    ctx.status = 400;
-    ctx.body = { code: 400, msg: '不可将自己设为自己的推荐人' };
-    return;
-  }
-
-  await query('UPDATE t_user SET referrer_id = ? WHERE id = ?', [referrer.id, curUser.id]);
-  ctx.body = {
-    code: 0,
-    msg: `成功将【${curUser.nickname}】的推荐人绑定为【${referrer.nickname} (${referrer.invite_code})】！`,
-    data: {
-      referrer_id: referrer.id,
-      referrer_name: referrer.nickname,
-      referrer_code: referrer.invite_code
-    }
-  };
+  const body = ctx.request.body as any;
+  await withTransaction(conn => bindReferral(conn, positiveId(body.user_id), text(body.referrer_invite_code, '邀请码', 32)));
+  ctx.body = { code: 0, msg: '推荐关系已绑定' };
 }
 
 /**
  * 掌柜后台：查询某会员积分调整历史审计记录
  */
 export async function getPointAdjustLogs(ctx: Context) {
-  const { user_id } = ctx.query as { user_id?: string };
-  let sql = 'SELECT * FROM t_point_adjust_log';
-  const params: any[] = [];
-  if (user_id) {
-    sql += ' WHERE user_id = ?';
-    params.push(user_id);
-  }
-  sql += ' ORDER BY id DESC LIMIT 50';
-
-  const logs: any = await query(sql, params);
-  ctx.body = { code: 0, msg: 'ok', data: logs };
+  const params: any[]=[];let sql="SELECT * FROM t_account_flow WHERE event_type='ADMIN_ADJUST'";
+  if(ctx.query.user_id){sql+=' AND user_id=?';params.push(positiveId(ctx.query.user_id));}
+  const rows=await query(sql+' ORDER BY id DESC LIMIT 50',params);
+  ctx.body={code:0,data:rows};
 }
 
 /**
  * 获取我的推广下级会员与收益贡献列表 (真实数据统计，拒绝假数据)
  */
 export async function getMyReferrals(ctx: Context) {
-  const openid = (ctx.headers['x-wx-openid'] as string) || (ctx.query.openid as string);
-  const users: any = await query('SELECT id FROM t_user WHERE openid = ? LIMIT 1', [openid]);
-
-  if (users.length === 0) {
-    ctx.body = {
-      code: 0,
-      msg: 'ok',
-      data: {
-        summary: {
-          total_referred: 0,
-          total_orders: 0,
-          total_commission: '0.00'
-        },
-        list: []
-      }
-    };
-    return;
-  }
-
-  const myUserId = users[0].id;
+  const myUserId = ctx.state.user.id, cursor = beforeId(ctx.query.before_id);
 
   // 查询由我推荐的下级会员列表及其实际累计贡献的返佣
   const referrals: any = await query(
-    `SELECT u.id, u.nickname, u.avatar_url, u.is_member, u.total_consume_amount, u.create_time,
-            COALESCE(SUM(f.reward_red_points), 0) AS contributed_points,
-            COUNT(DISTINCT o.id) AS order_count
+    `SELECT u.id, u.nickname, u.avatar_url, u.is_member, u.referrer_bound_time AS create_time,
+      COALESCE(f.contributed_points, 0) AS contributed_points, COALESCE(o.order_count, 0) AS order_count
      FROM t_user u
-     LEFT JOIN t_commission_flow f ON f.buyer_user_id = u.id AND f.referrer_user_id = ?
-     LEFT JOIN t_order o ON o.user_id = u.id AND o.order_status >= 20
-     WHERE u.referrer_id = ?
-     GROUP BY u.id
-     ORDER BY u.id DESC`,
-    [myUserId, myUserId]
-  );
+     LEFT JOIN (SELECT buyer_user_id, SUM(reward_red_points) AS contributed_points FROM t_commission_flow
+       WHERE referrer_user_id = ? AND status = 1 GROUP BY buyer_user_id) f ON f.buyer_user_id = u.id
+     LEFT JOIN (SELECT user_id, COUNT(*) AS order_count FROM t_order
+       WHERE order_status IN (20,25,30,40) GROUP BY user_id) o ON o.user_id = u.id
+     WHERE u.referrer_id = ? AND (? = 0 OR u.id < ?) ORDER BY u.id DESC LIMIT 31`, [myUserId, myUserId, cursor, cursor]);
+  const page = pageRows<any>(referrals);
 
   // 统计由我获得的总返利金额
   const totalFlows: any = await query(
@@ -318,16 +200,17 @@ export async function getMyReferrals(ctx: Context) {
     [myUserId]
   );
 
-  const totalReferred = referrals.length;
+  const referredCount: any = await query('SELECT COUNT(*) AS total FROM t_user WHERE referrer_id = ?', [myUserId]);
+  const totalReferred = Number(referredCount[0].total);
   const totalOrders = totalFlows[0] ? totalFlows[0].total_orders : 0;
   const totalCommission = totalFlows[0] ? Number(totalFlows[0].total_commission).toFixed(2) : '0.00';
 
-  const formattedList = referrals.map((r: any) => ({
+  const formattedList = page.list.map((r: any) => ({
     id: r.id,
     nickname: r.nickname || `临安食客_${r.id}`,
-    avatar_url: r.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120',
+    avatar_url: r.avatar_url || '',
     is_member: r.is_member,
-    bind_time: r.create_time ? new Date(r.create_time).toISOString().slice(0, 10) : '近期',
+    bind_time: r.create_time ? String(r.create_time).slice(0, 10) : '近期',
     commission_earned: Number(r.contributed_points).toFixed(2),
     order_count: r.order_count
   }));
@@ -341,7 +224,8 @@ export async function getMyReferrals(ctx: Context) {
         total_orders: totalOrders,
         total_commission: totalCommission
       },
-      list: formattedList
+      list: formattedList,
+      next_cursor: page.next_cursor
     }
   };
 }

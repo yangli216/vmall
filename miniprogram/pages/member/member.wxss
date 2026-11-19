@@ -82,9 +82,9 @@
 }
 
 .member-tag {
-  font-size: 20rpx;
-  padding: 4rpx 14rpx;
-  border-radius: 12rpx;
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 14rpx;
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
@@ -101,7 +101,7 @@
 }
 
 .bind-referrer-hint {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #6B7280;
 }
 
@@ -116,7 +116,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 22rpx;
+  font-size: 24rpx;
   margin-bottom: 12rpx;
 }
 
@@ -152,12 +152,12 @@
 }
 
 .free-tip {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #B45309;
 }
 
 .btn-free-upgrade {
-  font-size: 22rpx;
+  font-size: 24rpx;
   background: linear-gradient(135deg, #D9480F, #B45309);
   color: #FFFFFF;
   border-radius: 24rpx;
@@ -381,3 +381,57 @@
   line-height: 1.6;
   margin-top: 20rpx;
 }
+
+/* 街坊会员：清晰的身份、资产与服务层级 */
+.container { background: #F6F4F0; }
+.container { padding: 28rpx; }
+.test-account-panel { padding: 22rpx; margin-bottom: 24rpx; border-radius: 16rpx; background: #EEEAE3; color: #7C6D5D; font-size: 23rpx; line-height: 1.6; }
+.test-account-actions { display: flex; gap: 10rpx; margin-top: 14rpx; }
+.test-account-actions button { margin: 0; flex: 1; padding: 0 8rpx; font-size: 23rpx; }
+.member-hero-card { padding: 32rpx 28rpx; border: 1rpx solid #E7DFD3; border-radius: 26rpx; box-shadow: none; }
+.member-hero-card.normal { background: #FFFEFA; }
+.member-hero-card.vip { background: linear-gradient(120deg,#F8EACC,#F1D9AC); }
+.user-meta-pack { gap: 22rpx; }
+.avatar-wrap { flex-shrink: 0; }
+.user-text-info { min-width: 0; flex: 1; }
+.nickname-row { flex-wrap: wrap; gap: 8rpx; align-items: center; }
+.user-nickname { font-size: 34rpx; font-weight: 600; overflow-wrap: anywhere; }
+.member-tag { font-size: 21rpx; white-space: nowrap; }
+.bind-referrer-hint { font-size: 23rpx; line-height: 1.6; margin-top: 10rpx; color: #8D7A66; }
+.member-level-progress { margin-top: 26rpx; padding-top: 22rpx; border-top: 1rpx solid #EBE5DB; }
+.progress-info-row { gap: 12rpx; flex-wrap: wrap; font-size: 24rpx; line-height: 1.7; }
+.progress-title { color: #766655; }
+.progress-val { font-size: 24rpx; font-weight: 600; color: #A14725; }
+.progress-bar-track { height: 8rpx; background: #EEE7DC; }
+.progress-bar-fill { background: #B67A43; }
+.asset-heading { display: flex; justify-content: space-between; align-items: center; margin: 32rpx 2rpx 18rpx; font-size: 28rpx; font-weight: 600; color: #3F3429; }
+.asset-detail { font-size: 23rpx; font-weight: 400; color: #9A7F66; }
+.points-board-grid { gap: 18rpx; }
+.point-account-card { min-width: 0; padding: 28rpx 24rpx; border-color: #EAE5DF; border-radius: 22rpx; box-shadow: none; }
+.point-account-card.red-theme { background: #FCF2EA; border-color: #EEDDD0; }
+.point-card-header { display: flex; flex-direction: column; align-items: flex-start; gap: 8rpx; margin-bottom: 12rpx; }
+.point-name { font-size: 28rpx; font-weight: 600; }
+.point-name.red,.point-num.red { color: #AF4725; }
+.point-desc,.point-desc.red { font-size: 22rpx; color: #998675; }
+.point-num { font-size: 48rpx; font-weight: 650; overflow-wrap: anywhere; }
+.point-rule-tip { font-size: 23rpx; line-height: 1.7; color: #8A7C6E; padding-top: 12rpx; }
+.section-card { border-color: #EAE5DF; border-radius: 22rpx; box-shadow: none; padding: 28rpx; }
+.section-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8rpx; margin-bottom: 24rpx; }
+.title-h3 { font-size: 30rpx; font-weight: 600; color: #3F3429; }
+.title-sub { font-size: 22rpx; color: #9A8B7D; }
+.privilege-grid { gap: 16rpx; grid-template-columns: repeat(2,minmax(0,1fr)); }
+.priv-item { display: flex; flex-direction: column; align-items: flex-start; gap: 12rpx; padding: 24rpx 20rpx; background: #F8F6F2; }
+.priv-icon-box { width: auto; font-size: 32rpx; }
+.priv-name { font-size: 26rpx; font-weight: 600; }
+.priv-sub { font-size: 22rpx; line-height: 1.65; color: #918171; }
+.action-card { padding: 0 28rpx; }
+.menu-action-item { padding: 28rpx 0; gap: 16rpx; }
+.action-left { min-width: 0; flex: 1; gap: 20rpx; }
+.action-emoji { flex-shrink: 0; font-size: 32rpx; }
+.action-text { min-width: 0; }
+.action-title { font-size: 28rpx; font-weight: 500; line-height: 1.6; }
+.action-sub { font-size: 23rpx; line-height: 1.6; color: #958575; overflow-wrap: anywhere; }
+.arrow-right { flex-shrink: 0; color: #AC9E90; }
+.legal-entry { font-size: 25rpx; color: #8B7967; line-height: 1.7; padding: 24rpx 28rpx; }
+.member-footer-info { font-size: 21rpx; line-height: 1.8; color: #A49789; }
+.upgrade-action-row { flex-wrap: wrap; gap: 20rpx; }

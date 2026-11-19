@@ -1,12 +1,29 @@
 // miniprogram/pages/admin/admin.js
 const app = getApp();
+const productImage = require('../../utils/product-image');
+const adminPrivacy = require('../../utils/admin-privacy');
+const adminConfig = require('../../utils/admin-config');
 
 Page({
+  ...productImage.methods,
+  onDishImageError: function(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    if (this.data.dishes[index]) this.setData({['dishes[' + index + '].imageFailed']: true});
+  },
+  ...adminPrivacy.methods,
+  ...adminConfig.methods,
   data: {
-    loading: true,
+    loading: true, activeTab: 'orders', orderDate: '', orderKeyword: '', orderNextCursor: null, prepSummary: [],
+    allOrderDates:false,overduePickupOnly:false,completionBusyId:null,
+    activityQueues:null,activityError:'',activityCheckedAt:'',newPaidCount:0,newSupportCount:0,
+    orderLoading:false,orderError:'',prepError:'',capacityError:'',batchCapacity:null,orderFilterIndex:0,orderDeliveryIndex:0,orderDeliveryNames:['全部取餐方式','作坊自送','到店自提'],
+    orderFilters:[{label:'全部订单',value:''},{label:'待付款',value:'10'},{label:'待备餐',value:'20'},{label:'待取餐',value:'25'},{label:'配送中',value:'30'},{label:'已完成',value:'40'},{label:'退款处理中',value:'70'},{label:'已退款/已取消',value:'50,60'}],
+    categoryNames: ['招牌必吃','秘制酱牛肉','麻辣鸭副件','爽脆下酒菜','手工饮品'],
     dishes: [],
     pendingOrders: [],
-    members: [],
+    members: [], memberTotal: 0, memberNextCursor: null, memberLoading: false, memberError: '',
+    privacyRequests:[],privacyStatus:'OPEN',privacyNextCursor:null,privacyLoading:false,privacyError:'',privacyBusyId:null,
+    supportTickets: [], supportStatus: 'OPEN', supportNextCursor: null, supportLoading: false, supportError: '', supportBusyId: null, refundBusyId: null,
     memberSummary: {
       total_users: 0,
       total_vip_members: 0,
@@ -14,6 +31,7 @@ Page({
       total_outstanding_red_points: '0.00'
     },
     memberKeyword: '',
+    configLoaded:false,configLoading:false,configSaving:false,configDirty:false,configError:'',
     config: {
       MEMBER_ENTRY_MODE: 'CONSUME',
       MEMBER_ENTRY_THRESHOLD: 68,
@@ -21,11 +39,12 @@ Page({
       COMMISSION_RATE: '0.03',
       DELIVERY_BASE_FEE: '3.00',
       DELIVERY_FREE_THRESHOLD: '38.00',
-      DELIVERY_PERSON_PHONE: '13735518290',
-      WORKSHOP_ANNOUNCEMENT: '今日傍晚 16:30 准时出锅，临天八弄现捞保温直达'
+      DELIVERY_PERSON_PHONE: '',DELIVERY_PERSON_NAME:'',WORKSHOP_ADDRESS:'',ORDER_EXPIRE_MINUTES:'15',
+      WORKSHOP_ANNOUNCEMENT: '', DELIVERY_AREAS: '', BATCH_SCHEDULE_TIME: '16:30', BATCH_CUTOFF_TIME: '16:00', BOOKING_DAYS: '1', SHOP_OPEN: '1',BATCH_MAX_ORDERS:'0'
     },
     redDeductPercent: 50,
     commissionPercent: 3,
+    photoBusy:false,photoError:'',photoPreview:'',dishSaving:false,
     showAddModal: false,
     isEditingDish: false,
     dishForm: {
@@ -36,7 +55,7 @@ Page({
       badge: '今日现捞',
       intro: ''
     },
-    showPointsModal: false,
+    showPointsModal: false, pointsSubmitting: false,
     showReferrerModal: false,
     currentMember: null,
     pointsForm: {
@@ -50,41 +69,168 @@ Page({
   },
 
   onLoad: function () {
+    this._configUnloaded=false;
+    this._privacyUnloaded=false;
     this.checkAdminAuth();
   },
+  onShow: function(){this._visible=true;this.startActivityPolling();},
+  onHide: function(){this.stopActivityPolling();},
+  onUnload: function(){this._configUnloaded=true;this._configSequence=(this._configSequence || 0)+1;this._privacyUnloaded=true;this._privacySequence=(this._privacySequence || 0)+1;this.stopActivityPolling();this._adminAuthorized=false;this._dishEpoch=(this._dishEpoch || 0)+1;this._pendingPhoto=null;},
+  stopActivityPolling: function(){
+    this._visible=false;this._activityEpoch=(this._activityEpoch || 0)+1;
+    if(this._activityTimer){clearTimeout(this._activityTimer);this._activityTimer=null;}
+  },
+  startActivityPolling: function(){
+    if(!this._visible || !this._adminAuthorized || this._activityInFlight || this._activityTimer)return;
+    this.pollActivity();
+  },
+  refreshActivity: function(){
+    if(this._activityTimer){clearTimeout(this._activityTimer);this._activityTimer=null;}
+    this.startActivityPolling();
+  },
+  pollActivity: async function(){
+    if(!this._visible || !this._adminAuthorized || this._activityInFlight)return;
+    const epoch=this._activityEpoch || 0;let more=false;
+    this._activityInFlight=true;
+    try{
+      const result=await app.api('/api/admin/activity'+(this._activityCursor===undefined?'':'?after_revision='+this._activityCursor));
+      if(!this._visible || epoch!==(this._activityEpoch || 0))return;
+      this._activityCursor=result.cursor;more=result.has_more;
+      const events=result.events || [];
+      this.setData({activityQueues:result.queues,activityError:'',activityCheckedAt:result.checked_at,
+        newPaidCount:(result.reset?0:this.data.newPaidCount)+events.filter(e=>e.kind==='ORDER_PAID').length,
+        newSupportCount:(result.reset?0:this.data.newSupportCount)+events.filter(e=>e.kind==='SUPPORT_OPENED').length});
+    }catch(error){if(this._visible && epoch===(this._activityEpoch || 0))this.setData({activityError:error.message || '动态检查失败'});}
+    finally{
+      this._activityInFlight=false;
+      if(this._visible && this._adminAuthorized)this._activityTimer=setTimeout(()=>{this._activityTimer=null;this.pollActivity();},epoch!==(this._activityEpoch || 0) || more?0:15000);
+    }
+  },
+  openActivityQueue: function(e){
+    const kind=e.currentTarget.dataset.kind;
+    if(kind==='privacy'){this.setData({activeTab:'privacy',privacyStatus:'OPEN'});this.loadPrivacyRequests();return;}
+    if(kind==='support'){
+      this.setData({activeTab:'support',supportStatus:'OPEN',newSupportCount:0});this.loadSupportTickets();return;
+    }
+    const indexes={prepare:2,pickup:3,overdue:3,delivery:4,refund:6};
+    if(indexes[kind]===undefined)return;
+    this.setData({activeTab:'orders',allOrderDates:true,overduePickupOnly:kind==='overdue',orderFilterIndex:indexes[kind],orderDeliveryIndex:kind==='pickup'||kind==='overdue'?2:0,orderKeyword:'',newPaidCount:kind==='prepare'?0:this.data.newPaidCount});
+    this.loadPendingOrders();
+  },
 
-  checkAdminAuth: function () {
-    const that = this;
-    wx.showLoading({ title: '验证权限...' });
-    app.callContainer({
-      path: '/api/user/info',
-      method: 'GET'
-    }).then(res => {
-      wx.hideLoading();
-      if (res && res.code === 0 && res.data && res.data.is_admin === 1) {
-        that.loadDishes();
-        that.loadConfigs();
-        that.loadPendingOrders();
-        that.loadMembers();
-      } else {
-        wx.showModal({
-          title: '作坊掌柜专属通道',
-          content: '检测到当前微信未激活掌柜权限。请前往【尊享会员】中心输入口令绑定，或联系潘师傅授权。',
-          showCancel: false,
-          confirmText: '返回前台',
-          confirmColor: '#D9480F',
-          success: () => {
-            wx.navigateBack();
-          }
-        });
-      }
-    }).catch(() => {
-      wx.hideLoading();
-      wx.navigateBack();
-    });
+  checkAdminAuth: async function () {
+    try {
+      const user=await app.api('/api/user/info');
+      if(user.is_admin!==1) throw new Error('当前微信未获掌柜授权');
+      this._adminAuthorized=true;this.startActivityPolling();
+      const today=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+      this.setData({orderDate:today});
+      await this.loadConfigs();
+      if(this._configUnloaded)return;
+      if(!this.data.configLoaded){this.setData({loading:false,orderError:'请先重新读取营业设置，再查看批次订单'});return;}
+      this.loadDishes();this.loadPendingOrders();this.loadMembers();
+    } catch(error) {wx.showModal({title:'掌柜管理',content:error.message,showCancel:false,success:()=>wx.navigateBack()});}
+  },
+  openReport:function(){wx.navigateTo({url:'/pages/report/report'});},
+  changeAdminTab: function(e) {if(this.data.configSaving)return;const tab=e.currentTarget.dataset.tab;this.setData({activeTab:tab});if(tab==='support')this.loadSupportTickets();if(tab==='privacy')this.loadPrivacyRequests();if(tab==='orders' || tab==='products'){if(!this.data.configLoaded){this.reloadConfigs();return;}if(tab==='orders')this.loadPendingOrders();else this.loadDishes();}},
+  changeSupportStatus: function(e) {this.setData({supportStatus:e.currentTarget.dataset.status});this.loadSupportTickets();},
+  loadSupportTickets: async function(append=false) {
+    if(append!==true)append=false;
+    if(append && (this.data.supportLoading || !this.data.supportNextCursor))return;
+    const sequence=this._supportSequence=(this._supportSequence || 0)+1;
+    this.setData({supportLoading:true,supportError:''});
+    try {
+      const result=await app.api('/api/admin/support?status='+this.data.supportStatus+(append?'&before_id='+this.data.supportNextCursor:''));
+      if(sequence!==this._supportSequence)return;
+      const states={OPEN:'待处理',PROCESSING:'处理中',RESOLVED:'已回复'},categories={QUALITY:'质量问题',MISSING:'缺品/错品',PAYMENT:'支付/退款',OTHER:'其他问题'};
+      this.setData({supportTickets:(append?this.data.supportTickets:[]).concat(result.list.map(row=>Object.assign({},row,{status_title:states[row.status],category_title:categories[row.category]}))),supportNextCursor:result.next_cursor});
+    }catch(error){if(sequence===this._supportSequence)this.setData({supportError:error.message});}
+    finally{if(sequence===this._supportSequence)this.setData({supportLoading:false});}
+  },
+  moreSupportTickets: function(){this.loadSupportTickets(true);},
+  acceptSupportTicket: function(e){this.saveSupportTicket(e.currentTarget.dataset.id,'PROCESSING','');},
+  replySupportTicket: function(e){
+    if(this.data.supportBusyId)return;
+    const id=e.currentTarget.dataset.id;
+    wx.showModal({title:'回复处理结果',editable:true,placeholderText:'请填写已协商的处理结果；退款状态以订单为准',success:r=>{if(r.confirm && !this.data.supportBusyId)this.saveSupportTicket(id,'RESOLVED',(r.content || '').trim());}});
+  },
+  saveSupportTicket: async function(id,status,resolution){
+    if(this.data.supportBusyId)return;
+    if(status==='RESOLVED' && !resolution)return wx.showToast({title:'请填写处理结果',icon:'none'});
+    this.setData({supportBusyId:id});
+    try{await app.api('/api/admin/support/handle','POST',{id,status,resolution});wx.showToast({title:status==='RESOLVED'?'回复已保存':'已接单处理'});await this.loadSupportTickets();}
+    catch(error){wx.showToast({title:error.message,icon:'none'});}
+    finally{this.setData({supportBusyId:null});}
+  },
+  callSupportCustomer: function(e){wx.makePhoneCall({phoneNumber:e.currentTarget.dataset.phone});},
+  openSupportOrder: function(e){const ticket=this.data.supportTickets.find(t=>t.id===Number(e.currentTarget.dataset.id));if(!ticket)return;this.setData({activeTab:'orders',allOrderDates:false,overduePickupOnly:false,orderDate:ticket.batch_date || this.data.orderDate,orderKeyword:ticket.order_sn,orderFilterIndex:0,orderDeliveryIndex:0});this.loadPendingOrders();},
+  changeOrderDate: function(e) {this.setData({orderDate:e.detail.value,allOrderDates:false,overduePickupOnly:false});this.loadPendingOrders();this.loadDishes();},
+  showSelectedDate: function(){this.setData({allOrderDates:false,overduePickupOnly:false});this.loadPendingOrders();},
+  onOrderKeyword: function(e) {this.setData({orderKeyword:e.detail.value});},
+  searchOrders: function() {this.loadPendingOrders();},
+  changeOrderFilter: function(e){const index=Number(e.detail.value);if(!this.data.orderFilters[index])return;this.setData({orderFilterIndex:index,overduePickupOnly:false});this.loadPendingOrders();},
+  changeOrderDelivery: function(e){const index=Number(e.detail.value);if(!this.data.orderDeliveryNames[index])return;this.setData({orderDeliveryIndex:index,overduePickupOnly:false});this.loadPendingOrders();},
+  retryOrders: function(){this.loadPendingOrders();},
+  onDishField: function(e) {if(this.data.dishSaving || (e.currentTarget.dataset.field==='cover_img' && (this.data.photoBusy || this._pendingPhoto)))return;this.setData({['dishForm.'+e.currentTarget.dataset.field]:e.detail.value});},
+  onDishCategory: function(e) {if(this.data.dishSaving)return;this.setData({'dishForm.category_id':Number(e.detail.value)+1});},
+  adjustStock: function(e) {
+    const id=e.currentTarget.dataset.id;
+    wx.showModal({title:'调整本批剩余份数',editable:true,placeholderText:'填写新的可售剩余份数（0至9999）',success:async r=>{
+      if(!r.confirm)return;
+      try{await app.api('/api/admin/product/stock','POST',{product_id:id,batch_date:this.data.orderDate,batch_time:this.data.config.BATCH_SCHEDULE_TIME,available_qty:Number(r.content)});this.loadDishes();}
+      catch(error){wx.showToast({title:error.message,icon:'none'});}
+    }});
+  },
+  preparePickup: async function(e) {try{await app.api('/api/admin/order/ready','POST',{order_id:e.currentTarget.dataset.id});this.loadPendingOrders();}catch(error){wx.showToast({title:error.message,icon:'none'});}},
+  verifyPickup: function(e) {
+    if(this.data.completionBusyId)return;
+    const id=Number(e.currentTarget.dataset.id),order=this.data.pendingOrders.find(o=>o.id===id);if(!order)return;
+    this.setData({completionBusyId:id});
+    wx.showModal({title:'核销取餐',content:`订单 ${order.order_sn}，顾客 ${order.receiver_name}，${order.receiver_phone}。请核对餐品并让顾客出示自提码。`,editable:true,placeholderText:'填写顾客出示的4位自提码',success:r=>{
+      if(!r.confirm){this.setData({completionBusyId:null});return;}
+      const code=(r.content || '').trim();if(!/^\d{4}$/.test(code)){this.setData({completionBusyId:null});wx.showToast({title:'请填写4位自提码',icon:'none'});return;}
+      return this.submitCompletion({order_id:id,pickup_code:code},'取餐已完成');
+    },fail:()=>this.setData({completionBusyId:null})});
+  },
+  confirmDelivery: function(e){
+    if(this.data.completionBusyId)return;
+    const id=Number(e.currentTarget.dataset.id),order=this.data.pendingOrders.find(o=>o.id===id);if(!order)return;
+    this.setData({completionBusyId:id});
+    wx.showModal({title:'与顾客核实送达',content:`订单 ${order.order_sn}，顾客 ${order.receiver_name}，${order.receiver_phone}。请先联系顾客确认收到餐品，再填写核实方式及结果；确认后将发放订单奖励。`,editable:true,placeholderText:'例如：电话联系顾客，顾客确认已收到餐品',confirmText:'已核实送达',success:r=>{
+      if(!r.confirm){this.setData({completionBusyId:null});return;}
+      const note=(r.content || '').trim();if(note.length<2 || note.length>255){this.setData({completionBusyId:null});wx.showToast({title:'说明需2至255字',icon:'none'});return;}
+      return this.submitCompletion({order_id:id,delivery_confirmed:true,confirmation_note:note},'已记录送达');
+    },fail:()=>this.setData({completionBusyId:null})});
+  },
+  submitCompletion: async function(body,title){
+    try{await app.api('/api/admin/order/complete','POST',body);wx.showToast({title});await this.loadPendingOrders();this.refreshActivity();}
+    catch(error){wx.showToast({title:error.message,icon:'none'});}
+    finally{this.setData({completionBusyId:null});}
+  },
+  cancelShopOrder: function(e) {const id=e.currentTarget.dataset.id;wx.showModal({title:'取消并申请退款',content:'确认取消该订单？资金与积分将在退款成功后返回。',success:async r=>{if(!r.confirm)return;try{await app.api('/api/admin/order/cancel','POST',{order_id:id});this.loadPendingOrders();}catch(error){wx.showToast({title:error.message,icon:'none'});}}});},
+  refundShopOrder: function(e) {
+    if(this.data.refundBusyId)return;
+    const id=Number(e.currentTarget.dataset.id),order=this.data.pendingOrders.find(o=>o.id===id);
+    if(!order)return;
+    this.setData({refundBusyId:id});
+    wx.showModal({title:'填写售后退款原因',editable:true,placeholderText:'请填写已与顾客协商的退款原因（2至255字）',success:r=>{
+      const reason=(r.content || '').trim();
+      if(!r.confirm){this.setData({refundBusyId:null});return;}
+      if(reason.length<2 || reason.length>255){this.setData({refundBusyId:null});wx.showToast({title:'退款原因需2至255字',icon:'none'});return;}
+      wx.showModal({title:'确认整单售后退款',content:`订单 ${order.order_sn}，申请整单退款（订单金额 ¥${order.final_pay_amount}，实际退回以微信为准），返还已用积分并冲回已发奖励；余额不足的奖励从后续同类奖励抵回。已备好或发出的餐品不自动回到可售库存。原因：${reason}`,confirmText:'申请退款',success:async result=>{
+        if(!result.confirm){this.setData({refundBusyId:null});return;}
+        try{const data=await app.api('/api/admin/order/refund','POST',{order_id:id,reason});wx.showToast({title:data.payment_state==='REFUNDED'?'已确认退款':'退款处理中',icon:'none'});await this.loadPendingOrders();}
+        catch(error){wx.showToast({title:error.message,icon:'none'});}
+        finally{this.setData({refundBusyId:null});}
+      },fail:()=>this.setData({refundBusyId:null})});
+    },fail:()=>this.setData({refundBusyId:null})});
   },
 
   onPullDownRefresh: function () {
+    this.refreshActivity();
+    if(this.data.activeTab==='settings'){this.reloadConfigs().finally(()=>wx.stopPullDownRefresh());return;}
+    if(this.data.activeTab==='support') {this.loadSupportTickets().finally(()=>wx.stopPullDownRefresh());return;}
+    if(this.data.activeTab==='privacy') {this.loadPrivacyRequests().finally(()=>wx.stopPullDownRefresh());return;}
     this.loadDishes();
     this.loadPendingOrders();
     this.loadMembers();
@@ -93,69 +239,46 @@ Page({
     });
   },
 
-  // 获取真实菜品列表
-  loadDishes: function (cb) {
-    const that = this;
-    that.setData({ loading: true });
-
-    app.callContainer({
-      path: '/api/products',
-      method: 'GET'
-    }).then(res => {
-      that.setData({ loading: false });
-      if (res && res.code === 0 && Array.isArray(res.data)) {
-        that.setData({ dishes: res.data });
-      }
-      if (cb) cb();
-    }).catch(err => {
-      that.setData({ loading: false });
-      wx.showToast({ title: '加载菜品失败', icon: 'none' });
-      if (cb) cb();
-    });
+  // 获取真实菜品列表 (带精选老卤兜底)
+  loadDishes: async function(cb) {
+    const sequence=this._dishesSequence=(this._dishesSequence || 0)+1;
+    const date=this.data.orderDate,time=this.data.config.BATCH_SCHEDULE_TIME;
+    this.setData({loading:true});
+    try {const rows=await app.api('/api/products?batch_date='+date+'&batch_time='+time);if(sequence===this._dishesSequence)this.setData({dishes:rows});}
+    catch(error){if(sequence===this._dishesSequence){this.setData({dishes:[]});wx.showToast({title:error.message,icon:'none'});}}
+    finally{if(sequence===this._dishesSequence)this.setData({loading:false});if(cb)cb();}
   },
-
-  // 获取待备餐发车订单 (status = 20)
-  loadPendingOrders: function () {
-    const that = this;
-    app.callContainer({
-      path: '/api/order/list?status=20',
-      method: 'GET'
-    }).then(res => {
-      if (res && res.code === 0 && Array.isArray(res.data)) {
-        that.setData({ pendingOrders: res.data });
-      }
-    }).catch(() => {});
+  loadPendingOrders: async function(append) {
+    if(append!==true)append=false;
+    if(append && (this.data.orderLoading || !this.data.orderNextCursor))return;
+    const sequence=this._ordersSequence=(this._ordersSequence || 0)+1;
+    const date=this.data.orderDate,time=this.data.config.BATCH_SCHEDULE_TIME,filter=this.data.orderFilters[this.data.orderFilterIndex];
+    this.setData({orderLoading:true,orderError:'',prepError:'',capacityError:''});
+    if(!append)this.setData({pendingOrders:[],orderNextCursor:null,prepSummary:[],batchCapacity:null});
+    try {
+      let path='/api/admin/orders?keyword='+encodeURIComponent(this.data.orderKeyword);
+      if(!this.data.allOrderDates)path+='&batch_date='+date;
+      if(this.data.overduePickupOnly)path+='&overdue_pickup=1';
+      if(filter && filter.value)path+='&status='+filter.value;
+      if(this.data.orderDeliveryIndex)path+='&delivery_type='+this.data.orderDeliveryIndex;
+      if(append&&this.data.orderNextCursor)path+='&before_id='+this.data.orderNextCursor;
+      const settle=promise=>promise.then(value=>({status:'fulfilled',value}),reason=>({status:'rejected',reason}));
+      const [list,summary,capacity]=await Promise.all([
+        app.callContainer({path}).then(res=>{if(!res||res.code!==0)throw new Error((res&&res.msg)||'订单加载失败');return res;}),
+        this.data.allOrderDates?Promise.resolve([]):app.api('/api/admin/preparation?batch_date='+date+'&batch_time='+time),
+        this.data.allOrderDates?Promise.resolve(null):app.api('/api/admin/batch-capacity?batch_date='+date+'&batch_time='+time)
+      ].map(settle));
+      if(sequence!==this._ordersSequence)return;
+      const titles={10:'待付款',20:'待备餐',25:'待取餐',30:'配送中',40:'已完成',50:'已退款',60:'已取消',70:'退款处理中'};
+      const sources={CUSTOMER:'顾客确认收货',ADMIN_PICKUP:'掌柜核销取餐',ADMIN_DELIVERY:'掌柜核实送达'};
+      if(list.status==='fulfilled')this.setData({pendingOrders:(append?this.data.pendingOrders:[]).concat(list.value.data.map(o=>Object.assign({},o,{status_title:titles[o.order_status],completion_title:sources[o.completion_source] || ''}))),orderNextCursor:list.value.next_cursor});
+      else this.setData({orderError:list.reason.message || '订单加载失败'});
+      if(summary.status==='fulfilled')this.setData({prepSummary:summary.value});else this.setData({prepError:summary.reason.message || '备餐汇总加载失败'});
+      if(capacity.status==='fulfilled')this.setData({batchCapacity:capacity.value});else this.setData({capacityError:capacity.reason.message || '接单名额加载失败'});
+    } catch(error){if(sequence===this._ordersSequence)this.setData({orderError:error.message});}
+    finally{if(sequence===this._ordersSequence)this.setData({orderLoading:false});}
   },
-
-  // 获取真实后台运营配置
-  loadConfigs: function (cb) {
-    const that = this;
-    app.callContainer({
-      path: '/api/config/all',
-      method: 'GET'
-    }).then(res => {
-      if (res && res.code === 0 && res.data) {
-        const c = res.data;
-        const redRatio = parseFloat(c.RED_PACKET_MAX_DEDUCT_RATIO || '0.50') * 100;
-        const commRate = parseFloat(c.COMMISSION_RATE || '0.03') * 100;
-        const threshold = parseInt(c.MEMBER_ENTRY_THRESHOLD || '68', 10);
-
-        that.setData({
-          config: {
-            ...that.data.config,
-            ...c,
-            MEMBER_ENTRY_THRESHOLD: threshold,
-            MEMBER_ENTRY_MODE: c.MEMBER_ENTRY_MODE || 'CONSUME'
-          },
-          redDeductPercent: Math.round(redRatio),
-          commissionPercent: Math.round(commRate)
-        });
-      }
-      if (cb) cb();
-    }).catch(() => {
-      if (cb) cb();
-    });
-  },
+  moreOrders: function(){if(this.data.orderNextCursor)this.loadPendingOrders(true);},
 
   // 一键切换上下架/沽清状态
   toggleProductStatus: function (e) {
@@ -229,23 +352,26 @@ Page({
 
   // 打开编辑模态框
   openEditModal: function (e) {
+    if(this.data.dishSaving)return;this.resetDishPhoto();
     const dish = e.currentTarget.dataset.dish;
     this.setData({
       showAddModal: true,
       isEditingDish: true,
+      photoCloudCover:typeof dish.cover_img==='string' && dish.cover_img.indexOf('cloud://')===0,
       dishForm: {
         id: dish.id,
         title: dish.title,
         origin_price: dish.origin_price,
         member_price: dish.member_price,
         badge: dish.badge || '手工老卤',
-        intro: dish.intro || ''
+        intro: dish.intro || '', category_id:dish.category_id, cover_img:dish.cover_img, stock_qty:dish.default_stock_qty === undefined ? dish.stock_qty : dish.default_stock_qty, specification:dish.specification, storage_note:dish.storage_note
       }
     });
   },
 
   // 打开新增模态框
   openAddModal: function () {
+    if(this.data.dishSaving)return;this.resetDishPhoto();
     this.setData({
       showAddModal: true,
       isEditingDish: false,
@@ -255,19 +381,22 @@ Page({
         origin_price: '',
         member_price: '',
         badge: '今日现捞',
-        intro: ''
+        intro: '', category_id:1, cover_img:'', stock_qty:0, specification:'', storage_note:''
       }
     });
   },
 
   closeAddModal: function () {
+    if(this.data.dishSaving)return;this.resetDishPhoto();
     this.setData({ showAddModal: false });
   },
 
   onInputFormTitle: function (e) {
+    if(this.data.dishSaving)return;
     this.setData({ 'dishForm.title': e.detail.value });
   },
   onInputFormOriginPrice: function (e) {
+    if(this.data.dishSaving)return;
     const origin = parseFloat(e.detail.value) || 0;
     const member = (origin * 0.88).toFixed(2);
     this.setData({
@@ -276,17 +405,22 @@ Page({
     });
   },
   onInputFormMemberPrice: function (e) {
+    if(this.data.dishSaving)return;
     this.setData({ 'dishForm.member_price': e.detail.value });
   },
   onInputFormBadge: function (e) {
+    if(this.data.dishSaving)return;
     this.setData({ 'dishForm.badge': e.detail.value });
   },
   onInputFormIntro: function (e) {
+    if(this.data.dishSaving)return;
     this.setData({ 'dishForm.intro': e.detail.value });
   },
 
   // 提交新增或修改菜品
   submitDishForm: function () {
+    if(this.data.dishSaving)return;
+    if(this.data.photoBusy || this._pendingPhoto){wx.showToast({title:'请先完成图片上传或放弃新照片',icon:'none'});return;}
     const that = this;
     const f = this.data.dishForm;
     if (!f.title || !f.origin_price) {
@@ -295,11 +429,12 @@ Page({
     }
 
     const isEdit = this.data.isEditingDish;
+    const epoch=this._dishEpoch;this.setData({dishSaving:true});
     wx.showLoading({ title: isEdit ? '正在保存修改...' : '正在发布上架...' });
 
     const payload = {
       id: f.id,
-      category_id: 1,
+      category_id: Number(f.category_id || 1), cover_img:f.cover_img || '', stock_qty:Number(f.stock_qty || 0), specification:f.specification || '', storage_note:f.storage_note || '',
       title: f.title,
       intro: f.intro || '临天八弄纯手工老卤，鲜卤现捞',
       origin_price: parseFloat(f.origin_price),
@@ -315,84 +450,18 @@ Page({
       data: payload
     }).then(res => {
       wx.hideLoading();
+      if(epoch!==that._dishEpoch)return;that.setData({dishSaving:false});
       if (res && res.code === 0) {
         that.closeAddModal();
         wx.showToast({ title: isEdit ? '修改保存成功！' : '上架成功！', icon: 'success' });
         that.loadDishes();
       } else {
-        wx.showToast({ title: res.msg || '操作失败', icon: 'none' });
+        wx.showToast({ title: (res && res.msg) || '操作失败', icon: 'none' });
       }
     }).catch(() => {
       wx.hideLoading();
+      if(epoch!==that._dishEpoch)return;that.setData({dishSaving:false});
       wx.showToast({ title: '请求异常', icon: 'none' });
-    });
-  },
-
-  // 运营配置项输入处理器
-  changeUpgradeType: function (e) {
-    this.setData({ 'config.MEMBER_ENTRY_MODE': e.currentTarget.dataset.type });
-  },
-  updateThresholdSlider: function (e) {
-    this.setData({ 'config.MEMBER_ENTRY_THRESHOLD': e.detail.value });
-  },
-  updateRedRatioSlider: function (e) {
-    this.setData({ redDeductPercent: e.detail.value });
-  },
-  updateCommissionSlider: function (e) {
-    this.setData({ commissionPercent: e.detail.value });
-  },
-  onInputDeliveryFee: function (e) {
-    this.setData({ 'config.DELIVERY_BASE_FEE': e.detail.value });
-  },
-  onInputFreeThreshold: function (e) {
-    this.setData({ 'config.DELIVERY_FREE_THRESHOLD': e.detail.value });
-  },
-  onInputPhone: function (e) {
-    this.setData({ 'config.DELIVERY_PERSON_PHONE': e.detail.value });
-  },
-  onInputAnnouncement: function (e) {
-    this.setData({ 'config.WORKSHOP_ANNOUNCEMENT': e.detail.value });
-  },
-
-  // 保存全部真实运营参数至云端数据库
-  saveAllConfigs: function () {
-    const that = this;
-    wx.showLoading({ title: '正在保存全部配置...' });
-
-    const redRatioStr = (this.data.redDeductPercent / 100).toFixed(2);
-    const commRateStr = (this.data.commissionPercent / 100).toFixed(2);
-    const thresholdStr = this.data.config.MEMBER_ENTRY_THRESHOLD.toString();
-    const entryModeStr = this.data.config.MEMBER_ENTRY_MODE;
-
-    const updates = [
-      { key: 'MEMBER_ENTRY_MODE', val: entryModeStr },
-      { key: 'MEMBER_ENTRY_THRESHOLD', val: thresholdStr },
-      { key: 'RED_PACKET_MAX_DEDUCT_RATIO', val: redRatioStr },
-      { key: 'COMMISSION_RATE', val: commRateStr },
-      { key: 'DELIVERY_BASE_FEE', val: this.data.config.DELIVERY_BASE_FEE || '3.00' },
-      { key: 'DELIVERY_FREE_THRESHOLD', val: this.data.config.DELIVERY_FREE_THRESHOLD || '38.00' },
-      { key: 'DELIVERY_PERSON_PHONE', val: this.data.config.DELIVERY_PERSON_PHONE || '13735518290' },
-      { key: 'WORKSHOP_ANNOUNCEMENT', val: this.data.config.WORKSHOP_ANNOUNCEMENT || '' }
-    ];
-
-    const promises = updates.map(u => {
-      return app.callContainer({
-        path: '/api/admin/config/update',
-        method: 'POST',
-        data: {
-          config_key: u.key,
-          config_value: u.val
-        }
-      });
-    });
-
-    Promise.all(promises).then(() => {
-      wx.hideLoading();
-      wx.showToast({ title: '全部运营配置已生效！', icon: 'success' });
-      that.loadConfigs();
-    }).catch(() => {
-      wx.hideLoading();
-      wx.showToast({ title: '保存配置异常，请重试', icon: 'none' });
     });
   },
 
@@ -400,12 +469,13 @@ Page({
   dispatchSingleOrder: function (e) {
     const that = this;
     const orderId = e.currentTarget.dataset.id;
+    const order=this.data.pendingOrders.find(o=>o.id===Number(orderId));if(!order)return;
     wx.showLoading({ title: '正在派发...' });
 
     app.callContainer({
       path: '/api/admin/order/dispatch',
       method: 'POST',
-      data: { order_id: orderId }
+      data: { order_id: orderId, batch_date: order.batch_date, batch_time: order.batch_time }
     }).then(res => {
       wx.hideLoading();
       if (res && res.code === 0) {
@@ -422,10 +492,11 @@ Page({
 
   // 调度一键全单发车
   dispatchAllOrders: function () {
+    if(this.data.allOrderDates)return;
     const that = this;
     wx.showModal({
       title: '确认一键全单发车？',
-      content: `今日傍晚 16:30 出炉批次已准备就绪，当前共 ${this.data.pendingOrders.length} 笔订单，潘师傅将立即骑行电瓶车出发行车配送，所有订单实时流转为「配送中」。`,
+      content: `仅处理所选日期 ${this.data.orderDate}、${this.data.config.BATCH_SCHEDULE_TIME} 批次的已付款待备餐自送订单。自提及其他日期订单不受影响。`,
       confirmText: '立即发车',
       confirmColor: '#059669',
       success: (res) => {
@@ -434,7 +505,7 @@ Page({
           app.callContainer({
             path: '/api/admin/order/dispatch',
             method: 'POST',
-            data: {}
+            data: {batch_date:this.data.orderDate,batch_time:this.data.config.BATCH_SCHEDULE_TIME}
           }).then(apiRes => {
             wx.hideLoading();
             if (apiRes && apiRes.code === 0) {
@@ -455,30 +526,26 @@ Page({
   // ==================== 掌柜会员管理专属模块 ====================
 
   // 加载会员列表
-  loadMembers: function (cb) {
-    const that = this;
-    const kw = (that.data.memberKeyword || '').trim();
-    let url = '/api/admin/members';
-    if (kw) {
-      url += '?keyword=' + encodeURIComponent(kw);
+  loadMembers: async function (cb, append = false) {
+    if (append && (this.data.memberLoading || !this.data.memberNextCursor)) return;
+    const sequence = this._memberSequence = (this._memberSequence || 0) + 1;
+    const kw = (this.data.memberKeyword || '').trim();
+    let url = '/api/admin/members?keyword=' + encodeURIComponent(kw);
+    if (append) url += '&before_id=' + this.data.memberNextCursor;
+    this.setData({memberLoading:true, memberError:''});
+    try {
+      const result = await app.api(url);
+      if (sequence !== this._memberSequence) return;
+      this.setData({members:(append ? this.data.members : []).concat(result.list),
+        memberSummary:result.summary, memberTotal:result.total, memberNextCursor:result.next_cursor});
+    } catch(error) {
+      if (sequence === this._memberSequence) this.setData({memberError:error.message});
+    } finally {
+      if (sequence === this._memberSequence) this.setData({memberLoading:false});
+      if (cb) cb();
     }
-
-    app.callContainer({
-      path: url,
-      method: 'GET'
-    }).then(res => {
-      if (res && res.code === 0 && res.data) {
-        that.setData({
-          members: res.data.list || [],
-          memberSummary: res.data.summary || that.data.memberSummary
-        });
-      }
-      if (cb) cb();
-    }).catch(err => {
-      console.error('[Load Members Error]', err);
-      if (cb) cb();
-    });
   },
+  moreMembers: function () { this.loadMembers(undefined, true); },
 
   onInputMemberKeyword: function (e) {
     this.setData({ memberKeyword: e.detail.value });
@@ -498,7 +565,7 @@ Page({
     const that = this;
     const member = e.currentTarget.dataset.member;
     const targetStatus = member.is_member === 1 ? 0 : 1;
-    const actionTxt = targetStatus === 1 ? '开通尊享会员(8.8折特权)' : '撤销会员身份(清空红包)';
+    const actionTxt = targetStatus === 1 ? '开通尊享会员(菜品会员价)' : '撤销会员身份(清空红包)';
 
     wx.showModal({
       title: '确认调整会员身份？',
@@ -547,6 +614,7 @@ Page({
   },
 
   closePointsModal: function () {
+    if(this.data.pointsSubmitting)return;
     this.setData({ showPointsModal: false, currentMember: null });
   },
 
@@ -564,11 +632,11 @@ Page({
   },
 
   // 提交人工积分/红包调整
-  submitAdjustPoints: function () {
-    const that = this;
-    const form = that.data.pointsForm;
-    const member = that.data.currentMember;
-    const amt = parseFloat(form.amount);
+  submitAdjustPoints: async function () {
+    if(this.data.pointsSubmitting || !this.data.currentMember)return;
+    const form = this.data.pointsForm;
+    const member = this.data.currentMember;
+    const amt = Number(form.amount);
 
     if (isNaN(amt) || amt === 0) {
       wx.showToast({ title: '请输入有效变动数值(可填负数)', icon: 'none' });
@@ -579,29 +647,20 @@ Page({
       return;
     }
 
-    wx.showLoading({ title: '正在提交调整...' });
-    app.callContainer({
-      path: '/api/admin/member/adjust-points',
-      method: 'POST',
-      data: {
-        user_id: member.id,
-        adjust_type: form.adjust_type,
-        amount: amt,
-        reason: form.reason.trim()
-      }
-    }).then(res => {
-      wx.hideLoading();
-      if (res && res.code === 0) {
-        wx.showToast({ title: '资产调整成功！', icon: 'success' });
-        that.closePointsModal();
-        that.loadMembers();
-      } else {
-        wx.showToast({ title: res.msg || '调整失败', icon: 'none' });
-      }
-    }).catch(() => {
-      wx.hideLoading();
-      wx.showToast({ title: '网络异常', icon: 'none' });
-    });
+    const payload={user_id:member.id,adjust_type:form.adjust_type,amount:amt,reason:form.reason.trim()};
+    const fingerprint=JSON.stringify(payload), pending=wx.getStorageSync('pandou_pending_adjustment');
+    const requestId=pending && pending.fingerprint===fingerprint ? pending.requestId : `adjust_${Date.now()}_${Math.random().toString(36).slice(2,12)}`;
+    wx.setStorageSync('pandou_pending_adjustment',{fingerprint,requestId});
+    payload.request_id=requestId;
+    this.setData({pointsSubmitting:true});
+    wx.showLoading({ title: '正在提交调整...', mask:true });
+    try {
+      await app.api('/api/admin/member/adjust-points','POST',payload);
+      wx.removeStorageSync('pandou_pending_adjustment');
+      this.setData({showPointsModal:false,currentMember:null});
+      wx.showToast({title:'资产调整已完成',icon:'success'});this.loadMembers();
+    } catch(error) { wx.showToast({title:error.message || '结果未确认，请重试同一笔调整',icon:'none'}); }
+    finally {wx.hideLoading();this.setData({pointsSubmitting:false});}
   },
 
   // 打开补录推荐人模态框

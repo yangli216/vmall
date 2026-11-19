@@ -1,11 +1,12 @@
 <!-- miniprogram/pages/promote/promote.wxml -->
 <view class="container">
+ <dev-banner />
 
   <!-- 1. 邀请码尊享卡片 -->
   <view class="invite-hero-card">
-    <view class="invite-card-tag">🤝 会员推荐专享</view>
-    <view class="hero-title">邀请街坊品鲜老卤</view>
-    <view class="hero-sub">好友享全场8.8折 · 你享每笔实付 3% 红包积分返利</view>
+    <view class="invite-card-tag">街坊有礼 · 会员专享</view>
+    <view class="hero-title">好卤味，和街坊一起享</view>
+    <view class="hero-sub">有效会员邀请好友消费，收货后按有效货款 {{commissionRatePercent}}% 获得奖励</view>
 
     <!-- 邀请码展示与复制 -->
     <view class="invite-code-box">
@@ -13,26 +14,41 @@
         <text class="code-label">专属邀请码</text>
         <text class="code-value">{{myReferralCode}}</text>
       </view>
-      <button class="btn-copy-code btn-press" bindtap="copyCode">复制邀请码</button>
+      <button size="mini" class="btn-copy-code btn-press" bindtap="copyCode">复制邀请码</button>
     </view>
 
     <!-- 分享操作按钮组 -->
-    <view class="share-actions-row">
-      <button class="btn-share-wx btn-press" open-type="share">
-        💬 发送给微信好友
+    <view wx:if="{{isMember}}" class="share-actions-row">
+      <button size="mini" class="btn-share-wx btn-press" open-type="share">
+        分享给微信好友
       </button>
-      <button class="btn-share-poster btn-press" bindtap="showPosterTip">
-        🖼️ 生成推广海报
+      <button size="mini" class="btn-share-poster btn-press" bindtap="showPosterTip">
+        查看邀请规则
       </button>
+      <button size="mini" class="btn-share-poster btn-press" bindtap="generatePoster" disabled="{{posterGenerating}}" loading="{{posterGenerating}}">生成邀请海报</button>
     </view>
   </view>
 
-  <!-- 2. 防刷与返利动态交互试算器 (透明清晰呈现用户提出的核心规则) -->
+<view wx:if="{{!isMember}}" class="empty-list-box">成为有效会员后可获得推荐奖励</view>
+  <canvas type="2d" id="referralPosterCanvas" class="poster-canvas"></canvas>
+  <view class="poster-backdrop" wx:if="{{showPoster}}">
+    <view class="poster-dialog">
+      <view class="poster-heading">专属邀请海报</view>
+      <view wx:if="{{posterGenerating}}" class="poster-note">正在生成小程序码和海报…</view>
+      <view wx:if="{{posterError}}" class="poster-note">{{posterError}}</view>
+      <image wx:if="{{posterPath}}" class="poster-preview" src="{{posterPath}}" mode="widthFix" bindtap="previewPoster" />
+      <view class="poster-note" wx:if="{{posterPath}}">点击图片可放大预览，长按识别小程序码。好友仅在首次下单前可绑定推荐人。</view>
+      <button wx:if="{{posterPath}}" bindtap="savePoster" loading="{{posterSaving}}" disabled="{{posterSaving}}">保存到相册</button>
+      <button wx:if="{{posterError}}" bindtap="generatePoster">重新生成</button>
+      <button bindtap="closePoster" disabled="{{posterSaving}}">关闭</button>
+    </view>
+  </view>
+  <!-- 2. 推荐奖励示意测算 -->
   <view class="calc-section-card">
     <view class="calc-header">
       <view class="calc-title-h3">
-        <text>🧮 返利收益实时测算</text>
-        <text class="badge-ratio">{{commissionRatePercent}}% 返佣率</text>
+        <text>推荐红包怎么算</text>
+        <text class="badge-ratio">{{commissionRatePercent}}% 奖励比例</text>
       </view>
       <view class="calc-intro-p">拖动滑块查看好友不同付款场景下的红包积分收益</view>
     </view>
@@ -85,7 +101,7 @@
       </view>
       <view class="anti-fraud-alert">
         <text class="alert-icon">🛡️</text>
-        <text class="alert-text">核心防刷规则：好友使用红包积分抵扣的部分【¥{{simRedDeduct}}】严格不产生任何推荐返佣，杜绝虚假自循环刷单！</text>
+        <text class="alert-text">仅按扣除各类优惠和配送费后的有效现金货款奖励；示例未含配送费与普通积分，实际以订单流水为准，收货后到账。</text>
       </view>
     </view>
   </view>
@@ -102,7 +118,7 @@
     </view>
     <view class="stat-card">
       <view class="stat-num red">¥{{summary.total_commission || '0.00'}}</view>
-      <view class="stat-label">累计赚取红包(元)</view>
+      <view class="stat-label">累计推荐奖励(元)</view>
     </view>
   </view>
 
@@ -110,17 +126,19 @@
   <view class="referral-list-section">
     <view class="list-section-header">
       <text class="list-title">已绑定的好友列表</text>
-      <text class="list-total">共 {{referrals.length}} 位</text>
+      <text class="list-total">共 {{summary.total_referred}} 位</text>
     </view>
 
-    <view wx:if="{{referrals.length === 0}}" class="empty-list-box">
+    <view wx:if="{{error}}" class="empty-list-box" bindtap="retryReferrals">{{error}} · 点击重试</view>
+    <view wx:if="{{loading && !referrals.length}}" class="empty-list-box">正在加载好友…</view>
+    <view wx:if="{{referrals.length === 0 && !loading && !error}}" class="empty-list-box">
       <view class="empty-icon">👥</view>
       <view class="empty-text">暂无邀请好友，快去分享专属邀请码吧！</view>
     </view>
 
-    <view wx:else class="referrals-feed">
+    <view wx:if="{{referrals.length}}" class="referrals-feed">
       <view wx:for="{{referrals}}" wx:key="id" class="referral-row-item">
-        <image class="ref-avatar" src="{{item.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}}" mode="aspectFill"></image>
+        <image class="ref-avatar" src="{{item.avatar_url || '/images/tab_member.png'}}" mode="aspectFit"></image>
         <view class="ref-info">
           <view class="ref-name-row">
             <text class="ref-nickname">{{item.nickname}}</text>
@@ -129,11 +147,12 @@
           <view class="ref-date">绑定时间: {{item.bind_time}}</view>
         </view>
         <view class="ref-reward-col">
-          <text class="reward-title">已为我贡献</text>
+          <text class="reward-title">已结算奖励</text>
           <text class="reward-amount">+¥{{item.commission_earned}}</text>
         </view>
       </view>
     </view>
+    <button wx:if="{{nextCursor}}" loading="{{loading}}" disabled="{{loading}}" bindtap="moreReferrals">加载更多好友（已显示{{referrals.length}}位）</button>
   </view>
 
 </view>

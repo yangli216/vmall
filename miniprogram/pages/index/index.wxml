@@ -1,12 +1,13 @@
 <!-- miniprogram/pages/index/index.wxml -->
 <view class="container">
+ <dev-banner />
 
   <!-- 1. 头部一体化卡片 -->
   <view class="header-unified-card">
     <view class="header-top-line">
       <view class="shop-name-block">
-        <view class="shop-title">潘小兜老卤小作坊</view>
-        <view class="shop-sub">临天八弄手工慢卤 · 每日两炉现做</view>
+        <view class="shop-title">潘小兜 · 手工老卤</view>
+        <view class="shop-sub">临安临天八弄 · 一锅老卤，按批现做</view>
       </view>
       <!-- 配送方式切换 -->
       <view class="segmented-control">
@@ -15,32 +16,34 @@
       </view>
     </view>
 
+    <view wx:if="{{config.WORKSHOP_ANNOUNCEMENT}}" class="shop-announcement">{{config.WORKSHOP_ANNOUNCEMENT}}</view>
     <!-- 出炉预约条 (动态判断下午/次日批次) -->
     <view class="header-schedule-box">
       <view class="schedule-left">
         <view class="pulse-orange-dot"></view>
-        <text>{{currentBatchText}}</text>
+        <picker disabled="{{submitting}}" range="{{slots}}" range-key="label" value="{{slotIndex}}" bindchange="changeSlot"><text>{{currentBatchText}} ▾</text></picker>
       </view>
-      <text class="schedule-link">作坊出炉说明 ></text>
+      <text class="schedule-link">预约批次</text>
     </view>
 
     <!-- 配送/自提地址与收件人联系条 (垂直分层结构，绝不拥挤截断) -->
+    <view wx:if="{{fullBatchText}}" class="shop-announcement">{{fullBatchText}} 已接满，请选择其他可预约批次；下拉刷新可查看最新名额。</view>
     <view class="address-strip">
       <view class="address-loc-group">
         <view class="address-line-primary">
           <text class="loc-icon-circle">📍</text>
-          <text class="address-bold">{{deliveryType === 1 ? destAddress : '潘小兜作坊实体自提点 (临天八弄36号)'}}</text>
+          <text class="address-bold">{{deliveryType === 1 ? (destAddress || '请填写收货地址') : config.WORKSHOP_ADDRESS}}</text>
         </view>
         <view class="address-line-secondary" wx:if="{{deliveryType === 1}}">
           <text class="contact-label">收件人：</text>
           <text class="contact-value">{{receiverName}} ({{receiverPhone}})</text>
         </view>
         <view class="address-line-secondary" wx:else>
-          <text class="contact-label">工坊地址：</text>
-          <text class="contact-value">临安锦城临天八弄36号 · 报手机号自提</text>
+          <text class="contact-label" bindtap="copyShopAddress">复制地址 ›</text>
+          <text class="contact-value">等待备好后，出示订单自提码</text>
         </view>
       </view>
-      <view class="address-edit-btn" bindtap="editAddress">修改</view>
+      <view wx:if="{{deliveryType === 1}}" class="address-edit-btn" bindtap="editAddress">填写地址</view>
     </view>
   </view>
 
@@ -49,46 +52,55 @@
     <view class="vip-left-pack">
       <view class="vip-star-gold">👑</view>
       <view class="vip-text-pack">
-        <view class="vip-title">{{isMember ? '尊享老客会员 · 正在享受全场8.8折' : '潘小兜会员 · 全场专享 8.8 折'}}</view>
-        <view class="vip-desc">{{isMember ? '已享普通积分与推荐返利双特权' : '累计消费满 ¥68 自动升级或授权免费开卡'}}</view>
+        <view class="vip-title">{{isMember ? '正在享受菜品会员价' : '潘小兜会员 · 菜品专享价'}}</view>
+        <view class="vip-desc">{{isMember ? '订单完成赠积分，推荐消费享奖励' : (config.MEMBER_ENTRY_MODE === 'FREE' ? '当前可免费开通会员' : '入会规则请前往会员中心查看')}}</view>
       </view>
     </view>
     <view class="vip-enter-pill">去查看 ></view>
   </view>
 
-  <!-- 3. 分类胶囊 -->
-  <scroll-view scroll-x class="modern-category-row" enable-flex>
-    <view 
-      wx:for="{{categories}}" 
-      wx:key="id" 
+  <!-- 3. 现代化匠心品类导航栏 (独立矢量图标 + 规范胶囊按钮与文字比例) -->
+  <scroll-view scroll-x class="modern-category-row" enable-flex enhanced show-scrollbar="{{false}}">
+    <view
+      wx:for="{{categories}}"
+      wx:key="id"
       class="cat-capsule {{currentCatId === item.id ? 'active' : ''}}"
       bindtap="selectCategory"
       data-id="{{item.id}}"
     >
-      {{item.name}}
+      <image
+        wx:if="{{item.iconNormal}}"
+        class="cat-icon-img"
+        src="{{currentCatId === item.id ? item.iconActive : item.iconNormal}}"
+        mode="aspectFit"
+      ></image>
+      <text class="cat-name">{{item.name}}</text>
     </view>
   </scroll-view>
 
   <!-- 4. 卤味商品列表 (支持动态上下架、售罄遮罩与加减步进器) -->
   <view class="menu-feed">
-    <view wx:if="{{dishes.length === 0 && !loadingProducts}}" class="empty-dish-box">
+    <view wx:if="{{loadingProducts}}" class="empty-dish-box">正在加载本批菜品…</view>
+    <view wx:if="{{productError}}" class="empty-dish-box" bindtap="refresh">{{productError}} · 点此重试</view>
+    <view wx:if="{{dishes.length === 0 && !loadingProducts && !productError}}" class="empty-dish-box">
       <view class="empty-icon">🍲</view>
       <view class="empty-text">当前分类下暂无在售菜品</view>
     </view>
 
-    <view wx:for="{{dishes}}" wx:key="id" class="dish-item-card {{item.status === 0 ? 'sold-out' : ''}}">
+    <view wx:for="{{dishes}}" wx:key="id" class="dish-item-card {{item.status === 0 || item.stock_qty <= 0 ? 'sold-out' : ''}}">
       <view class="dish-img-box">
-        <image src="{{item.cover_img}}" class="dish-real-img" mode="aspectFill" binderror="onImageError" data-index="{{index}}"></image>
-        <view class="dish-floating-badge">{{item.badge}}</view>
-        <view wx:if="{{item.status === 0}}" class="dish-soldout-overlay">今日已售罄</view>
+        <image wx:if="{{item.cover_img}}" src="{{item.cover_img}}" class="dish-real-img" mode="aspectFill" binderror="onImageError" data-index="{{index}}"></image>
+        <view wx:else class="dish-photo-placeholder"><text>卤</text><text class="placeholder-caption">手工慢卤</text></view>
+        <view wx:if="{{item.badge}}" class="dish-floating-badge">{{item.badge}}</view>
+        <view wx:if="{{item.status === 0 || item.stock_qty <= 0}}" class="dish-soldout-overlay">本批已售罄</view>
       </view>
       <view class="dish-content-box">
         <view>
-          <view class="dish-name-h3">{{item.title}}</view>
+          <view class="dish-name-h3" bindtap="showDishDetail" data-dish="{{item}}">{{item.title}} ›</view>
           <view class="dish-intro-p">{{item.intro}}</view>
           <view class="dish-tag-row">
-            <text class="tag-vip-disc">会员8.8折</text>
-            <text class="tag-points-tip">获 {{item.points}} 普通积分</text>
+            <text class="tag-vip-disc">{{isMember ? '会员价' : '会员 ¥' + item.member_price}}</text>
+            <text class="tag-points-tip">本批剩余 {{item.stock_qty}} 份</text>
           </view>
         </view>
         <view class="dish-bottom-action">
@@ -99,7 +111,7 @@
           </view>
 
           <!-- 状态判定与加减步进器 -->
-          <view wx:if="{{item.status === 0}}" class="sold-out-text">已抢光</view>
+          <view wx:if="{{item.status === 0 || item.stock_qty <= 0}}" class="sold-out-text">本批售罄</view>
           <!-- 步进器 (精细化控制) -->
           <view wx:elif="{{cart[item.id] && cart[item.id].quantity > 0}}" class="cart-stepper-row">
             <view class="btn-stepper minus btn-press" catchtap="decreaseCart" data-dish="{{item}}">-</view>
@@ -116,7 +128,7 @@
   <view class="official-license-footer">
     <view>实体经营者：杭州临安潘小兜食品小作坊</view>
     <view>许可证编号：JY13301850326102 (含网络经营)</view>
-    <view>工坊基地：临安区锦城街道临天八弄36号</view>
+    <view>工坊基地：{{config.WORKSHOP_ADDRESS}}</view>
   </view>
 
   <!-- 6. 悬浮现代毛玻璃购物车 Dock -->
@@ -135,26 +147,36 @@
   <view class="drawer-backdrop {{isDrawerOpen ? 'open' : ''}}">
     <view class="drawer-content-sheet">
       <view class="drawer-bar-title">
-        <text class="drawer-h2">结算明细与积分抵扣</text>
+        <text class="drawer-h2">确认这一份好卤</text>
         <view class="drawer-close" bindtap="closeCheckoutSheet">✕</view>
       </view>
 
       <!-- 配送信息条 -->
       <view class="drawer-info-box">
         <view class="info-row">
-          <text class="info-label">自送目的地:</text>
-          <text class="info-val">{{deliveryType === 1 ? destAddress : '临天八弄36号实体工坊自提'}}</text>
+          <text class="info-label">{{deliveryType === 1 ? '配送地址:' : '取餐地址:'}}</text>
+          <text class="info-val">{{deliveryType === 1 ? destAddress : config.WORKSHOP_ADDRESS}}</text>
         </view>
         <view class="info-row" wx:if="{{deliveryType === 1}}">
           <text class="info-label">收件人电话:</text>
           <text class="info-val highlight">{{receiverName}} ({{receiverPhone}})</text>
         </view>
         <view class="info-row">
-          <text class="info-label">出炉送达:</text>
+          <text class="info-label">预约出炉:</text>
           <text class="info-val highlight">{{currentBatchText}}</text>
         </view>
+        <button wx:if="{{deliveryType === 2}}" size="mini" class="copy-pickup-button" bindtap="copyShopAddress">复制门店自提地址</button>
       </view>
 
+      <view class="checkout-contact">
+        <input class="contact-input" disabled="{{submitting}}" placeholder="联系人（必填）" maxlength="50" value="{{receiverName}}" data-field="receiverName" bindinput="onContactInput" />
+        <input class="contact-input" disabled="{{submitting}}" placeholder="手机号（必填）" type="number" maxlength="11" value="{{receiverPhone}}" data-field="receiverPhone" bindinput="onContactInput" />
+        <block wx:if="{{deliveryType === 1}}">
+          <picker disabled="{{submitting}}" range="{{deliveryAreas}}" bindchange="onAreaChange"><view>配送小区：{{deliveryArea || '请选择 ▾'}}</view></picker>
+          <input class="contact-input" disabled="{{submitting}}" placeholder="小区、楼幢、门牌号（必填）" maxlength="255" value="{{destAddress}}" data-field="destAddress" bindinput="onContactInput" />
+          <text wx:if="{{!deliveryAreas.length}}">当前未开放自送，请选择到店自提</text>
+        </block>
+      </view>
       <!-- 已选老卤清单明细 (支持增减与清空) -->
       <view class="drawer-cart-list">
         <view class="drawer-cart-title-row">
@@ -178,7 +200,7 @@
 
       <!-- 口味备注输入 -->
       <view class="remark-input-box">
-        <input class="remark-input" placeholder="口味备注 (如：微辣/多带点卤汁/切薄片)" bindinput="onRemarkInput" value="{{orderRemark}}" />
+        <input disabled="{{submitting}}" class="remark-input" placeholder="口味备注 (如：微辣/多带点卤汁/切薄片)" maxlength="255" bindinput="onRemarkInput" value="{{orderRemark}}" />
       </view>
 
       <!-- 双积分抵扣设置卡片 -->
@@ -189,7 +211,7 @@
             <text class="deduct-name">🪙 普通积分满减</text>
             <text class="deduct-sub">(可用 {{userNormalPoints}} 分)</text>
           </view>
-          <switch checked="{{useNormalPoints}}" color="#D9480F" bindchange="toggleNormalPoints" />
+          <switch disabled="{{submitting}}" checked="{{useNormalPoints}}" color="#D9480F" bindchange="toggleNormalPoints" />
         </view>
         <view class="deduct-tip-text">- 消耗 100 积分满减抵扣 ¥5.00</view>
 
@@ -199,13 +221,13 @@
             <text class="deduct-name red">🧧 红包积分冲抵现金</text>
             <text class="deduct-sub red">(余额 ¥{{userRedPoints}})</text>
           </view>
-          <switch checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
+          <switch disabled="{{submitting || !isMember}}" checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
         </view>
         <view class="deduct-calc-row">
-          <text class="deduct-limit-hint">抵现金额 (防亏上限50%):</text>
+          <text class="deduct-limit-hint">抵现金额 (货款上限{{redLimitPercent}}%):</text>
           <view class="deduct-input-group">
             <text class="symbol">-¥</text>
-            <input type="digit" class="red-amount-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />
+            <input disabled="{{submitting || !isMember}}" type="digit" class="red-amount-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />
           </view>
         </view>
       </view>
@@ -217,7 +239,7 @@
           <text>¥{{calcResult.goods_origin_total || '0.00'}}</text>
         </view>
         <view class="bill-row red" wx:if="{{calcResult.member_discount > 0}}">
-          <text>会员8.8折专享优惠</text>
+          <text>会员价优惠</text>
           <text>-¥{{calcResult.member_discount}}</text>
         </view>
         <view class="bill-row orange" wx:if="{{useNormalPoints && calcResult.normal_deduct > 0}}">
@@ -233,17 +255,19 @@
           <text>+¥{{calcResult.delivery_fee || '0.00'}}</text>
         </view>
         <view class="bill-final-row">
-          <text class="final-title">微信支付实付:</text>
+          <text class="final-title">本单实付</text>
           <view class="final-price-box">
             <text class="final-price-num">¥{{calcResult.final_pay_amount || '0.00'}}</text>
-            <view class="final-rebate-hint">产生推荐返利基数: ¥{{calcResult.commission_cash_base}}</view>
+            <view class="final-rebate-hint">出炉时间不等于送达时间，请留意订单状态</view>
           </view>
         </view>
       </view>
 
+      <view class="checkout-rule-link" bindtap="showRules">查看预约、配送、会员及退款规则 ›</view>
       <!-- 微信支付提交按钮 -->
-      <button class="btn-wxpay-submit btn-press" bindtap="submitOrderPay">
-        微信原生安全支付
+      <view class="checkout-error" wx:if="{{calcError}}" bindtap="calculateBill">{{calcError}} · 点此重新核算</view>
+      <button class="btn-wxpay-submit btn-press" disabled="{{!calcReady || submitting}}" loading="{{calculating || submitting}}" bindtap="submitOrderPay">
+        {{calculating ? '正在核算' : '确认订单并支付'}}
       </button>
     </view>
   </view>

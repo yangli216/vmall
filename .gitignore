@@ -15,3 +15,11 @@ miniprogram/.vscode/
 miniprogram/miniprogram_npm/
 project.private.config.json
 miniprogram/project.private.config.json
+
+# Payment credentials and local verification outputs
+*.pem
+server/.env.*
+!server/.env.example
+server/.runtime/
+.runtime/
+server-deploy.zip

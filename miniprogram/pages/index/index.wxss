@@ -25,20 +25,23 @@
 
 .shop-title {
   font-size: 34rpx;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.25;
+  letter-spacing: 0.5rpx;
 }
 
 .shop-sub {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: var(--text-sub);
   margin-top: 6rpx;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 /* 配送方式分段胶囊 */
@@ -46,23 +49,25 @@
   display: flex;
   background: #F1F3F5;
   padding: 6rpx;
-  border-radius: 36rpx;
+  border-radius: 28rpx;
   flex-shrink: 0;
 }
 
 .segment-btn {
-  padding: 8rpx 20rpx;
-  border-radius: 30rpx;
-  font-size: 22rpx;
-  font-weight: 700;
+  padding: 10rpx 22rpx;
+  border-radius: 22rpx;
+  font-size: 24rpx;
+  font-weight: 600;
   color: var(--text-sub);
   white-space: nowrap;
   transition: all 0.2s;
+  line-height: 1.2;
 }
 
 .segment-btn.active {
   background: #FFFFFF;
   color: var(--text-main);
+  font-weight: 700;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
 }
 
@@ -75,7 +80,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 22rpx;
+  font-size: 24rpx;
   margin-top: 18rpx;
   gap: 16rpx;
 }
@@ -85,7 +90,8 @@
   align-items: center;
   gap: 12rpx;
   color: var(--text-main);
-  font-weight: 700;
+  font-weight: 500;
+  font-size: 24rpx;
   flex: 1;
   min-width: 0;
 }
@@ -111,7 +117,8 @@
 
 .schedule-link {
   color: var(--brand-red);
-  font-weight: 700;
+  font-size: 24rpx;
+  font-weight: 600;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -124,7 +131,7 @@
   justify-content: space-between;
   padding: 18rpx 20rpx;
   background: #F9FAFB;
-  border-radius: 20rpx;
+  border-radius: 24rpx;
   border: 1rpx solid var(--border-soft);
   gap: 16rpx;
 }
@@ -145,53 +152,58 @@
 }
 
 .loc-icon-circle {
-  font-size: 24rpx;
+  font-size: 26rpx;
   flex-shrink: 0;
 }
 
 .address-bold {
-  font-weight: 800;
-  font-size: 26rpx;
+  font-weight: 700;
+  font-size: 28rpx;
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.35;
 }
 
 .address-line-secondary {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: var(--text-sub);
   display: flex;
   align-items: center;
   gap: 4rpx;
-  padding-left: 34rpx;
+  padding-left: 36rpx;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .contact-label {
   color: #9CA3AF;
   flex-shrink: 0;
+  font-size: 24rpx;
 }
 
 .contact-value {
   color: var(--text-main);
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 24rpx;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .address-edit-btn {
-  font-size: 22rpx;
-  font-weight: 800;
+  font-size: 24rpx;
+  font-weight: 600;
   color: var(--brand-red);
   background: #FFF1E6;
-  padding: 8rpx 20rpx;
-  border-radius: 24rpx;
+  padding: 10rpx 22rpx;
+  border-radius: 20rpx;
   flex-shrink: 0;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 /* 香槟金会员通栏 */
@@ -199,7 +211,7 @@
   margin: 24rpx 32rpx 0;
   background: linear-gradient(135deg, #FFFDF8 0%, var(--champagne-bg) 100%);
   border: 1rpx solid var(--champagne-border);
-  border-radius: 32rpx;
+  border-radius: 28rpx;
   padding: 22rpx 28rpx;
   display: flex;
   justify-content: space-between;
@@ -215,7 +227,7 @@
 }
 
 .vip-star-gold {
-  font-size: 32rpx;
+  font-size: 34rpx;
 }
 
 .vip-text-pack {
@@ -223,55 +235,81 @@
 }
 
 .vip-title {
-  font-size: 26rpx;
-  font-weight: 800;
+  font-size: 28rpx;
+  font-weight: 700;
   color: var(--champagne-gold);
+  line-height: 1.35;
   white-space: nowrap;
 }
 
 .vip-desc {
-  font-size: 20rpx;
+  font-size: 24rpx;
   color: #92400E;
-  margin-top: 4rpx;
+  margin-top: 6rpx;
+  line-height: 1.4;
   white-space: nowrap;
 }
 
 .vip-enter-pill {
-  font-size: 20rpx;
-  font-weight: 700;
+  font-size: 24rpx;
+  font-weight: 600;
   color: #FFFFFF;
   background: var(--champagne-gold);
-  padding: 8rpx 20rpx;
-  border-radius: 30rpx;
+  padding: 10rpx 24rpx;
+  border-radius: 24rpx;
   flex-shrink: 0;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
-/* 分类胶囊 */
+/* 品类胶囊导航栏 (标准尺寸、独立矢量图标与和谐文字比例) */
 .modern-category-row {
   display: flex;
   white-space: nowrap;
-  padding: 24rpx 32rpx 14rpx;
+  padding: 22rpx 28rpx 14rpx;
+  box-sizing: border-box;
 }
 
 .cat-capsule {
-  display: inline-block;
-  padding: 12rpx 28rpx;
-  border-radius: 40rpx;
-  font-size: 24rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  padding: 0 22rpx;
+  border-radius: 20rpx;
+  font-size: 26rpx;
   font-weight: 600;
-  background: #FFFFFF;
-  border: 1rpx solid var(--border-soft);
-  color: var(--text-sub);
-  margin-right: 16rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.02);
+  background: #F3F4F6;
+  color: #4B5563;
+  margin-right: 14rpx;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cat-capsule:last-child {
+  margin-right: 28rpx;
 }
 
 .cat-capsule.active {
-  background: var(--brand-red);
+  background: linear-gradient(135deg, #E04F16 0%, #C23B08 100%);
   color: #FFFFFF;
-  border-color: var(--brand-red);
+  font-weight: 700;
   box-shadow: 0 6rpx 16rpx rgba(217, 72, 15, 0.25);
+  transform: translateY(-1rpx);
+}
+
+.cat-icon-img {
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 8rpx;
+  flex-shrink: 0;
+  display: block;
+}
+
+.cat-name {
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* 菜品列表 */
@@ -320,9 +358,9 @@
   background: rgba(31, 41, 55, 0.75);
   backdrop-filter: blur(4px);
   color: #FFFFFF;
-  font-size: 18rpx;
+  font-size: 20rpx;
   font-weight: 700;
-  padding: 4rpx 12rpx;
+  padding: 4rpx 14rpx;
   border-radius: 12rpx;
 }
 
@@ -331,8 +369,8 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   color: #FFFFFF;
-  font-size: 22rpx;
-  font-weight: 800;
+  font-size: 24rpx;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -348,35 +386,39 @@
 
 .dish-name-h3 {
   font-size: 28rpx;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-main);
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .dish-intro-p {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: var(--text-sub);
-  margin-top: 4rpx;
+  margin-top: 6rpx;
+  line-height: 1.4;
 }
 
 .dish-tag-row {
   display: flex;
+  align-items: center;
   gap: 12rpx;
   margin-top: 8rpx;
 }
 
 .tag-vip-disc {
-  font-size: 18rpx;
-  font-weight: 700;
+  font-size: 22rpx;
+  font-weight: 600;
   color: var(--brand-red);
   background: var(--brand-red-light);
-  padding: 2rpx 12rpx;
+  padding: 4rpx 12rpx;
   border-radius: 8rpx;
+  line-height: 1.2;
 }
 
 .tag-points-tip {
-  font-size: 18rpx;
+  font-size: 22rpx;
   color: var(--text-light);
+  line-height: 1.2;
 }
 
 .dish-bottom-action {
@@ -395,18 +437,19 @@
 
 .price-symbol {
   font-size: 24rpx;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--brand-red);
 }
 
 .dish-price-text {
-  font-size: 34rpx;
-  font-weight: 900;
+  font-size: 36rpx;
+  font-weight: 800;
   color: var(--brand-red);
+  line-height: 1.0;
 }
 
 .dish-origin-text {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: var(--text-light);
   text-decoration: line-through;
   margin-left: 8rpx;
@@ -427,9 +470,9 @@
 }
 
 .sold-out-text {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #9CA3AF;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* 官方资质备案说明 */
@@ -440,7 +483,7 @@
   border-radius: 28rpx;
   border: 1rpx dashed var(--border-soft);
   text-align: center;
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: var(--text-light);
   line-height: 1.6;
 }
@@ -470,13 +513,13 @@
 }
 
 .cart-label {
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: var(--text-sub);
 }
 
 .cart-total-num {
   font-size: 36rpx;
-  font-weight: 900;
+  font-weight: 800;
   color: var(--brand-red);
 }
 
@@ -486,7 +529,7 @@
   padding: 18rpx 40rpx;
   border-radius: 36rpx;
   font-size: 26rpx;
-  font-weight: 800;
+  font-weight: 700;
   box-shadow: 0 6rpx 20rpx rgba(217, 72, 15, 0.3);
 }
 
@@ -534,8 +577,8 @@
 }
 
 .drawer-h2 {
-  font-size: 32rpx;
-  font-weight: 900;
+  font-size: 30rpx;
+  font-weight: 700;
   color: var(--text-main);
 }
 
@@ -572,7 +615,7 @@
 }
 
 .info-val {
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-main);
 }
 
@@ -623,7 +666,7 @@
 }
 
 .deduct-name {
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-main);
   font-size: 24rpx;
 }
@@ -633,7 +676,7 @@
 }
 
 .deduct-sub {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: var(--text-sub);
 }
 
@@ -642,7 +685,7 @@
 }
 
 .deduct-tip-text {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #D97706;
   padding-left: 8rpx;
 }
@@ -891,3 +934,88 @@
   padding: 0 6rpx;
   border: 2rpx solid #FFFFFF;
 }
+
+.checkout-contact { padding: 16rpx; background: #FFF8F2; border-radius: 16rpx; }
+.checkout-contact input, .checkout-contact picker { margin: 16rpx 0; min-height: 52rpx; font-size: 26rpx; }
+.checkout-error { color: #B42318; padding: 16rpx; font-size: 24rpx; }
+.shop-announcement { font-size: 24rpx; color: #9A3412; margin-top: 16rpx; }
+.drawer-content-sheet { max-height: 88vh; overflow-y: auto; }
+
+.checkout-rule-link {font-size:24rpx;color:#9A3412;padding:20rpx 0;text-align:center;}
+.dish-photo-placeholder {height:100%;display:flex;align-items:center;justify-content:center;background:#FFF1E5;font-size:64rpx;}
+
+/* 点餐首页：温润纸色、完整店名和易扫读的菜品信息 */
+.container { background: #F6F4F0; }
+.header-unified-card { margin: 0 28rpx; padding: 30rpx 26rpx; border-radius: 24rpx; border: 1rpx solid #EAE5DF; box-shadow: none; }
+.header-top-line { flex-direction: column; align-items: stretch; gap: 24rpx; }
+.shop-title { font-size: 42rpx; font-weight: 600; color: #332C25; white-space: normal; line-height: 1.3; }
+.shop-sub { font-size: 23rpx; color: #98816B; line-height: 1.6; white-space: normal; margin-top: 10rpx; }
+.segmented-control { align-self: flex-start; padding: 6rpx; background: #F1EDE7; border-radius: 14rpx; }
+.segment-btn { padding: 16rpx 32rpx; border-radius: 10rpx; font-size: 25rpx; font-weight: 500; }
+.segment-btn.active { background: #fff; color: #A14726; box-shadow: 0 2rpx 6rpx #E6DDD2; }
+.shop-announcement { font-size: 22rpx; line-height: 1.7; color: #9B7153; margin: 20rpx 0 0; }
+.header-schedule-box { margin-top: 22rpx; background: #FAF5EB; border-color: #F0E5D1; border-radius: 14rpx; padding: 20rpx; }
+.schedule-left { font-size: 26rpx; }
+.schedule-left picker { min-width: 0; }
+.pulse-orange-dot { width: 10rpx; height: 10rpx; background: #B45A30; box-shadow: none; }
+.schedule-link { font-size: 22rpx; font-weight: 500; color: #A36F40; }
+.address-strip { background: transparent; padding: 4rpx 0 0; border: 0; gap: 10rpx; }
+.address-bold { font-size: 25rpx; font-weight: 500; white-space: normal; line-height: 1.6; }
+.address-line-secondary { padding-left: 30rpx; font-size: 21rpx; white-space: normal; flex-wrap: wrap; }
+.contact-label,.contact-value { font-size: 21rpx; color: #9B8A79; white-space: normal; }
+.loc-icon-circle { font-size: 23rpx; }
+.address-edit-btn { padding: 14rpx; border-radius: 10rpx; font-size: 23rpx; }
+.champagne-vip-bar { margin: 22rpx 28rpx 0; padding: 22rpx; border-radius: 18rpx; box-shadow: none; background: #EEE5D7; border: 0; gap: 12rpx; }
+.vip-left-pack,.vip-text-pack { min-width: 0; }
+.vip-title { font-size: 26rpx; font-weight: 600; color: #745130; }
+.vip-desc { font-size: 22rpx; line-height: 1.6; color: #9C7F61; }
+.vip-enter-pill { flex-shrink: 0; background: transparent; color: #94643B; padding: 8rpx; font-size: 22rpx; }
+.modern-category-row { padding-top: 22rpx; padding-bottom: 22rpx; }
+.cat-capsule { border-radius: 12rpx; padding: 18rpx 24rpx; background: #ECE8E1; border: 0; font-size: 25rpx; }
+.cat-capsule.active { background: #A94728; box-shadow: none; transform: none; }
+.menu-feed { padding: 0 28rpx 28rpx; gap: 20rpx; }
+.dish-item-card { padding: 22rpx; border-radius: 22rpx; gap: 22rpx; box-shadow: none; border-color: #EAE5DF; }
+.dish-img-box { width: 194rpx; height: 218rpx; border-radius: 16rpx; background: #EEE5D7; }
+.dish-content-box { min-width: 0; }
+.dish-name-h3 { font-size: 29rpx; font-weight: 600; line-height: 1.5; color: #332C25; }
+.dish-intro-p { font-size: 23rpx; color: #9B8979; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 8rpx; }
+.dish-tag-row { flex-wrap: wrap; gap: 8rpx 12rpx; margin-top: 12rpx; }
+.tag-vip-disc { font-size: 21rpx; font-weight: 500; color: #A64A28; background: #FAEEE5; padding: 4rpx 8rpx; border-radius: 5rpx; }
+.tag-points-tip { font-size: 21rpx; color: #A19588; }
+.dish-bottom-action { flex-wrap: wrap; gap: 14rpx; margin-top: 16rpx; }
+.dish-price-text { font-size: 36rpx; font-weight: 650; color: #AC4625; }
+.price-symbol { color: #AC4625; font-size: 22rpx; }
+.dish-price-group { flex-wrap: wrap; }
+.dish-origin-text { font-size: 22rpx; }
+.btn-circle-add,.btn-stepper.plus { background: #AF4727; box-shadow: none; }
+.btn-circle-add { width: 56rpx; height: 56rpx; border-radius: 16rpx; margin-left: auto; }
+.cart-stepper-row { gap: 12rpx; margin-left: auto; }
+.btn-stepper { width: 54rpx; height: 54rpx; border-radius: 14rpx; font-weight: 500; }
+.stepper-count { font-size: 26rpx; min-width: 26rpx; }
+.dish-floating-badge { top: auto; bottom: 0; left: 0; right: 0; border-radius: 0; padding: 8rpx 10rpx; text-align: center; font-size: 20rpx; font-weight: 400; background: rgba(64,44,26,.7); }
+.dish-photo-placeholder { flex-direction: column; background: #F0E9DE; font-family: serif; font-size: 58rpx; color: #AF9270; }
+.placeholder-caption { font-family: sans-serif; font-size: 21rpx; margin-top: 12rpx; color: #AD9B86; }
+.airy-cart-dock { left: 28rpx; right: 28rpx; border-radius: 22rpx; padding: 18rpx 20rpx; border-color: #E8DFD4; box-shadow: 0 8rpx 28rpx rgba(79,57,34,.12); }
+.cart-summary-text { min-width: 0; flex-wrap: wrap; gap: 8rpx; }
+.cart-total-num { font-size: 36rpx; color: #AA4624; }
+.btn-dock-confirm { background: #AA4624; border-radius: 16rpx; padding: 22rpx 32rpx; font-size: 26rpx; white-space: nowrap; box-shadow: none; }
+.drawer-content-sheet { border-radius: 28rpx 28rpx 0 0; background: #FFFEFC; padding: 30rpx 28rpx calc(40rpx + env(safe-area-inset-bottom)); }
+.drawer-h2 { font-size: 32rpx; font-weight: 600; }
+.drawer-info-box { border-radius: 16rpx; background: #F5F1EA; }
+.info-row { gap: 20rpx; font-size: 24rpx; line-height: 1.7; }
+.info-label { flex-shrink: 0; }
+.info-val { min-width: 0; text-align: right; overflow-wrap: anywhere; font-weight: 500; }
+.checkout-contact .contact-input { width: 100%; height: 88rpx; box-sizing: border-box; background: #F8F5EF; border: 1rpx solid #E8DFD4; border-radius: 12rpx; margin: 16rpx 0; padding: 20rpx; font-size: 26rpx; }
+.checkout-contact picker { font-size: 26rpx; padding: 20rpx 0; color: #8C6546; }
+.deduct-left { min-width: 0; flex: 1; }
+.deduct-line-item { gap: 12rpx; }
+.deduct-name { font-size: 26rpx; }
+.deduct-sub { font-size: 22rpx; }
+.bill-final-row { align-items: flex-start; gap: 18rpx; }
+.final-title { flex-shrink: 0; font-size: 28rpx; font-weight: 600; }
+.final-rebate-hint { line-height: 1.7; font-size: 22rpx; margin-top: 8rpx; }
+.btn-wxpay-submit { background: #278464; box-shadow: none; padding: 18rpx 24rpx; border-radius: 16rpx; font-size: 28rpx; font-weight: 600; line-height: 1.6; }
+.official-license-footer { color: #A99B8C; font-size: 21rpx; line-height: 1.8; }
+
+.drawer-info-box .copy-pickup-button { margin: 16rpx 0 0; padding: 12rpx 20rpx; font-size: 24rpx; line-height: 1.6; color: #8A6D51; background: #FFFCF7; border-radius: 10rpx; }
+.copy-pickup-button::after { border: 1rpx solid #E5DACB; }

@@ -1,0 +1,15 @@
+page { background:#f7f5f2; color:#292524; }
+.page { padding:28rpx 24rpx 80rpx; }
+.title { font-size:40rpx; font-weight:700; margin-bottom:20rpx; }
+.card { background:#fff; border-radius:20rpx; padding:28rpx; margin:24rpx 0; }
+.heading { font-size:30rpx; font-weight:600; margin-bottom:20rpx; }
+.notice { font-size:25rpx; line-height:1.7; color:#675e58; margin:14rpx 0; }
+.error { color:#b42318; }
+.label { display:block; font-size:26rpx; margin:20rpx 0 10rpx; }
+input,.field,textarea { box-sizing:border-box; background:#faf8f5; border:1rpx solid #e7e2dc; border-radius:10rpx; padding:20rpx; font-size:28rpx; }
+input { height:86rpx; } textarea { width:100%; min-height:180rpx; margin:20rpx 0; }
+button { margin-top:20rpx; font-size:28rpx; color:#fff; background:#bb4c1b; }
+button.secondary { background:#fff; color:#675e58; border:1rpx solid #ded6cb; }
+.confirmation { display:block; font-size:24rpx; line-height:1.8; color:#675e58; }
+.description { white-space:pre-wrap; overflow-wrap:break-word; font-size:28rpx; line-height:1.7; }
+.reply { border-top:1rpx solid #eee; margin-top:20rpx; padding-top:20rpx; }

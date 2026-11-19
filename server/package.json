@@ -5,24 +5,39 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "local:start": "node scripts/local-dev.js start",
+    "local:stop": "node scripts/local-dev.js stop",
+    "local:restart": "node scripts/local-dev.js restart",
+    "local:status": "node scripts/local-dev.js status",
+    "local:verify": "npm run build && node --test test/local-integration.mysql.js",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "npm run build && node --test test/*.test.js",
+    "migrate": "node scripts/migrate.js",
+    "preflight": "node scripts/preflight.js",
+    "test:integration": "npm run build && node --test test/integration.mysql.js",
+    "release": "npm run build && node scripts/package-release.js"
   },
   "dependencies": {
     "@koa/cors": "^5.0.0",
     "@koa/router": "^12.0.1",
+    "cos-nodejs-sdk-v5": "^3.0.0",
     "dotenv": "^16.4.5",
     "koa": "^2.15.3",
     "koa-bodyparser": "^4.4.1",
-    "mysql2": "^3.9.7"
+    "mysql2": "^3.9.7",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/koa": "^2.15.0",
-    "@types/koa-bodyparser": "^4.3.12",
     "@types/koa__cors": "^5.0.0",
     "@types/koa__router": "^12.0.4",
+    "@types/koa-bodyparser": "^4.3.12",
     "@types/node": "^20.12.12",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

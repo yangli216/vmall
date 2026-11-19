@@ -1,3 +1,4 @@
+-- 仅用于首次空库初始化：包含DROP TABLE；已有营业数据请使用server/migrations升级。
 -- ====================================================================
 -- 杭州临安潘小兜食品小作坊 · 微信云托管数据库初始化脚本
 -- 许可证号：JY13301850326102 (含网络经营)
@@ -28,12 +29,9 @@ INSERT INTO `t_system_config` (`config_key`, `config_value`, `remark`) VALUES
 ('COMMISSION_RATE', '0.03', '新会员消费实付款给推荐人的返佣比例(默认3%)'),
 ('DELIVERY_BASE_FEE', '3.00', '作坊本地配送基础费用(元)'),
 ('DELIVERY_FREE_THRESHOLD', '38.00', '同城配送满额包邮免配送费门槛(元)'),
-('DELIVERY_MAX_DISTANCE', '5.0', '作坊自配送最大覆盖半径(公里，超出仅限自提)'),
 ('WORKSHOP_ADDRESS', '浙江省杭州市临安区锦城街道临天八弄36号', '潘小兜实体工坊自提发货地址'),
 ('DELIVERY_PERSON_NAME', '潘坚 (潘师傅)', '默认自配送负责人姓名'),
 ('DELIVERY_PERSON_PHONE', '13735518290', '默认自配送负责人电话'),
-('ADMIN_PASSCODE', '8899', '作坊掌柜身份验证主口令(用于绑定管理员OpenID)'),
-('MEMBER_DISCOUNT_RATE', '0.88', '尊享会员折扣率(如0.88代表8.8折)'),
 ('WORKSHOP_ANNOUNCEMENT', '今日傍晚 16:30 准时出锅，临天八弄现捞保温直达', '作坊主页顶部出炉与营业公告'),
 ('BATCH_SCHEDULE_TIME', '16:30', '每日出锅截单时段(如16:30)');
 
@@ -52,17 +50,22 @@ CREATE TABLE `t_product` (
   `origin_price` DECIMAL(10,2) NOT NULL COMMENT '原价/非会员价(元)',
   `member_price` DECIMAL(10,2) NOT NULL COMMENT '会员专享价(元)',
   `status` TINYINT(1) DEFAULT 1 COMMENT '状态：1在售中，0已沽清售罄',
-  `stock_qty` INT DEFAULT 999 COMMENT '预估今日剩余份数',
+  `stock_qty` INT DEFAULT 0 COMMENT '未开始预约批次的默认可售份数',
   `sort_order` INT DEFAULT 0 COMMENT '排序权重',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='卤味商品主表';
 
--- 初始精品菜品种子数据
+-- 初始精品菜品种子数据 (涵盖全部4大核心品类，保证每个分类均有丰满货品)
 INSERT INTO `t_product` (`title`, `cover_img`, `category_id`, `category_name`, `intro`, `badge`, `origin_price`, `member_price`, `status`, `sort_order`) VALUES
 ('古法五香酱卤牛肉 (半斤装)', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&q=80', 1, '招牌必吃', '老卤慢煨6小时，肉香紧实纹理清晰，切片直接下酒', '传统柴火', 48.00, 42.00, 1, 100),
-('秘制甜辣鸭翅中 (8只份装)', 'https://images.unsplash.com/photo-1527477321055-43615b62e739?w=400&q=80', 1, '招牌必吃', '微甜带辣，外皮胶质浓郁连骨头都有味，现捞出锅', '今日现出', 30.00, 26.80, 1, 90),
-('爽口双拼素菜 (卤藕片+海带结)', 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80', 4, '爽脆下酒素', '现捞红油凉拌，爽口解腻佐餐必备', '现拌素味', 12.00, 12.00, 1, 80);
+('秘制甜辣鸭翅中 (8只份装)', 'https://images.unsplash.com/photo-1527477321055-43615b62e739?w=400&q=80', 1, '招牌必吃', '微甜带辣，外皮胶质浓郁连骨头都有味，现捞出锅', '今日现出', 30.00, 26.80, 1, 95),
+('招牌陈皮酱香牛腱子 (半斤装)', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&q=80', 2, '秘制酱牛肉', '精选牛腱芯，肉筋花纹清晰如大理石，陈皮提鲜回甘', '金牌牛腱', 52.00, 45.80, 1, 90),
+('慢煨软糯酱牛筋 (四两装)', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&q=80', 2, '秘制酱牛肉', '晶莹剔透，满满胶原蛋白，软烂弹牙入口即化', '老卤胶质', 46.00, 40.00, 1, 85),
+('香辣老卤鸭锁骨 (5大块)', 'https://images.unsplash.com/photo-1527477321055-43615b62e739?w=400&q=80', 3, '麻辣鸭副件', '肉质酥软入骨，浓香微麻，追剧下酒停不下来', '下酒神品', 22.00, 19.00, 1, 80),
+('绝味香卤鸭掌 (8只装)', 'https://images.unsplash.com/photo-1527477321055-43615b62e739?w=400&q=80', 3, '麻辣鸭副件', '皮脆筋道，鲜香微辣，嚼劲十足越啃越香', '经典回购', 25.00, 22.00, 1, 75),
+('爽口双拼素菜 (卤藕片+海带结)', 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80', 4, '爽脆下酒菜', '现捞红油凉拌，爽口解腻佐餐必备，香脆开胃', '现拌素味', 12.00, 10.50, 1, 70),
+('临安香卤高山笋尖 (特制份装)', 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80', 4, '爽脆下酒菜', '采自临安天目山优质高山鲜笋，鲜嫩无渣吸饱卤汁', '山野鲜捞', 15.00, 13.00, 1, 65);
 
 -- ----------------------------
 -- 3. 用户与会员账户表
@@ -88,11 +91,7 @@ CREATE TABLE `t_user` (
   INDEX `idx_invite_code` (`invite_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户与会员账户表';
 
--- 初始示例会员种子数据 (用于后台快速演示会员画像)
-INSERT INTO `t_user` (`openid`, `phone`, `nickname`, `avatar_url`, `is_member`, `is_admin`, `member_card_no`, `invite_code`, `normal_points`, `red_packet_points`, `total_consume_amount`) VALUES
-('wx_admin_pan', '13735518290', '掌柜潘师傅', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120', 1, 1, 'NO.0001', 'PXD-8888', 500, 120.00, 1280.00),
-('wx_user_wang', '13958001122', '临安王姐', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120', 1, 0, 'NO.8802', 'PXD-8802', 180, 36.50, 156.00),
-('wx_user_zhang', '13867112233', '锦城老张', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120', 0, 0, 'NO.8803', 'PXD-8803', 42, 0.00, 42.00);
+-- 真实用户通过微信可信身份首次访问自动建档，不预置示例账户或虚拟资产。
 
 -- ----------------------------
 -- 4. 订单主表
@@ -112,7 +111,7 @@ CREATE TABLE `t_order` (
   
   -- 金额明细
   `goods_total_amount` DECIMAL(10,2) NOT NULL COMMENT '商品原价总金额',
-  `member_discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '会员8.8折优惠减免金额',
+  `member_discount_amount` DECIMAL(10,2) DEFAULT 0.00 COMMENT '逐商品会员价优惠减免金额',
   `normal_points_deduct` DECIMAL(10,2) DEFAULT 0.00 COMMENT '普通积分满减抵扣金额',
   `used_normal_points` INT DEFAULT 0 COMMENT '消耗的普通积分点数',
   `red_packet_deduct` DECIMAL(10,2) DEFAULT 0.00 COMMENT '红包积分直接冲抵现金金额',
@@ -123,7 +122,7 @@ CREATE TABLE `t_order` (
   -- 状态机
   `order_status` TINYINT NOT NULL DEFAULT 10 COMMENT '10:待付款, 20:已付款/待出锅备餐, 30:潘师傅自送中, 40:已完成送达, 50:已退款',
   `delivery_person_name` VARCHAR(50) DEFAULT '潘坚' COMMENT '自送人姓名',
-  `delivery_person_phone` VARCHAR(20) DEFAULT '13800000000' COMMENT '自送人电话',
+  `delivery_person_phone` VARCHAR(20) DEFAULT '' COMMENT '发车时快照自送人电话',
   
   `pay_time` DATETIME NULL COMMENT '微信支付完成时间',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,

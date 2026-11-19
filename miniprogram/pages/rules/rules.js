@@ -1,0 +1,2 @@
+const app=getApp();
+Page({data:{config:{},error:''},onLoad(){app.api('/api/config/all').then(config=>this.setData({config})).catch(error=>this.setData({error:error.message}));},copyShopAddress(){require('../../utils/copy-address').copyAddress(this.data.config.WORKSHOP_ADDRESS);},privacy(){wx.navigateTo({url:'/pages/privacy/privacy'});},contact(){if(this.data.config.DELIVERY_PERSON_PHONE)wx.makePhoneCall({phoneNumber:this.data.config.DELIVERY_PERSON_PHONE});}});

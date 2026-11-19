@@ -1,0 +1,5 @@
+<view class="page">
+ <dev-banner /><view class="notice">有效现金货款每满1元赠1分，订单完成后到账；100分抵5元，货款不足5元不消耗该次积分。推荐红包仅抵货款，不可提现。退款冲回该单已发奖励，已用部分单独列为待抵回，从后续同类奖励中抵回，不扣现金。历史余额以升级时保留的账户余额为起点。</view>
+<view wx:if="{{error}}" class="notice">{{error}} · 下拉重试</view><view wx:if="{{!rows.length && !loading}}" class="notice">暂无账户流水</view>
+<view wx:for="{{rows}}" wx:key="id" class="row"><view class="line"><text>{{item.label}} · {{item.reason}}</text><text>{{item.display_amount}}{{item.unit}}</text></view><view class="meta">{{item.create_time}} · 变动后{{item.balance_label}} {{item.after_val}}{{item.unit}}</view></view>
+<view class="notice" wx:if="{{nextId}}">上拉加载更多</view></view>

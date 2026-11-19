@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
+import { adminAuditContext } from './services/audit-context';
 
 dotenv.config();
 
@@ -27,13 +28,24 @@ const pool = mysql.createPool({
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
+  dateStrings: true,
+  timezone: '+08:00',
   decimalNumbers: true // 自动将 DECIMAL 转换为数值/字符串，避免不精确序列化
 });
+
+pool.on('connection', (connection: any) => { connection.query("SET time_zone = '+08:00'"); });
 
 /**
  * 通用安全参数化 SQL 查询
  */
 export async function query<T = any>(sql: string, params?: any[]): Promise<T> {
+  const audit = adminAuditContext.getStore();
+  if (audit && !audit.committed && /^\s*(INSERT|UPDATE|DELETE)\b/i.test(sql)) {
+    return withTransaction(async conn => {
+      const [results] = await conn.execute(sql, params);
+      return results as T;
+    });
+  }
   const [results] = await pool.execute(sql, params);
   return results as T;
 }
@@ -44,17 +56,31 @@ export async function query<T = any>(sql: string, params?: any[]): Promise<T> {
 export async function withTransaction<T>(
   callback: (conn: mysql.PoolConnection) => Promise<T>
 ): Promise<T> {
-  const conn = await pool.getConnection();
-  await conn.beginTransaction();
-  try {
-    const result = await callback(conn);
-    await conn.commit();
-    return result;
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
+  // Only retry errors whose entire transaction has been rolled back. Network or
+  // commit errors have an uncertain outcome and must never be blindly replayed.
+  for (let attempt = 0; ; attempt++) {
+    const conn = await pool.getConnection();
+    let retry = false;
+    try {
+      await conn.beginTransaction();
+      const result = await callback(conn);
+      const audit = adminAuditContext.getStore();
+      if (audit && !audit.committed) {
+        await conn.execute('INSERT INTO t_admin_audit (operator_id, action, target_id) VALUES (?, ?, ?)',
+          [audit.operatorId, audit.action, audit.targetId]);
+      }
+      await conn.commit();
+      if (audit) audit.committed = true;
+      return result;
+    } catch (err: any) {
+      try { await conn.rollback(); }
+      catch { throw err; }
+      retry = attempt < 2 && ['ER_LOCK_DEADLOCK', 'ER_LOCK_WAIT_TIMEOUT'].includes(err.code);
+      if (!retry) throw err;
+    } finally {
+      conn.release();
+    }
+    if (retry) await new Promise(resolve => setTimeout(resolve, 25 * (attempt + 1) + Math.floor(Math.random() * 50)));
   }
 }
 
