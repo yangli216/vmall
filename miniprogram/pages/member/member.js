@@ -1,7 +1,7 @@
 const app=getApp();
 Page({
  data:{loading:false,userInfo:{nickname:'食客',normal_points:0,red_packet_points:'0.00'},isMember:false,progressPercent:0,
-  config:{MEMBER_ENTRY_MODE:'CONSUME',MEMBER_ENTRY_THRESHOLD:'68.00',COMMISSION_RATE:'0.03'},error:'',localDevelopment:false,switchingTestAccount:false},
+  config:{MEMBER_ENTRY_MODE:'CONSUME',MEMBER_ENTRY_THRESHOLD:'68.00',COMMISSION_RATE:'0.03'},error:'',localDevelopment:false,switchingTestAccount:false,showTimelineGuide:false},
  onShow(){this.setData({localDevelopment:app.globalData.allowLocalDev===true && app.globalData.runtimeVersion==='develop'});this.loadData();},onPullDownRefresh(){this.loadData().finally(()=>wx.stopPullDownRefresh());},
  async switchTestAccount(event){
   if(!this.data.localDevelopment || this.data.switchingTestAccount)return;
@@ -31,5 +31,27 @@ Page({
  showAccountFlows(){wx.navigateTo({url:'/pages/account/account'});},
  showPrivacy(){wx.navigateTo({url:'/pages/privacy/privacy'});},
  showRules(){wx.navigateTo({url:'/pages/rules/rules'});},
- onEditProfile(){wx.showModal({title:'修改昵称',editable:true,content:this.data.userInfo.nickname,success:async r=>{if(!r.confirm||!r.content)return;try{await app.api('/api/user/update-profile','POST',{nickname:r.content.trim()});await this.loadData();}catch(error){wx.showToast({title:error.message,icon:'none'});}}});}
+ onEditProfile(){wx.showModal({title:'修改昵称',editable:true,content:this.data.userInfo.nickname,success:async r=>{if(!r.confirm||!r.content)return;try{await app.api('/api/user/update-profile','POST',{nickname:r.content.trim()});await this.loadData();}catch(error){wx.showToast({title:error.message,icon:'none'});}}});},
+ copyReferralCode(){
+  const code = this.data.userInfo && this.data.userInfo.invite_code;
+  if (!code) return wx.showToast({ title: '邀请码正在生成中', icon: 'none' });
+  wx.setClipboardData({ data: code, success: () => wx.showToast({ title: '邀请码已复制', icon: 'success' }) });
+ },
+ showTimelineGuide(){ this.setData({ showTimelineGuide: true }); },
+ closeTimelineGuide(){ this.setData({ showTimelineGuide: false }); },
+ timelineGuideToPromote(){ this.setData({ showTimelineGuide: false }); this.navToPromote(); },
+ onShareAppMessage(){
+  const code = this.data.isMember && this.data.userInfo && this.data.userInfo.invite_code;
+  return {
+   title: '潘小兜老卤 · 预约现做，会员享菜品专属价',
+   path: code ? `/pages/index/index?referrer=${encodeURIComponent(code)}` : '/pages/index/index'
+  };
+ },
+ onShareTimeline(){
+  const code = this.data.isMember && this.data.userInfo && this.data.userInfo.invite_code;
+  return {
+   title: '潘小兜老卤 · 预约现做，新鲜现卤到店自提或周边自送',
+   query: code ? `referrer=${encodeURIComponent(code)}` : ''
+  };
+ }
 });

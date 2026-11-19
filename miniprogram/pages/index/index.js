@@ -10,7 +10,7 @@ Page({
       { id: 3, name: '麻辣鸭副件',iconNormal:'/images/category/cat_3.png',iconActive:'/images/category/cat_3_active.png' },
       { id: 4, name: '爽脆下酒菜',iconNormal:'/images/category/cat_4.png',iconActive:'/images/category/cat_4_active.png' },{id:5,name:'手工饮品'}],
     currentCatId: 0, allDishes: [], dishes: [], cart: {}, cartList: [], cartCount: 0, cartTotal: '0.00', isDrawerOpen: false,
-    orderRemark: '', isMember: false, userNormalPoints: 0, userRedPoints: '0.00', useNormalPoints: false, useRedPoints: false,
+    orderRemark: '', isMember: false, myReferralCode: '', userNormalPoints: 0, userRedPoints: '0.00', useNormalPoints: false, useRedPoints: false,
     inputRedAmount: '0.00', loadingProducts: true, productError: '', calcError: '', calcReady: false, calculating: false, submitting: false,
     redLimitPercent: 50, calcResult: {}, contactFormOpen: false
   },
@@ -45,7 +45,7 @@ Page({
       const fullBatchText=(business.full_batch_labels || []).join('、');
       this.setData({ slots: business.slots, slotIndex,fullBatchText, currentBatchText: business.slots[slotIndex] ? business.slots[slotIndex].label : fullBatchText ? '可预约批次已接满' : '当前暂无可预约批次',
         config: business.config, deliveryAreas: business.delivery_areas, redLimitPercent: Math.round(Number(business.config.RED_PACKET_MAX_DEDUCT_RATIO) * 100),
-        isMember: user.is_member === 1, userNormalPoints: user.normal_points, userRedPoints: user.red_packet_points,
+        isMember: user.is_member === 1, myReferralCode: user.invite_code || '', userNormalPoints: user.normal_points, userRedPoints: user.red_packet_points,
         inputRedAmount: user.red_packet_points });
       const pending = wx.getStorageSync('pandou_pending_referrer');
       if (pending) {
@@ -173,6 +173,18 @@ Page({
   showRules() { wx.navigateTo({url:'/pages/rules/rules'}); },
   copyShopAddress(){require('../../utils/copy-address').copyAddress(this.data.config.WORKSHOP_ADDRESS);},
   navToMember() { wx.switchTab({ url: '/pages/member/member' }); },
-  onShareAppMessage() { return { title: '潘小兜老卤 · 预约现做，到店自提或周边自送', path: '/pages/index/index' }; },
-  onShareTimeline() { return { title: '潘小兜老卤 · 预约现做' }; }
+  onShareAppMessage() {
+    const code = this.data.isMember && this.data.myReferralCode;
+    return {
+      title: '潘小兜老卤 · 预约现做，会员享菜品专属价',
+      path: code ? `/pages/index/index?referrer=${encodeURIComponent(code)}` : '/pages/index/index'
+    };
+  },
+  onShareTimeline() {
+    const code = this.data.isMember && this.data.myReferralCode;
+    return {
+      title: '潘小兜老卤 · 预约现做，新鲜现卤到店自提或周边自送',
+      query: code ? `referrer=${encodeURIComponent(code)}` : ''
+    };
+  }
 });

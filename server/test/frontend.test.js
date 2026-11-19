@@ -372,3 +372,41 @@ test('report dates and detail types ignore stale results, preserve failed pagina
  assert.equal(page.data.rows[0].id,6);assert.equal(page.data.nextCursor,null);
  const late=page.loadSummary();page.onUnload();pending[7].resolve({date:'wrong',benefits:[]});await late;assert.equal(page.data.summary.date,'2026-04-01');
 });
+test('member recommendations support sharing to WeChat friends and timeline with referral code',()=>{
+ const toasts=[],copied=[];
+ const {page}=loadPage('member',{},{showToast:o=>toasts.push(o.title),setClipboardData:o=>{copied.push(o.data);o.success();}});
+ page.data.isMember=true;page.data.userInfo={invite_code:'VIP888'};
+ assert.equal(page.onShareAppMessage().path,'/pages/index/index?referrer=VIP888');
+ assert.equal(page.onShareTimeline().query,'referrer=VIP888');
+ page.copyReferralCode();assert.deepEqual(copied,['VIP888']);assert.ok(toasts.includes('邀请码已复制'));
+ page.showTimelineGuide();assert.equal(page.data.showTimelineGuide,true);
+ page.closeTimelineGuide();assert.equal(page.data.showTimelineGuide,false);
+ page.data.isMember=false;page.data.userInfo={invite_code:''};
+ assert.equal(page.onShareAppMessage().path,'/pages/index/index');
+ assert.equal(page.onShareTimeline().query,'');
+});
+test('index page attaches member referral code to onShareAppMessage and onShareTimeline',()=>{
+ const {page}=loadPage('index',{});
+ page.data.isMember=true;page.data.myReferralCode='REF123';
+ assert.equal(page.onShareAppMessage().path,'/pages/index/index?referrer=REF123');
+ assert.equal(page.onShareTimeline().query,'referrer=REF123');
+ page.data.isMember=false;page.data.myReferralCode='REF123';
+ assert.equal(page.onShareAppMessage().path,'/pages/index/index');
+ assert.equal(page.onShareTimeline().query,'');
+});
+test('promote page timeline guide dialog toggles and binds pending referral for new guests',async()=>{
+ const bound=[];
+ const {page,storage}=loadPage('promote',{api:async(path,method,body)=>{
+  if(path==='/api/user/info')return {invite_code:'PXD-GUEST',is_member:0};
+  if(path==='/api/config/all')return {COMMISSION_RATE:'0.03',RED_PACKET_MAX_DEDUCT_RATIO:'0.5'};
+  if(path.startsWith('/api/referral/my'))return {summary:{},list:[],next_cursor:null};
+  if(path==='/api/user/bind-referrer'){bound.push(body.invite_code);return {};}
+  return {};
+ }});
+ storage.set('pandou_pending_referrer','INVITE999');
+ page.showTimelineGuide();assert.equal(page.data.showTimelineGuide,true);
+ page.closeTimelineGuide();assert.equal(page.data.showTimelineGuide,false);
+ await page.loadReferrals();
+ assert.deepEqual(bound,['INVITE999']);
+ assert.equal(storage.has('pandou_pending_referrer'),false);
+});

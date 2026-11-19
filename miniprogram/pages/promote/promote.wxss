@@ -439,3 +439,196 @@
 .ref-reward-col { flex-shrink: 0; }
 .ref-date,.reward-title { font-size: 21rpx; line-height: 1.7; }
 .empty-text { font-size: 25rpx; line-height: 1.8; color: #9B8978; }
+
+/* 微信个人与朋友圈双渠道分享增强 */
+.share-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  margin-bottom: 14rpx;
+}
+.btn-share-channel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  padding: 22rpx 12rpx;
+  border-radius: 16rpx;
+  font-size: 27rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 0;
+  margin: 0;
+}
+.btn-share-channel .btn-icon {
+  font-size: 32rpx;
+}
+.btn-share-wx {
+  background: linear-gradient(135deg, #07C160 0%, #059669 100%);
+  color: #FFFFFF !important;
+  box-shadow: 0 4rpx 12rpx rgba(7, 193, 96, 0.25);
+}
+.btn-share-pyq {
+  background: linear-gradient(135deg, #F97316 0%, #D9480F 100%);
+  color: #FFFFFF !important;
+  box-shadow: 0 4rpx 12rpx rgba(217, 72, 15, 0.25);
+}
+.share-secondary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+.btn-sec-action {
+  box-sizing: border-box;
+  width: 100% !important;
+  background: #FFFFFF;
+  color: #785A3E !important;
+  border: 1rpx solid #E3D7C6 !important;
+  border-radius: 14rpx;
+  padding: 16rpx 8rpx !important;
+  font-size: 23rpx !important;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0 !important;
+}
+
+/* 新客/未入会友好展示横幅 */
+.guest-invite-banner {
+  background: #FFFDF8;
+  border: 1rpx solid #E8DAC5;
+  border-radius: 24rpx;
+  padding: 32rpx 28rpx;
+  margin-bottom: 24rpx;
+  text-align: center;
+}
+.guest-banner-tag {
+  display: inline-block;
+  background: #F7EDE2;
+  color: #A26F45;
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 10rpx;
+  margin-bottom: 14rpx;
+}
+.guest-banner-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #443424;
+  margin-bottom: 8rpx;
+}
+.guest-banner-sub {
+  font-size: 24rpx;
+  color: #8C7B6B;
+  line-height: 1.6;
+  margin-bottom: 24rpx;
+}
+.btn-guest-order {
+  background: #AF4725;
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 16rpx;
+  padding: 20rpx 0;
+  border: 0;
+}
+
+/* 朋友圈指引弹窗 */
+.timeline-guide-dialog {
+  width: 100%;
+  max-width: 620rpx;
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  box-sizing: border-box;
+  text-align: center;
+  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.16);
+}
+.timeline-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  margin-bottom: 28rpx;
+}
+.timeline-guide-icon {
+  font-size: 36rpx;
+}
+.timeline-guide-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+.timeline-guide-body {
+  background: #FFF9F3;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  text-align: left;
+}
+.guide-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+.guide-step-item .step-num {
+  width: 38rpx;
+  height: 38rpx;
+  border-radius: 19rpx;
+  background: #D9480F;
+  color: #FFFFFF;
+  font-size: 22rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.guide-step-item .step-text {
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #4B5563;
+}
+.highlight-capsule {
+  color: #111827;
+  font-weight: 700;
+  background: #E5E7EB;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+}
+.highlight-action {
+  color: #D9480F;
+  font-weight: 700;
+}
+.timeline-guide-tip {
+  font-size: 23rpx;
+  color: #9CA3AF;
+  line-height: 1.5;
+  margin-bottom: 28rpx;
+}
+.timeline-guide-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.btn-guide-poster {
+  background: linear-gradient(135deg, #F97316 0%, #D9480F 100%);
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 18rpx;
+  padding: 20rpx 0;
+  border: 0;
+  margin: 0;
+}
+.btn-guide-cancel {
+  background: #F3F4F6;
+  color: #4B5563;
+  font-size: 26rpx;
+  border-radius: 18rpx;
+  padding: 18rpx 0;
+  border: 0;
+  margin: 0;
+}

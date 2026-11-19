@@ -6,7 +6,7 @@ const {createReferralPoster} = require('../../utils/poster');
 Page({
   data: {
     loading: false, error: '', nextCursor: null,
-    posterGenerating:false,posterSaving:false,posterPath:'',posterError:'',showPoster:false,
+    posterGenerating:false,posterSaving:false,posterPath:'',posterError:'',showPoster:false,showTimelineGuide:false,
     myReferralCode: '',
     commissionRatePercent: 3, maxDeductRatio: 0.5, isMember: false,
     simOrderAmount: 100,
@@ -52,6 +52,16 @@ Page({
         commissionRatePercent:Math.round(Number(config.COMMISSION_RATE) * 100),
         maxDeductRatio:Number(config.RED_PACKET_MAX_DEDUCT_RATIO), summary:result.summary,
         referrals:(append ? this.data.referrals : []).concat(result.list), nextCursor:result.next_cursor}, () => this.recalcSim());
+      const pending = wx.getStorageSync('pandou_pending_referrer');
+      if (pending && user.is_member !== 1) {
+        try {
+          await app.api('/api/user/bind-referrer', 'POST', { invite_code: pending });
+          wx.removeStorageSync('pandou_pending_referrer');
+          wx.showToast({ title: '已绑定推荐好友', icon: 'success' });
+        } catch (err) {
+          if ([400, 403, 409].includes(err.code)) wx.removeStorageSync('pandou_pending_referrer');
+        }
+      }
     } catch(error) {
       if (sequence === this._sequence) this.setData({error:error.message});
     } finally {
@@ -118,7 +128,20 @@ Page({
   },
 
   showPosterTip: function () {
-    wx.showModal({title:'分享邀请',content:'请使用“发送给微信好友”分享专属入口，好友进入后会尝试绑定；仅首次下单前可绑定。推荐人须为有效会员，好友收货后奖励才可使用。',showCancel:false});
+    wx.showModal({title:'推荐好友规则',content:'1. 点击「发给微信好友」或「分享到朋友圈」分享专属推荐；\n2. 点击「生成邀请海报」可保存至相册发布到朋友圈；\n3. 好友在首次下单前会自动绑定您为推荐人；\n4. 好友订单收货完成后，推荐奖励将实时存入您的红包账户，下单可直接抵扣货款。',showCancel:false});
+  },
+  showTimelineGuide: function () {
+    this.setData({ showTimelineGuide: true });
+  },
+  closeTimelineGuide: function () {
+    this.setData({ showTimelineGuide: false });
+  },
+  timelineGuideToPoster: function () {
+    this.setData({ showTimelineGuide: false });
+    this.generatePoster();
+  },
+  goToIndex: function () {
+    wx.switchTab({ url: '/pages/index/index' });
   },
   generatePoster: async function(){
     if(this.data.posterGenerating)return;

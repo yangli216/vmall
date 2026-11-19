@@ -19,18 +19,58 @@
 
     <!-- 分享操作按钮组 -->
     <view wx:if="{{isMember}}" class="share-actions-row">
-      <button size="mini" class="btn-share-wx btn-press" open-type="share">
-        分享给微信好友
+      <button class="btn-share-channel btn-share-wx btn-press" open-type="share">
+        <text class="btn-icon">💬</text>
+        <text>发给微信好友</text>
       </button>
-      <button size="mini" class="btn-share-poster btn-press" bindtap="showPosterTip">
-        查看邀请规则
+      <button class="btn-share-channel btn-share-pyq btn-press" bindtap="showTimelineGuide">
+        <text class="btn-icon">⭕️</text>
+        <text>分享到朋友圈</text>
       </button>
-      <button size="mini" class="btn-share-poster btn-press" bindtap="generatePoster" disabled="{{posterGenerating}}" loading="{{posterGenerating}}">生成邀请海报</button>
+    </view>
+    <view wx:if="{{isMember}}" class="share-secondary-row">
+      <button size="mini" class="btn-sec-action btn-press" bindtap="generatePoster" disabled="{{posterGenerating}}" loading="{{posterGenerating}}">
+        🖼️ 生成邀请海报
+      </button>
+      <button size="mini" class="btn-sec-action btn-press" bindtap="showPosterTip">
+        📋 奖励规则
+      </button>
     </view>
   </view>
 
-<view wx:if="{{!isMember}}" class="empty-list-box">成为有效会员后可获得推荐奖励</view>
+  <view wx:if="{{!isMember}}" class="guest-invite-banner">
+    <view class="guest-banner-tag">街坊好味 · 现做老卤</view>
+    <view class="guest-banner-title">老街坊邀您品尝手工老卤</view>
+    <view class="guest-banner-sub">成为有效会员后可获得推荐奖励，新客首次下单可享街坊专享福利</view>
+    <button class="btn-guest-order btn-press" bindtap="goToIndex">立即前往选购老卤</button>
+  </view>
   <canvas type="2d" id="referralPosterCanvas" class="poster-canvas"></canvas>
+
+  <!-- 朋友圈分享指引弹窗 -->
+  <view class="poster-backdrop" wx:if="{{showTimelineGuide}}">
+    <view class="timeline-guide-dialog">
+      <view class="timeline-guide-header">
+        <text class="timeline-guide-icon">✨</text>
+        <text class="timeline-guide-title">分享到微信朋友圈</text>
+      </view>
+      <view class="timeline-guide-body">
+        <view class="guide-step-item">
+          <text class="step-num">1</text>
+          <text class="step-text">点击手机屏幕右上角胶囊菜单 <text class="highlight-capsule">「···」</text></text>
+        </view>
+        <view class="guide-step-item">
+          <text class="step-num">2</text>
+          <text class="step-text">在弹出菜单中轻触 <text class="highlight-action">「分享到朋友圈」</text> 即可发布</text>
+        </view>
+      </view>
+      <view class="timeline-guide-tip">好友从朋友圈点开即可带上您的专属推荐信息！</view>
+      <view class="timeline-guide-actions">
+        <button class="btn-guide-poster btn-press" bindtap="timelineGuideToPoster">直接生成海报发朋友圈</button>
+        <button class="btn-guide-cancel btn-press" bindtap="closeTimelineGuide">我知道了</button>
+      </view>
+    </view>
+  </view>
+
   <view class="poster-backdrop" wx:if="{{showPoster}}">
     <view class="poster-dialog">
       <view class="poster-heading">专属邀请海报</view>
