@@ -581,8 +581,8 @@
 
 .drawer-bar-title {
   flex-shrink: 0;
-  height: 96rpx;
-  padding: 0 32rpx;
+  height: 88rpx;
+  padding: 0 28rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -609,14 +609,14 @@
   font-size: 26rpx;
 }
 
-/* 结算中间滚动区：设置明确高度保证纵向滚动顺畅 */
+/* 结算中间滚动区：高度保证纵向滚动顺畅 */
 .drawer-body-scroll {
   flex: 1;
-  height: calc(80vh - 96rpx - 140rpx);
+  height: calc(80vh - 88rpx - 140rpx);
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 20rpx 28rpx 16rpx;
+  padding: 14rpx 24rpx 10rpx;
   box-sizing: border-box;
 }
 
@@ -624,9 +624,9 @@
 .drawer-fulfillment-card {
   background: #FDF9F4;
   border: 1.5rpx solid #EFE4D6;
-  border-radius: 20rpx;
-  padding: 18rpx 22rpx 12rpx;
-  margin-bottom: 20rpx;
+  border-radius: 18rpx;
+  padding: 14rpx 20rpx 10rpx;
+  margin-bottom: 14rpx;
 }
 
 .fulfillment-card-head {
@@ -868,129 +868,186 @@
 
 /* 口味备注框 */
 .remark-input-box {
-  margin-top: 16rpx;
+  margin-top: 12rpx;
   background: #F8F9FA;
-  border-radius: 24rpx;
-  padding: 18rpx 22rpx;
+  border-radius: 16rpx;
+  padding: 10rpx 18rpx;
 }
 
 .remark-input {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: var(--text-main);
+  height: 40rpx;
+  min-height: 40rpx;
 }
 
-/* 抵扣卡片 */
-.deduct-light-card {
-  margin: 22rpx 0;
-  background: #FFFDF8;
-  border: 1rpx solid var(--champagne-border);
-  border-radius: 32rpx;
-  padding: 26rpx;
+/* 极简紧凑双积分抵扣卡片 (单行模式，大幅压缩垂直空间) */
+.deduct-compact-card {
+  margin: 12rpx 0;
+  background: #FFFDF9;
+  border: 1rpx solid #F2E4D2;
+  border-radius: 16rpx;
+  padding: 8rpx 18rpx;
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
 }
 
-.deduct-line-item {
+.deduct-compact-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 52rpx;
+  padding: 4rpx 0;
 }
 
-.deduct-line-item.border-top {
-  border-top: 1rpx dashed var(--champagne-border);
-  padding-top: 18rpx;
+.deduct-compact-row.border-top {
+  border-top: 1rpx dashed #F2E4D2;
 }
 
-.deduct-left {
+.deduct-compact-left {
   display: flex;
   align-items: center;
   gap: 8rpx;
+  flex: 1;
+  min-width: 0;
 }
 
-.deduct-name {
+.deduct-icon {
+  font-size: 24rpx;
+  flex-shrink: 0;
+}
+
+.deduct-compact-title {
+  font-size: 23rpx;
   font-weight: 700;
-  color: var(--text-main);
-  font-size: 24rpx;
+  color: #372E27;
+  flex-shrink: 0;
 }
 
-.deduct-name.red {
-  color: var(--brand-red);
+.deduct-compact-title.red {
+  color: #AA4624;
 }
 
-.deduct-sub {
-  font-size: 22rpx;
-  color: var(--text-sub);
+.deduct-compact-sub {
+  font-size: 20rpx;
+  color: #8C7B6D;
+  flex-shrink: 0;
 }
 
-.deduct-sub.red {
-  color: var(--brand-red);
+.deduct-compact-sub.red {
+  color: #C2410C;
 }
 
-.deduct-tip-text {
-  font-size: 22rpx;
+.deduct-saved-tag {
+  font-size: 20rpx;
+  font-weight: 800;
+  color: #AA4624;
+  background: #FEECE5;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  margin-left: 6rpx;
+}
+
+.deduct-rule-tag {
+  font-size: 19rpx;
+  color: #A89582;
+  background: #F4EFEA;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  margin-left: 6rpx;
+}
+
+.deduct-rule-tag.red {
   color: #D97706;
-  padding-left: 8rpx;
+  background: #FEF3C7;
 }
 
-.deduct-calc-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-left: 8rpx;
-  font-size: 22rpx;
-}
-
-.deduct-limit-hint {
-  color: var(--text-sub);
-}
-
-.deduct-input-group {
+.deduct-compact-right {
   display: flex;
   align-items: center;
-  gap: 8rpx;
+  gap: 10rpx;
+  flex-shrink: 0;
 }
 
-.symbol {
-  color: var(--brand-red);
-  font-weight: 800;
+/* 微型开关组件：scale(0.68) */
+.compact-switch {
+  transform: scale(0.68);
+  transform-origin: right center;
+  margin-right: -10rpx;
 }
 
-.red-amount-input {
-  width: 120rpx;
-  padding: 4rpx 10rpx;
-  border: 1rpx solid #D1D5DB;
-  border-radius: 12rpx;
-  text-align: right;
-  font-weight: 800;
-  color: var(--brand-red);
+/* 红包行内微型金额输入胶囊 */
+.red-compact-pill {
+  display: inline-flex;
+  align-items: center;
   background: #FFFFFF;
-  font-size: 24rpx;
+  border: 1rpx solid #E5D5C5;
+  border-radius: 10rpx;
+  padding: 2rpx 8rpx;
+  margin-right: 2rpx;
 }
 
-/* 账单明细列表 */
+.red-compact-pill .pill-prefix {
+  font-size: 20rpx;
+  font-weight: 800;
+  color: #AA4624;
+}
+
+.red-compact-input {
+  width: 80rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  color: #AA4624;
+  text-align: right;
+  height: 34rpx;
+  min-height: 34rpx;
+  line-height: 34rpx;
+}
+
+/* 账单明细列表 (紧凑克制，层次分明) */
 .bill-summary-list {
-  font-size: 24rpx;
+  font-size: 22rpx;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
+  gap: 4rpx;
+  padding: 4rpx 2rpx;
 }
 
 .bill-row {
   display: flex;
   justify-content: space-between;
-  color: var(--text-sub);
+  align-items: center;
+  line-height: 1.35;
+  color: #7A6F65;
 }
 
-.bill-row.red {
-  color: var(--brand-red);
+.bill-row .bill-row-label {
+  font-size: 22rpx;
+  color: #7A6F65;
 }
 
-.bill-row.orange {
+.bill-row .bill-row-val {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #372E27;
+}
+
+.bill-row .bill-row-val.free {
+  color: #059669;
+  font-weight: 700;
+}
+
+.bill-row.red .bill-row-label,
+.bill-row.red .bill-row-val {
+  color: #AA4624;
+}
+
+.bill-row.orange .bill-row-label,
+.bill-row.orange .bill-row-val {
   color: #D97706;
 }
 
-.bill-row.bold {
+.bill-row.bold .bill-row-val {
   font-weight: 800;
 }
 
@@ -1094,9 +1151,9 @@
 /* 抽屉中的已选老卤清单 */
 .drawer-cart-list {
   background: #F9FAFB;
-  border-radius: 20rpx;
-  padding: 20rpx 24rpx;
-  margin-bottom: 20rpx;
+  border-radius: 18rpx;
+  padding: 12rpx 20rpx;
+  margin-bottom: 12rpx;
   border: 1rpx solid #E5E7EB;
 }
 
@@ -1104,30 +1161,30 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16rpx;
+  margin-bottom: 10rpx;
 }
 
 .cart-list-title {
-  font-size: 24rpx;
+  font-size: 23rpx;
   font-weight: 700;
   color: #374151;
 }
 
 .cart-list-clear {
-  font-size: 22rpx;
+  font-size: 21rpx;
   color: #9CA3AF;
-  padding: 4rpx 10rpx;
+  padding: 2rpx 8rpx;
 }
 
 .drawer-cart-scroll {
-  max-height: 240rpx;
+  max-height: 220rpx;
 }
 
 .drawer-cart-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12rpx 0;
+  padding: 8rpx 0;
   border-bottom: 1rpx dashed #E5E7EB;
 }
 
@@ -1183,7 +1240,7 @@
 .checkout-error { color: #B42318; padding: 16rpx; font-size: 24rpx; }
 .shop-announcement { font-size: 24rpx; color: #9A3412; margin-top: 16rpx; }
 
-.checkout-rule-link {font-size:24rpx;color:#9A3412;padding:20rpx 0;text-align:center;}
+.checkout-rule-link {font-size:20rpx;color:#A88F7B;padding:8rpx 0 4rpx;text-align:center;}
 .dish-photo-placeholder {height:100%;display:flex;align-items:center;justify-content:center;background:#FFF1E5;font-size:64rpx;}
 
 /* 点餐首页：温润纸色、完整店名和易扫读的菜品信息 */

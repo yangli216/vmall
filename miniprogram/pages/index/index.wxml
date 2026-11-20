@@ -232,60 +232,66 @@
           <input disabled="{{submitting}}" class="remark-input" placeholder="口味备注 (如：微辣/多带点卤汁/切薄片)" maxlength="255" bindinput="onRemarkInput" value="{{orderRemark}}" />
         </view>
 
-        <!-- 双积分抵扣设置卡片 -->
-        <view class="deduct-light-card">
-          <!-- 普通积分 -->
-          <view class="deduct-line-item">
-            <view class="deduct-left">
-              <text class="deduct-name">🪙 普通积分满减</text>
-              <text class="deduct-sub">(可用 {{userNormalPoints}} 分)</text>
+        <!-- 双积分抵扣设置卡片 (极简紧凑单行模式，节省垂向空间) -->
+        <view class="deduct-compact-card">
+          <!-- 普通积分单行 -->
+          <view class="deduct-compact-row">
+            <view class="deduct-compact-left">
+              <text class="deduct-icon">🪙</text>
+              <text class="deduct-compact-title">积分抵扣</text>
+              <text class="deduct-compact-sub">可用 {{userNormalPoints}} 分</text>
+              <text class="deduct-saved-tag" wx:if="{{useNormalPoints && calcResult.normal_deduct > 0}}">-¥{{calcResult.normal_deduct}}</text>
+              <text class="deduct-rule-tag" wx:else>满100抵¥5</text>
             </view>
-            <switch disabled="{{submitting}}" checked="{{useNormalPoints}}" color="#D9480F" bindchange="toggleNormalPoints" />
+            <view class="deduct-compact-right">
+              <switch class="compact-switch" disabled="{{submitting}}" checked="{{useNormalPoints}}" color="#D9480F" bindchange="toggleNormalPoints" />
+            </view>
           </view>
-          <view class="deduct-tip-text">- 消耗 100 积分满减抵扣 ¥5.00</view>
 
-          <!-- 红包积分 (动态上限受后台控制) -->
-          <view class="deduct-line-item border-top">
-            <view class="deduct-left">
-              <text class="deduct-name red">🧧 推荐红包抵扣货款</text>
-              <text class="deduct-sub red">(余额 ¥{{userRedPoints}})</text>
+          <!-- 推荐红包抵扣单行 -->
+          <view class="deduct-compact-row border-top">
+            <view class="deduct-compact-left">
+              <text class="deduct-icon">🧧</text>
+              <text class="deduct-compact-title red">推荐红包</text>
+              <text class="deduct-compact-sub red">余额 ¥{{userRedPoints}}</text>
+              <text class="deduct-rule-tag red" wx:if="{{!useRedPoints}}">最高抵{{redLimitPercent}}%</text>
             </view>
-            <switch disabled="{{submitting || !isMember}}" checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
-          </view>
-          <view class="deduct-calc-row">
-            <text class="deduct-limit-hint">抵扣金额 (货款上限{{redLimitPercent}}%):</text>
-            <view class="deduct-input-group">
-              <text class="symbol">-¥</text>
-              <input disabled="{{submitting || !isMember}}" type="digit" class="red-amount-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />
+            <view class="deduct-compact-right">
+              <!-- 开启红包抵扣时展示极简行内微型金额输入 -->
+              <view class="red-compact-pill" wx:if="{{useRedPoints}}">
+                <text class="pill-prefix">-¥</text>
+                <input disabled="{{submitting || !isMember}}" type="digit" class="red-compact-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />
+              </view>
+              <switch class="compact-switch" disabled="{{submitting || !isMember}}" checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
             </view>
           </view>
         </view>
 
-        <!-- 金额明细列表 -->
+        <!-- 金额明细列表 (紧凑直观明细) -->
         <view class="bill-summary-list">
           <view class="bill-row">
-            <text>商品原价总额</text>
-            <text>¥{{calcResult.goods_origin_total || '0.00'}}</text>
+            <text class="bill-row-label">商品金额</text>
+            <text class="bill-row-val">¥{{calcResult.goods_origin_total || '0.00'}}</text>
           </view>
           <view class="bill-row red" wx:if="{{calcResult.member_discount > 0}}">
-            <text>会员价优惠</text>
-            <text>-¥{{calcResult.member_discount}}</text>
+            <text class="bill-row-label">会员立减</text>
+            <text class="bill-row-val">-¥{{calcResult.member_discount}}</text>
           </view>
           <view class="bill-row orange" wx:if="{{useNormalPoints && calcResult.normal_deduct > 0}}">
-            <text>普通积分满减</text>
-            <text>-¥{{calcResult.normal_deduct}}</text>
+            <text class="bill-row-label">积分满减</text>
+            <text class="bill-row-val">-¥{{calcResult.normal_deduct}}</text>
           </view>
           <view class="bill-row red bold" wx:if="{{useRedPoints && calcResult.red_deduct > 0}}">
-            <text>红包积分冲抵货款</text>
-            <text>-¥{{calcResult.red_deduct}}</text>
+            <text class="bill-row-label">红包冲抵</text>
+            <text class="bill-row-val">-¥{{calcResult.red_deduct}}</text>
           </view>
           <view class="bill-row">
-            <text>作坊自送补贴运费</text>
-            <text>+¥{{calcResult.delivery_fee || '0.00'}}</text>
+            <text class="bill-row-label">{{deliveryType === 1 ? '配送费用' : '取货方式'}}</text>
+            <text class="bill-row-val {{calcResult.delivery_fee > 0 ? '' : 'free'}}">{{deliveryType === 1 ? (calcResult.delivery_fee > 0 ? '+¥' + calcResult.delivery_fee : '免运费') : '门店自提 (免运费)'}}</text>
           </view>
         </view>
 
-        <view class="checkout-rule-link" bindtap="showRules">查看预约、配送、会员及退款规则 ›</view>
+        <view class="checkout-rule-link" bindtap="showRules">预约/配送/退款规则说明 ›</view>
       </scroll-view>
 
       <!-- 3. 底部结算确认条 (吸底常驻，无需滚动即可确认支付！) -->
