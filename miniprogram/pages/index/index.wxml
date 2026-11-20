@@ -1,3 +1,4 @@
+<page-meta page-style="{{(isDrawerOpen || showAddressPicker || showContactModal) ? 'overflow: hidden; height: 100vh;' : ''}}"></page-meta>
 <!-- miniprogram/pages/index/index.wxml -->
 <view class="container">
  <dev-banner />
@@ -143,61 +144,64 @@
     </view>
   </view>
 
-  <!-- 7. 结算明细半屏抽屉 (BottomSheet) -->
-  <view class="drawer-backdrop {{isDrawerOpen ? 'open' : ''}}">
-    <view class="drawer-content-sheet">
-      <!-- 1. 顶栏 (固定吸顶) -->
-      <view class="drawer-bar-title">
-        <text class="drawer-h2">确认这一份好卤</text>
-        <view class="drawer-close" bindtap="closeCheckoutSheet">✕</view>
-      </view>
+  <!-- 7. 结算明细半屏抽屉 (BottomSheet，与背景遮罩为同级结构，彻底阻断背景滚动穿透) -->
+  <view class="drawer-backdrop {{isDrawerOpen ? 'open' : ''}}" catchtouchmove="preventTouchMove" bindtap="closeCheckoutSheet"></view>
+  <view class="drawer-content-sheet {{isDrawerOpen ? 'open' : ''}}">
+    <!-- 1. 顶栏 (固定吸顶) -->
+    <view class="drawer-bar-title">
+      <text class="drawer-h2">确认这一份好卤</text>
+      <view class="drawer-close" bindtap="closeCheckoutSheet">✕</view>
+    </view>
 
-      <!-- 2. 中间可滚动区域 (聚焦核心信息，去除繁杂大输入框) -->
-      <scroll-view scroll-y class="drawer-body-scroll">
-        <!-- 履约与地址精炼卡片 (地址单独管理，此处仅负责查看与快速切换) -->
-        <view class="drawer-fulfillment-card">
-          <!-- 模式 1：周边自送 -->
-          <block wx:if="{{deliveryType === 1}}">
-            <view class="drawer-address-row" bindtap="openAddressPicker">
-              <view class="addr-icon">📍</view>
-              <view class="addr-main" wx:if="{{destAddress}}">
-                <view class="addr-line-top">
-                  <text class="addr-name">{{receiverName}}</text>
-                  <text class="addr-phone">{{receiverPhone}}</text>
-                  <text class="addr-area-tag" wx:if="{{deliveryArea}}">{{deliveryArea}}</text>
-                </view>
-                <view class="addr-line-bottom">{{destAddress}}</view>
+    <!-- 2. 中间可滚动区域 (聚焦核心信息，设置明确高度保证纵向滚动顺畅) -->
+    <scroll-view scroll-y="true" class="drawer-body-scroll" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+      <!-- 履约与联系人紧凑两栏 (两栏均支持点击弹窗修改，不占多余版面) -->
+      <view class="drawer-fulfillment-card">
+        <!-- 第一栏：配送地址 / 自提门店 (点击修改或复制) -->
+        <view class="compact-info-row" bindtap="{{deliveryType === 1 ? 'openAddressPicker' : 'copyShopAddress'}}">
+          <view class="info-row-left">
+            <text class="row-icon">📍</text>
+            <view class="row-text-block">
+              <view class="row-title-line">
+                <text class="row-label">{{deliveryType === 1 ? '配送地址' : '取餐门店'}}</text>
+                <text class="row-badge" wx:if="{{deliveryType === 1 && deliveryArea}}">{{deliveryArea}}</text>
               </view>
-              <view class="addr-main empty" wx:else>
-                <text class="addr-empty-hint">请选择或从微信导入配送地址</text>
-              </view>
-              <view class="addr-arrow">切换 ›</view>
+              <text class="row-val ellipsis" wx:if="{{deliveryType === 1}}">{{destAddress || '点击选择或从微信导入配送地址'}}</text>
+              <text class="row-val ellipsis" wx:else>{{config.WORKSHOP_ADDRESS || '门店自提地址'}}</text>
             </view>
-          </block>
-
-          <!-- 模式 2：到店自提 -->
-          <block wx:else>
-            <view class="drawer-pickup-row">
-              <view class="pickup-left">
-                <view class="pickup-title-line">
-                  <text class="pickup-shop-badge">到店自提</text>
-                  <text class="pickup-address">{{config.WORKSHOP_ADDRESS}}</text>
-                </view>
-                <view class="pickup-phone-line">
-                  <text class="pickup-phone-label">提货手机：</text>
-                  <input class="pickup-phone-input" disabled="{{submitting}}" placeholder="填写提货手机号" type="number" maxlength="11" value="{{receiverPhone}}" data-field="receiverPhone" bindinput="onContactInput" />
-                </view>
-              </view>
-              <button size="mini" class="btn-copy-address" bindtap="copyShopAddress">复制地址</button>
-            </view>
-          </block>
-
-          <!-- 预约出炉时段 -->
-          <view class="drawer-schedule-line">
-            <text class="sched-label">预约出炉批次：</text>
-            <text class="sched-val">{{currentBatchText}}</text>
+          </view>
+          <view class="row-action">
+            <text class="action-btn-text">{{deliveryType === 1 ? '修改 ›' : '复制'}}</text>
           </view>
         </view>
+
+        <!-- 分隔线 -->
+        <view class="compact-row-divider"></view>
+
+        <!-- 第二栏：配送人 / 提货人及联系方式 (点击弹窗修改姓名和手机号) -->
+        <view class="compact-info-row" bindtap="openContactModal">
+          <view class="info-row-left">
+            <text class="row-icon">👤</text>
+            <view class="row-text-block">
+              <text class="row-label">{{deliveryType === 1 ? '配送人与联系方式' : '提货人与联系电话'}}</text>
+              <view class="row-val-contact" wx:if="{{receiverName || receiverPhone}}">
+                <text class="contact-name">{{receiverName || '未填联系人'}}</text>
+                <text class="contact-phone">{{receiverPhone || '未填手机号'}}</text>
+              </view>
+              <text class="row-val empty" wx:else>点击填写联系人和手机号</text>
+            </view>
+          </view>
+          <view class="row-action">
+            <text class="action-btn-text">修改 ›</text>
+          </view>
+        </view>
+
+        <!-- 预约出炉时段轻量栏 -->
+        <view class="compact-schedule-strip">
+          <text class="strip-label">预约出炉批次：</text>
+          <text class="strip-val">{{currentBatchText}}</text>
+        </view>
+      </view>
 
         <!-- 已选老卤清单明细 (支持增减与清空) -->
         <view class="drawer-cart-list">
@@ -298,11 +302,10 @@
         </view>
       </view>
     </view>
-  </view>
 
   <!-- 快速选择收货地址弹窗 -->
-  <view class="poster-backdrop" wx:if="{{showAddressPicker}}">
-    <view class="address-picker-dialog">
+  <view class="poster-backdrop" wx:if="{{showAddressPicker}}" catchtouchmove="preventTouchMove" bindtap="closeAddressPicker">
+    <view class="address-picker-dialog" catchtap="stopBubble">
       <view class="modal-head">
         <text class="modal-title">选择配送地址</text>
         <view class="modal-close" bindtap="closeAddressPicker">✕</view>
@@ -331,6 +334,29 @@
         </view>
       </scroll-view>
       <button class="btn-dialog-done btn-press" bindtap="closeAddressPicker">取消</button>
+    </view>
+  </view>
+
+  <!-- 快速修改联系方式弹窗 -->
+  <view class="poster-backdrop" wx:if="{{showContactModal}}" catchtouchmove="preventTouchMove" bindtap="closeContactModal">
+    <view class="contact-modal-dialog" catchtap="stopBubble">
+      <view class="modal-head">
+        <text class="modal-title">{{deliveryType === 1 ? '修改配送联系人' : '修改提货人信息'}}</text>
+        <view class="modal-close" bindtap="closeContactModal">✕</view>
+      </view>
+      <view class="contact-modal-body">
+        <view class="contact-input-field">
+          <text class="contact-field-label">联系人姓名</text>
+          <input class="contact-modal-input" placeholder="请填写姓名" maxlength="20" value="{{tempReceiverName}}" bindinput="onTempNameInput" />
+        </view>
+        <view class="contact-input-field">
+          <text class="contact-field-label">联系手机号</text>
+          <input class="contact-modal-input" type="number" placeholder="请填写11位手机号" maxlength="11" value="{{tempReceiverPhone}}" bindinput="onTempPhoneInput" />
+        </view>
+      </view>
+      <view class="modal-foot">
+        <button class="btn-contact-save btn-press" bindtap="saveContactModal">确认保存</button>
+      </view>
     </view>
   </view>
 

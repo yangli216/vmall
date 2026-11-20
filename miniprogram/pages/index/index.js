@@ -14,7 +14,8 @@ Page({
     orderRemark: '', isMember: false, myReferralCode: '', userNormalPoints: 0, userRedPoints: '0.00', useNormalPoints: false, useRedPoints: false,
     inputRedAmount: '0.00', loadingProducts: true, productError: '', calcError: '', calcReady: false, calculating: false, submitting: false,
     redLimitPercent: 50, calcResult: {}, contactFormOpen: false,
-    showAddressPicker: false, addressList: []
+    showAddressPicker: false, addressList: [],
+    showContactModal: false, tempReceiverName: '', tempReceiverPhone: ''
   },
   onLoad(options) {
     captureReferral(options);
@@ -142,6 +143,39 @@ Page({
   closeAddressPicker() {
     this.setData({ showAddressPicker: false });
   },
+  openContactModal() {
+    if (this.data.submitting) return;
+    this.setData({
+      showContactModal: true,
+      tempReceiverName: this.data.receiverName || '',
+      tempReceiverPhone: this.data.receiverPhone || ''
+    });
+  },
+  closeContactModal() {
+    this.setData({ showContactModal: false });
+  },
+  onTempNameInput(e) {
+    this.setData({ tempReceiverName: e.detail.value });
+  },
+  onTempPhoneInput(e) {
+    this.setData({ tempReceiverPhone: e.detail.value });
+  },
+  saveContactModal() {
+    const name = (this.data.tempReceiverName || '').trim();
+    const phone = (this.data.tempReceiverPhone || '').trim();
+    if (!name) return wx.showToast({ title: '请填写联系人姓名', icon: 'none' });
+    if (!/^1[3-9]\d{9}$/.test(phone)) return wx.showToast({ title: '请填写11位有效手机号', icon: 'none' });
+    this.setData({
+      receiverName: name,
+      receiverPhone: phone,
+      showContactModal: false
+    });
+    this.saveContact();
+    this.invalidateBill();
+    wx.showToast({ title: '联系信息已更新', icon: 'success' });
+  },
+  preventTouchMove() {},
+  stopBubble() {},
   selectAddress(e) {
     if (this.data.submitting) return;
     const id = e.currentTarget.dataset.id;

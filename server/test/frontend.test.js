@@ -521,5 +521,21 @@ test('index checkout autofills default address and guides address selection on s
  await page.submitOrderPay();
  assert.equal(toastMsg, '请选择或完善配送地址');
  assert.equal(page.data.showAddressPicker, true);
+
+ // Contact modal allows editing recipient and phone via dedicated dialog
+ page.openContactModal();
+ assert.equal(page.data.showContactModal, true);
+ assert.equal(page.data.tempReceiverName, '李掌柜');
+ assert.equal(page.data.tempReceiverPhone, '13800000000');
+
+ page.onTempNameInput({ detail: { value: '杨力' } });
+ page.onTempPhoneInput({ detail: { value: '13738027508' } });
+ page.saveContactModal();
+
+ assert.equal(page.data.showContactModal, false);
+ assert.equal(page.data.receiverName, '杨力');
+ assert.equal(page.data.receiverPhone, '13738027508');
+ assert.equal(storage.get('pandou_contact').receiverName, '杨力');
+ assert.equal(storage.get('pandou_contact').receiverPhone, '13738027508');
 });
 

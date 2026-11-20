@@ -554,30 +554,41 @@
 }
 
 .drawer-content-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
   background: #FFFEFC;
   border-top-left-radius: 36rpx;
   border-top-right-radius: 36rpx;
   padding: 0;
-  max-height: 85vh;
+  height: 80vh;
+  max-height: 82vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  visibility: hidden;
+  box-sizing: border-box;
 }
 
-.drawer-backdrop.open .drawer-content-sheet {
+.drawer-content-sheet.open {
   transform: translateY(0);
+  visibility: visible;
 }
 
 .drawer-bar-title {
   flex-shrink: 0;
+  height: 96rpx;
+  padding: 0 32rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 28rpx 32rpx 20rpx;
   border-bottom: 1rpx solid #EAE5DF;
   background: #FFFEFC;
+  box-sizing: border-box;
 }
 
 .drawer-h2 {
@@ -598,181 +609,146 @@
   font-size: 26rpx;
 }
 
-/* 结算中间滚动区：聚焦核心，收纳菜品与抵扣项 */
+/* 结算中间滚动区：设置明确高度保证纵向滚动顺畅 */
 .drawer-body-scroll {
   flex: 1;
+  height: calc(80vh - 96rpx - 140rpx);
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 24rpx 32rpx 20rpx;
+  padding: 20rpx 28rpx 16rpx;
   box-sizing: border-box;
 }
 
-/* 履约卡片与收货地址行 (卡片化独立管理，界面精炼聚焦) */
+/* 履约卡片：顶部两栏显示，一栏配送地址，另一栏是联系方式 */
 .drawer-fulfillment-card {
   background: #FDF9F4;
   border: 1rpx solid #EFE4D6;
   border-radius: 20rpx;
-  padding: 20rpx 22rpx;
-  margin-bottom: 22rpx;
+  padding: 8rpx 20rpx;
+  margin-bottom: 20rpx;
 }
 
-.drawer-address-row {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  min-height: 64rpx;
-}
-
-.drawer-address-row .addr-icon {
-  font-size: 36rpx;
-  flex-shrink: 0;
-}
-
-.drawer-address-row .addr-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.drawer-address-row .addr-line-top {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  margin-bottom: 6rpx;
-}
-
-.drawer-address-row .addr-name {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: #332C25;
-}
-
-.drawer-address-row .addr-phone {
-  font-size: 26rpx;
-  color: #665C54;
-  font-weight: 500;
-}
-
-.drawer-address-row .addr-area-tag {
-  font-size: 20rpx;
-  color: #AA4624;
-  background: #FFF0E4;
-  padding: 2rpx 10rpx;
-  border-radius: 6rpx;
-  font-weight: 600;
-}
-
-.drawer-address-row .addr-line-bottom {
-  font-size: 24rpx;
-  color: #554A40;
-  line-height: 1.4;
-  word-break: break-all;
-}
-
-.drawer-address-row .addr-empty-hint {
-  font-size: 26rpx;
-  color: #AA4624;
-  font-weight: 600;
-}
-
-.drawer-address-row .addr-arrow {
-  font-size: 24rpx;
-  color: #AA4624;
-  font-weight: 600;
-  flex-shrink: 0;
-  padding-left: 12rpx;
-}
-
-/* 自提门店行 */
-.drawer-pickup-row {
+.compact-info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16rpx;
+  padding: 16rpx 4rpx;
+  min-height: 72rpx;
+  box-sizing: border-box;
 }
 
-.drawer-pickup-row .pickup-left {
+.compact-info-row .info-row-left {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
   flex: 1;
   min-width: 0;
 }
 
-.drawer-pickup-row .pickup-title-line {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  margin-bottom: 12rpx;
-}
-
-.drawer-pickup-row .pickup-shop-badge {
-  font-size: 20rpx;
-  font-weight: 700;
-  background: #EAE0D5;
-  color: #5D432C;
-  padding: 2rpx 10rpx;
-  border-radius: 6rpx;
+.compact-info-row .row-icon {
+  font-size: 32rpx;
   flex-shrink: 0;
 }
 
-.drawer-pickup-row .pickup-address {
-  font-size: 25rpx;
+.compact-info-row .row-text-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.compact-info-row .row-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.compact-info-row .row-label {
+  font-size: 20rpx;
+  color: #8C7D70;
+  font-weight: 500;
+}
+
+.compact-info-row .row-badge {
+  font-size: 19rpx;
+  color: #AA4624;
+  background: #FFF0E4;
+  padding: 1rpx 8rpx;
+  border-radius: 6rpx;
   font-weight: 600;
+}
+
+.compact-info-row .row-val {
+  font-size: 26rpx;
+  font-weight: 700;
   color: #332C25;
+  line-height: 1.35;
+}
+
+.compact-info-row .row-val.ellipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.drawer-pickup-row .pickup-phone-line {
+.compact-info-row .row-val.empty {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #AA4624;
+}
+
+.compact-info-row .row-val-contact {
   display: flex;
   align-items: center;
+  gap: 16rpx;
 }
 
-.drawer-pickup-row .pickup-phone-label {
-  font-size: 24rpx;
-  color: #7A6F65;
-  flex-shrink: 0;
-}
-
-.drawer-pickup-row .pickup-phone-input {
-  flex: 1;
-  height: 56rpx;
-  background: #FFFFFF;
-  border: 1rpx solid #E8DFD4;
-  border-radius: 10rpx;
-  padding: 0 16rpx;
+.compact-info-row .contact-name {
   font-size: 26rpx;
-  font-weight: 600;
+  font-weight: 700;
   color: #332C25;
 }
 
-.drawer-pickup-row .btn-copy-address {
-  font-size: 22rpx !important;
-  color: #8A6D51 !important;
-  background: #FFFFFF !important;
-  border: 1rpx solid #E5DACB !important;
-  border-radius: 10rpx;
-  padding: 8rpx 16rpx !important;
-  line-height: 1.5;
-  margin: 0 !important;
+.compact-info-row .contact-phone {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #665C54;
 }
 
-/* 出炉时段行 */
-.drawer-schedule-line {
+.compact-info-row .row-action {
+  flex-shrink: 0;
+  padding-left: 16rpx;
+}
+
+.compact-info-row .action-btn-text {
+  font-size: 24rpx;
+  color: #AA4624;
+  font-weight: 600;
+}
+
+.compact-row-divider {
+  height: 1rpx;
+  background: #EAE0D5;
+  margin: 0 4rpx;
+}
+
+.compact-schedule-strip {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 14rpx;
-  padding-top: 12rpx;
+  gap: 8rpx;
+  padding: 12rpx 4rpx 6rpx;
   border-top: 1rpx dashed #EAE0D5;
 }
 
-.drawer-schedule-line .sched-label {
-  font-size: 23rpx;
+.compact-schedule-strip .strip-label {
+  font-size: 21rpx;
   color: #8C7D70;
 }
 
-.drawer-schedule-line .sched-val {
-  font-size: 24rpx;
+.compact-schedule-strip .strip-val {
+  font-size: 23rpx;
   font-weight: 700;
   color: #AA4624;
 }
@@ -1416,4 +1392,69 @@
   padding: 18rpx 0;
   width: 100%;
   border: 0;
+}
+
+/* 快速修改联系人弹窗 */
+.contact-modal-dialog {
+  width: 100%;
+  max-width: 620rpx;
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  box-sizing: border-box;
+  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.16);
+}
+.contact-modal-dialog .modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28rpx;
+}
+.contact-modal-dialog .modal-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+.contact-modal-dialog .modal-close {
+  font-size: 32rpx;
+  color: #9CA3AF;
+  padding: 8rpx;
+  line-height: 1;
+}
+.contact-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-bottom: 32rpx;
+}
+.contact-input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.contact-field-label {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #4B5563;
+}
+.contact-modal-input {
+  height: 84rpx;
+  background: #F9FAFB;
+  border: 1.5rpx solid #E5E7EB;
+  border-radius: 14rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #1F2937;
+  box-sizing: border-box;
+}
+.btn-contact-save {
+  width: 100% !important;
+  background: #AA4624 !important;
+  color: #FFFFFF !important;
+  font-size: 28rpx !important;
+  font-weight: 700;
+  padding: 20rpx 0 !important;
+  border-radius: 16rpx;
+  border: none;
+  line-height: 1.4;
 }
