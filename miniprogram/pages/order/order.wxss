@@ -1,47 +1,705 @@
-/* 订单页：状态、预约、金额、操作分区 */
-.container { background: #F6F4F0; }
-.container { padding: 28rpx 28rpx calc(60rpx + env(safe-area-inset-bottom)); min-height: 100vh; }
-.page-heading { padding: 12rpx 2rpx 28rpx; }
-.page-title { font-size: 42rpx; font-weight: 600; color: #352E27; }
-.page-caption { font-size: 24rpx; color: #9A8775; margin-top: 10rpx; }
-.order-filters { display: flex; gap: 8rpx; padding: 8rpx; background: #EDE9E2; border-radius: 16rpx; margin-bottom: 26rpx; }
-.filter-pill { flex: 1; min-width: 0; text-align: center; padding: 18rpx 4rpx; font-size: 24rpx; line-height: 1.5; color: #8E7B69; border-radius: 12rpx; white-space: nowrap; }
-.filter-pill.selected { background: #fff; color: #A74927; font-weight: 600; box-shadow: 0 2rpx 6rpx rgba(65,46,26,.04); }
-.active-order-card { background: #fff; padding: 28rpx; border: 1rpx solid #EAE5DF; border-radius: 24rpx; margin-bottom: 24rpx; }
-.order-status-header { display: flex; justify-content: space-between; align-items: center; gap: 16rpx; padding-bottom: 22rpx; border-bottom: 1rpx solid #F0EBE4; }
-.status-main-title { font-size: 32rpx; font-weight: 600; color: #A44928; }
-.status-badge-pill { flex-shrink: 0; font-size: 22rpx; color: #8D7A64; background: #F5F1EB; border-radius: 8rpx; padding: 8rpx 14rpx; }
-.order-overview { padding: 24rpx 0 18rpx; font-size: 25rpx; line-height: 1.8; color: #786858; overflow-wrap: anywhere; }
-.order-sn { font-size: 21rpx; color: #AD9D8D; line-height: 1.7; }
-.order-summary { font-size: 28rpx; font-weight: 500; color: #3F342A; line-height: 1.7; margin: 14rpx 0; }
-.order-batch { background: #F8F5EF; padding: 16rpx 20rpx; border-radius: 10rpx; font-size: 24rpx; color: #9C7755; }
-.order-total-row { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; flex-wrap: wrap; margin-top: 24rpx; }
-.order-total-label { font-size: 24rpx; color: #9B8876; }
-.order-total { font-size: 34rpx; font-weight: 650; color: #4C3828; }
-.details-link { font-size: 23rpx; color: #9B7453; }
-.cooking-hint-box { background: #FBF3E5; border-radius: 12rpx; color: #9C774F; font-size: 23rpx; line-height: 1.8; padding: 20rpx; margin: 16rpx 0; overflow-wrap: anywhere; }
-.pickup-hero-box { text-align: center; padding: 28rpx 20rpx; margin: 18rpx 0; background: #FAF7F0; border-radius: 16rpx; border: 1rpx dashed #DCC6A7; }
-.pickup-code-label { font-size: 23rpx; color: #9B8268; }
-.pickup-big-code { font-size: 64rpx; font-weight: 650; color: #A34D2C; letter-spacing: 12rpx; padding: 14rpx 0; overflow-wrap: anywhere; }
-.pickup-addr-info { font-size: 25rpx; color: #6F5945; line-height: 1.8; }
-.addr-sub { font-size: 22rpx; color: #A28E77; margin-top: 12rpx; }
-.dish-item-row { display: flex; align-items: baseline; gap: 14rpx; font-size: 25rpx; line-height: 1.7; padding: 16rpx 0; }
-.item-name { min-width: 0; flex: 1; color: #5D4C3D; }
-.item-qty { flex-shrink: 0; color: #A18F7E; }
-.bill-row { display: flex; justify-content: space-between; font-size: 24rpx; line-height: 1.7; padding: 10rpx 0; color: #95816E; }
-.bill-row.red { color: #A95432; }
-.order-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 14rpx; padding-top: 20rpx; }
-.order-actions .order-action { margin: 0; font-size: 24rpx; line-height: 1.7; padding: 16rpx 22rpx; background: #F6F2EC; color: #917D69; border-radius: 12rpx; }
-.order-actions .order-action.primary { color: #fff; background: #AB4B28; }
-.order-action::after { border: 0; }
-.order-service-row { display: flex; justify-content: space-between; align-items: center; gap: 16rpx; padding-top: 22rpx; margin-top: 22rpx; border-top: 1rpx solid #F0EBE4; }
-.order-contact { font-size: 22rpx; color: #A18A75; line-height: 1.7; }
-.empty-order-card { text-align: center; background: #fff; border: 1rpx solid #EAE5DF; border-radius: 24rpx; padding: 70rpx 28rpx; }
-.empty-order-symbol { margin: 0 auto 28rpx; width: 120rpx; height: 120rpx; line-height: 120rpx; border-radius: 32rpx; font-family: serif; font-size: 60rpx; color: #B29674; background: #F5EFE5; }
-.empty-title { font-size: 32rpx; font-weight: 500; color: #67523F; }
-.empty-desc { font-size: 24rpx; color: #A28F7E; line-height: 1.8; margin: 20rpx 0 30rpx; text-align: center; }
-.btn-go-menu { background: #AE4B28; color: #fff; border-radius: 14rpx; font-size: 26rpx; line-height: 1.7; padding: 18rpx 32rpx; margin-top: 32rpx; width: 65%; }
-.btn-go-menu::after { border: 0; }
+/* 潘小兜手工老卤 - 订单中心现代温润视觉规范 */
+.container {
+  background: #F6F4F0;
+  padding: 24rpx 28rpx calc(90rpx + env(safe-area-inset-bottom));
+  min-height: 100vh;
+  box-sizing: border-box;
+}
 
-.order-overview .copy-order-address { font-size: 23rpx; line-height: 1.6; padding: 12rpx 18rpx; margin: 12rpx 0; background: #F6F2EC; color: #8A6D51; border-radius: 10rpx; }
-.copy-order-address::after { border: 0; }
+/* 1. 顶部标题栏 */
+.page-heading {
+  padding: 10rpx 4rpx 22rpx;
+}
+
+.page-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #352E27;
+  letter-spacing: 1rpx;
+}
+
+.refresh-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  background: #EFE8DF;
+  padding: 8rpx 18rpx;
+  border-radius: 20rpx;
+  border: 1rpx solid #E2D7C8;
+}
+
+.refresh-action-btn .refresh-icon {
+  font-size: 24rpx;
+  color: #8C7560;
+}
+
+.refresh-action-btn .refresh-text {
+  font-size: 22rpx;
+  color: #8C7560;
+  font-weight: 600;
+}
+
+.page-caption {
+  font-size: 23rpx;
+  color: #9C8A79;
+  margin-top: 8rpx;
+}
+
+/* 2. 状态分类胶囊切换栏 */
+.order-filters {
+  display: flex;
+  gap: 8rpx;
+  padding: 6rpx;
+  background: #EBE5DC;
+  border-radius: 18rpx;
+  margin-bottom: 24rpx;
+}
+
+.filter-pill {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  padding: 14rpx 4rpx;
+  font-size: 24rpx;
+  line-height: 1.4;
+  color: #857262;
+  border-radius: 14rpx;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.filter-pill.selected {
+  background: #FFFFFF;
+  color: #AA4624;
+  font-weight: 700;
+  box-shadow: 0 3rpx 10rpx rgba(80, 50, 20, 0.08);
+}
+
+/* 状态更新与异常轻提示 */
+.order-alert-strip {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 14rpx 20rpx;
+  border-radius: 14rpx;
+  font-size: 23rpx;
+  margin-bottom: 18rpx;
+}
+
+.order-alert-strip.notify {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1rpx solid #FDE68A;
+}
+
+.order-alert-strip.error {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1rpx solid #FECACA;
+}
+
+/* 3. 订单卡片核心容器 */
+.active-order-card {
+  background: #FFFFFF;
+  border-radius: 22rpx;
+  padding: 24rpx 26rpx;
+  margin-bottom: 22rpx;
+  border: 1rpx solid #EBE4DB;
+  box-shadow: 0 4rpx 16rpx rgba(60, 40, 20, 0.03);
+}
+
+/* A. 卡片头部：店铺与履约方式 + 状态 */
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 18rpx;
+  border-bottom: 1rpx solid #F3EDE5;
+}
+
+.order-card-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.shop-brand-name {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: #352E27;
+}
+
+.delivery-badge {
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 3rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.delivery-badge.pickup {
+  background: #FFF3E6;
+  color: #B45309;
+}
+
+.delivery-badge.dispatch {
+  background: #ECFDF5;
+  color: #047857;
+}
+
+/* 状态徽标色彩分级 */
+.order-status-badge {
+  font-size: 25rpx;
+  font-weight: 700;
+  color: #8C7B6D;
+}
+
+.order-status-badge.status-10 {
+  color: #DC2626; /* 待付款：高警示红 */
+}
+
+.order-status-badge.status-20 {
+  color: #D97706; /* 待备餐：琥珀暖橙 */
+}
+
+.order-status-badge.status-25 {
+  color: #059669; /* 可取餐：醒目生机绿 */
+}
+
+.order-status-badge.status-30 {
+  color: #2563EB; /* 配送中：专注蓝 */
+}
+
+.order-status-badge.status-40 {
+  color: #6B7280; /* 已完成：沉稳灰 */
+}
+
+.order-status-badge.status-50,
+.order-status-badge.status-60,
+.order-status-badge.status-70 {
+  color: #9CA3AF; /* 取消/退款 */
+}
+
+/* B. 菜品图文展示区 */
+.order-goods-section {
+  display: flex;
+  gap: 20rpx;
+  padding: 18rpx 0 16rpx;
+  align-items: center;
+}
+
+.goods-thumb-box {
+  position: relative;
+  width: 104rpx;
+  height: 104rpx;
+  flex-shrink: 0;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: #F8F4EC;
+  border: 1rpx solid #EFE6D8;
+}
+
+.goods-img {
+  width: 100%;
+  height: 100%;
+}
+
+.goods-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FAF5EB;
+}
+
+.seal-char {
+  font-family: serif;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #C07A4A;
+  border: 1.5rpx solid #D8A57A;
+  padding: 4rpx 8rpx;
+  border-radius: 8rpx;
+}
+
+.goods-count-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  background: rgba(40, 30, 20, 0.72);
+  color: #FFFFFF;
+  font-size: 17rpx;
+  padding: 2rpx 8rpx;
+  border-top-left-radius: 8rpx;
+}
+
+.goods-info-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.goods-title-line {
+  line-height: 1.35;
+}
+
+.goods-main-name {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #332B24;
+  word-break: break-all;
+}
+
+.batch-schedule-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  background: #FAF6ED;
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  width: fit-content;
+}
+
+.batch-schedule-strip .strip-icon {
+  font-size: 20rpx;
+}
+
+.batch-schedule-strip .strip-text {
+  font-size: 21rpx;
+  color: #8D6B4F;
+  font-weight: 500;
+}
+
+/* C. 自提提货专属凭证卡 (极简现代取餐卡) */
+.pickup-voucher-card {
+  background: #FDF9F2;
+  border: 1.5rpx solid #EFE1CF;
+  border-radius: 16rpx;
+  padding: 16rpx 20rpx;
+  margin: 8rpx 0 16rpx;
+}
+
+.voucher-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx dashed #EADECA;
+}
+
+.voucher-left {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
+}
+
+.voucher-sub-title {
+  font-size: 22rpx;
+  color: #8C7560;
+  font-weight: 600;
+}
+
+.voucher-big-code {
+  font-size: 48rpx;
+  font-weight: 900;
+  color: #AA4624;
+  letter-spacing: 4rpx;
+  line-height: 1;
+}
+
+.voucher-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+}
+
+.voucher-status-pill.cooking {
+  background: #FEF3C7;
+}
+
+.voucher-status-pill.cooking .pill-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: #D97706;
+}
+
+.voucher-status-pill.cooking .pill-text {
+  font-size: 20rpx;
+  color: #B45309;
+  font-weight: 600;
+}
+
+.voucher-status-pill.ready {
+  background: #ECFDF5;
+}
+
+.voucher-status-pill.ready .pill-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: #059669;
+}
+
+.voucher-status-pill.ready .pill-text {
+  font-size: 20rpx;
+  color: #047857;
+  font-weight: 700;
+}
+
+.voucher-bottom-addr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10rpx;
+  gap: 12rpx;
+}
+
+.voucher-bottom-addr .addr-line {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  min-width: 0;
+  flex: 1;
+}
+
+.voucher-bottom-addr .addr-icon {
+  font-size: 22rpx;
+  flex-shrink: 0;
+}
+
+.voucher-bottom-addr .addr-text {
+  font-size: 23rpx;
+  color: #6B5542;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voucher-bottom-addr .btn-copy-addr {
+  font-size: 20rpx;
+  color: #8C6A4B;
+  background: #FFFFFF;
+  border: 1rpx solid #E5D5C1;
+  padding: 3rpx 12rpx;
+  border-radius: 8rpx;
+  flex-shrink: 0;
+}
+
+/* D. 金额与折叠明细条 */
+.order-price-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8rpx 0 14rpx;
+}
+
+.price-bar-left {
+  display: flex;
+  align-items: baseline;
+  gap: 6rpx;
+}
+
+.price-type-label {
+  font-size: 23rpx;
+  color: #7D6F63;
+}
+
+.price-amount-symbol {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #352E27;
+}
+
+.price-amount-num {
+  font-size: 34rpx;
+  font-weight: 900;
+  color: #352E27;
+}
+
+.price-saved-badge {
+  font-size: 19rpx;
+  font-weight: 700;
+  color: #AA4624;
+  background: #FEECE5;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  margin-left: 6rpx;
+}
+
+.price-bar-right .detail-toggle-text {
+  font-size: 22rpx;
+  color: #9C7553;
+  font-weight: 600;
+}
+
+/* 提示条 */
+.cooking-hint-box {
+  background: #FAF5EB;
+  border-radius: 12rpx;
+  color: #94714A;
+  font-size: 22rpx;
+  line-height: 1.6;
+  padding: 14rpx 18rpx;
+  margin: 10rpx 0;
+  border-left: 6rpx solid #D8A57A;
+}
+
+.cooking-hint-box .timer-hl {
+  font-weight: 700;
+  color: #DC2626;
+}
+
+/* E. 展开的费用与配送明细 */
+.expanded-detail-section {
+  background: #FBF9F6;
+  border-radius: 16rpx;
+  padding: 18rpx 20rpx;
+  margin: 10rpx 0 16rpx;
+  border: 1rpx solid #EFE6DC;
+  font-size: 23rpx;
+}
+
+.expanded-contact-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx dashed #E8DEC7;
+}
+
+.detail-info-row {
+  display: flex;
+  line-height: 1.5;
+}
+
+.detail-info-row .info-k {
+  color: #8C7C6E;
+  width: 140rpx;
+  flex-shrink: 0;
+}
+
+.detail-info-row .info-v {
+  color: #3B332B;
+  flex: 1;
+  word-break: break-all;
+}
+
+.expanded-goods-list {
+  padding: 10rpx 0;
+  border-bottom: 1rpx dashed #E8DEC7;
+}
+
+.dish-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6rpx 0;
+  line-height: 1.4;
+}
+
+.dish-item-row .item-name {
+  flex: 1;
+  color: #4A3E34;
+}
+
+.dish-item-row .item-qty {
+  color: #8C7C6E;
+  margin: 0 18rpx;
+}
+
+.dish-item-row .item-subtotal {
+  font-weight: 600;
+  color: #352E27;
+}
+
+.expanded-bill-list {
+  padding-top: 10rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.bill-row {
+  display: flex;
+  justify-content: space-between;
+  color: #7D6E60;
+  font-size: 22rpx;
+}
+
+.bill-row.red {
+  color: #AA4624;
+}
+
+.bill-row.orange {
+  color: #D97706;
+}
+
+/* F. 操作按钮区域 */
+.order-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  padding-top: 14rpx;
+}
+
+.order-actions .order-action {
+  margin: 0;
+  font-size: 24rpx;
+  line-height: 1.4;
+  padding: 12rpx 24rpx;
+  background: #F4EFEA;
+  color: #7B6856;
+  border-radius: 28rpx;
+  border: 1rpx solid #E5D9CB;
+  font-weight: 600;
+}
+
+.order-actions .order-action.cancel {
+  background: #FFFFFF;
+  color: #8C7560;
+  border-color: #DCD0C0;
+}
+
+.order-actions .order-action.primary {
+  color: #FFFFFF;
+  background: #AA4624;
+  border-color: #AA4624;
+  box-shadow: 0 4rpx 14rpx rgba(170, 70, 36, 0.25);
+}
+
+.order-action::after {
+  border: none;
+}
+
+/* G. 卡片底栏：单号与售后/联系掌柜 */
+.order-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16rpx;
+  margin-top: 16rpx;
+  border-top: 1rpx solid #F4EFEA;
+  font-size: 21rpx;
+}
+
+.footer-sn-box {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  color: #A39384;
+}
+
+.footer-sn-text {
+  max-width: 280rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer-copy-tag {
+  font-size: 19rpx;
+  color: #8C6F53;
+  background: #FAF6EF;
+  border: 1rpx solid #E6D8C6;
+  padding: 1rpx 8rpx;
+  border-radius: 6rpx;
+}
+
+.footer-service-actions {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.service-link {
+  color: #8C7560;
+  font-weight: 500;
+}
+
+.service-link.contact {
+  color: #AA4624;
+  font-weight: 600;
+}
+
+.service-sep {
+  color: #D5C9BC;
+}
+
+/* 4. 空态卡片 */
+.empty-order-card {
+  text-align: center;
+  background: #FFFFFF;
+  border: 1rpx solid #EAE3D9;
+  border-radius: 24rpx;
+  padding: 80rpx 28rpx;
+  margin-top: 40rpx;
+}
+
+.empty-order-symbol {
+  margin: 0 auto 24rpx;
+  width: 110rpx;
+  height: 110rpx;
+  line-height: 110rpx;
+  border-radius: 28rpx;
+  font-family: serif;
+  font-size: 56rpx;
+  color: #B4926C;
+  background: #FAF4EB;
+  border: 1rpx solid #E9DFC4;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #584433;
+}
+
+.empty-desc {
+  font-size: 24rpx;
+  color: #9C8977;
+  line-height: 1.6;
+  margin: 14rpx 0 28rpx;
+}
+
+.btn-go-menu {
+  background: #AA4624;
+  color: #FFFFFF;
+  border-radius: 36rpx;
+  font-size: 26rpx;
+  padding: 16rpx 48rpx;
+  font-weight: 700;
+  box-shadow: 0 6rpx 20rpx rgba(170, 70, 36, 0.25);
+  display: inline-block;
+  width: auto;
+}
+
+.btn-go-menu::after {
+  border: none;
+}
+
+.copy-order-address {
+  font-size: 21rpx;
+  padding: 6rpx 16rpx;
+  margin-top: 6rpx;
+  background: #F3ECE2;
+  color: #7D6146;
+  border-radius: 8rpx;
+  border: 1rpx solid #E3D4C2;
+}
+
+.copy-order-address::after {
+  border: none;
+}

@@ -1,39 +1,218 @@
 <view class="container">
- <dev-banner />
- <view class="page-heading"><view class="page-title">我的订单</view><view class="page-caption">预约、备餐与取餐进度</view></view>
- <view class="order-filters"><view wx:for="{{filters}}" wx:key="value" class="filter-pill {{status === item.value ? 'selected' : ''}}" data-value="{{item.value}}" bindtap="filterOrders">{{item.label}}</view></view>
- <view wx:if="{{refreshAvailable}}" class="cooking-hint-box" bindtap="retryOrders">订单状态有更新，点击刷新列表</view>
- <view wx:if="{{error}}" class="cooking-hint-box" bindtap="retryOrders">{{error}} · 点击重试</view>
- <view wx:if="{{!orders.length && !loading && !error}}" class="empty-order-card"><view class="empty-order-symbol">卤</view><view class="empty-title">还没有这类订单</view><view class="empty-desc">挑几份喜欢的老卤，预约下一锅新鲜</view><button class="btn-go-menu" bindtap="navToMenu">挑选卤味</button></view>
- <view wx:for="{{orders}}" wx:key="id" class="active-order-card">
-  <view class="order-status-header" data-id="{{item.id}}" bindtap="expand"><text class="status-main-title">{{item.status_title}}</text><text class="status-badge-pill">{{item.delivery_type === 1 ? '作坊自送' : '到店自提'}}</text></view>
-  <view class="order-overview" data-id="{{item.id}}" bindtap="expand">
-   <view class="order-sn">{{item.order_sn}}</view><view class="order-summary">{{item.summary_text}}</view><view class="order-batch">预约出炉 · {{item.expect_time_slot}}</view>
-   <view class="order-total-row"><view><text class="order-total-label">订单应付 </text><text class="order-total">¥{{item.final_pay_amount}}</text></view><text class="details-link">{{expandedId === item.id ? '收起明细 ▴' : '查看明细 ▾'}}</text></view>
+  <dev-banner />
+
+  <!-- 1. 顶部标题与轻量刷新 -->
+  <view class="page-heading">
+    <view class="page-title-row">
+      <view class="page-title">我的订单</view>
+      <view class="refresh-action-btn btn-press" bindtap="retryOrders">
+        <text class="refresh-icon">↻</text>
+        <text class="refresh-text">刷新</text>
+      </view>
+    </view>
+    <view class="page-caption">预约出炉 · 手工慢煨 · 取餐与自送进度</view>
   </view>
-  <view wx:if="{{item.legacy}}" class="cooking-hint-box">历史订单付款记录待掌柜核对，请联系掌柜处理</view>
-  <view wx:if="{{item.delivery_type === 2 && item.payment_state === 'PAID' && item.order_status !== 40}}" class="pickup-hero-box"><view class="pickup-code-label">到店向掌柜出示自提码</view><view class="pickup-big-code">{{item.pickup_code}}</view><view class="pickup-addr-info">{{item.receiver_address}}</view><view class="addr-sub">{{item.order_status === 25 ? '已备好，可以取餐' : '请等待备餐完成'}}</view></view>
-  <view wx:if="{{item.order_status === 10 && !item.legacy}}" class="cooking-hint-box"><view wx:if="{{paymentTimers[item.id] && !paymentTimers[item.id].expired}}">付款剩余约 {{paymentTimers[item.id].remaining}}</view><view wx:if="{{paymentTimers[item.id] && paymentTimers[item.id].expired}}">付款时限已到，等待服务端核对关单。若已付款，请查询支付结果，勿重复下单。</view><view wx:else>付款截止 {{item.expires_at}}（北京时间）。超时关单后返还已占用积分，以刷新后的订单结果为准。</view></view>
-  <view wx:if="{{item.order_status === 70}}" class="cooking-hint-box">微信退款处理中，资金及积分以渠道确认结果为准。{{item.refund_error}}</view>
-  <view wx:if="{{item.refund_reason}}" class="cooking-hint-box">售后退款原因：{{item.refund_reason}}</view>
-  <view wx:if="{{expandedId === item.id}}">
-   <view class="order-overview"><view>联系人：{{item.receiver_name}} {{item.receiver_phone}}</view><view>{{item.receiver_address}}</view><button wx:if="{{item.delivery_type === 2}}" size="mini" class="copy-order-address" data-id="{{item.id}}" bindtap="copyPickupAddress">复制此订单取餐地址</button><view wx:if="{{item.order_remark}}">备注：{{item.order_remark}}</view><view>下单：{{item.create_time_formatted}}</view></view>
-   <view wx:for="{{item.items}}" wx:for-item="dish" wx:key="id" class="dish-item-row"><text class="item-name">{{dish.product_title}}</text><text class="item-qty">×{{dish.quantity}}</text><text>¥{{dish.subtotal}}</text></view>
-   <view class="bill-row"><text>商品原价</text><text>¥{{item.goods_origin_total}}</text></view>
-   <view class="bill-row red"><text>会员优惠</text><text>-¥{{item.member_discount}}</text></view>
-   <view class="bill-row"><text>普通积分抵扣</text><text>-¥{{item.normal_deduct}}</text></view>
-   <view class="bill-row"><text>红包抵扣</text><text>-¥{{item.red_deduct}}</text></view>
-   <view class="bill-row"><text>配送费</text><text>¥{{item.delivery_fee}}</text></view>
+
+  <!-- 2. 状态分类胶囊切换栏 -->
+  <view class="order-filters">
+    <view wx:for="{{filters}}" wx:key="value" 
+          class="filter-pill {{status === item.value ? 'selected' : ''}}" 
+          data-value="{{item.value}}" 
+          bindtap="filterOrders">
+      {{item.label}}
+    </view>
   </view>
-  <view class="order-actions" wx:if="{{!item.legacy}}">
-   <button class="order-action primary" wx:if="{{item.order_status === 10}}" size="mini" data-id="{{item.id}}" bindtap="pay" disabled="{{!!busyId || (paymentTimers[item.id] && paymentTimers[item.id].expired)}}" loading="{{busyId === item.id}}">继续付款</button>
-   <button class="order-action" wx:if="{{item.order_status === 10}}" size="mini" data-id="{{item.id}}" bindtap="queryPayment" disabled="{{!!busyId}}">查询支付结果</button>
-   <button class="order-action" wx:if="{{item.order_status === 10 || item.order_status === 20}}" size="mini" data-id="{{item.id}}" bindtap="cancel" disabled="{{!!busyId}}">{{item.order_status === 10 ? '取消订单' : '取消并退款'}}</button>
-   <button class="order-action primary" wx:if="{{item.order_status === 30}}" size="mini" data-id="{{item.id}}" bindtap="confirm" disabled="{{!!busyId}}">确认收货</button>
-   <button class="order-action primary" wx:if="{{item.order_status === 40}}" size="mini" data-id="{{item.id}}" bindtap="reorder">再来一单</button>
+
+  <!-- 状态更新或异常轻提示 -->
+  <view wx:if="{{refreshAvailable}}" class="order-alert-strip notify" bindtap="retryOrders">
+    <text class="alert-icon">🔔</text>
+    <text class="alert-text">订单状态有更新，点击刷新列表</text>
   </view>
-  <view class="order-service-row"><view class="order-contact" bindtap="support" data-id="{{item.id}}">订单问题 / 查看售后进度 ›</view>
-  <view class="order-contact" bindtap="contact">联系掌柜</view></view>
- </view>
- <view wx:if="{{loading}}" class="empty-desc">正在加载订单…</view><view wx:elif="{{nextCursor}}" class="empty-desc">上拉加载更多订单</view>
+  <view wx:if="{{error}}" class="order-alert-strip error" bindtap="retryOrders">
+    <text class="alert-icon">⚠️</text>
+    <text class="alert-text">{{error}} · 点击重试</text>
+  </view>
+
+  <!-- 空态提示 -->
+  <view wx:if="{{!orders.length && !loading && !error}}" class="empty-order-card">
+    <view class="empty-order-symbol">卤</view>
+    <view class="empty-title">还没有这类订单</view>
+    <view class="empty-desc">挑几份喜欢的老卤，预约下一锅新鲜</view>
+    <button class="btn-go-menu btn-press" bindtap="navToMenu">挑选卤味</button>
+  </view>
+
+  <!-- 3. 订单卡片列表 -->
+  <view wx:for="{{orders}}" wx:key="id" class="active-order-card">
+    <!-- A. 卡片头部：店铺/履约标签 + 状态 -->
+    <view class="order-card-header" data-id="{{item.id}}" bindtap="expand">
+      <view class="header-left">
+        <text class="shop-brand-name">潘小兜·手工老卤</text>
+        <text class="delivery-badge {{item.delivery_type === 1 ? 'dispatch' : 'pickup'}}">
+          {{item.delivery_type === 1 ? '作坊自送' : '到店自提'}}
+        </text>
+      </view>
+      <view class="header-right">
+        <text class="order-status-badge status-{{item.order_status}}">{{item.status_title}}</text>
+      </view>
+    </view>
+
+    <!-- B. 菜品图文展示区 (生动展示菜品图与预约出炉批次) -->
+    <view class="order-goods-section" data-id="{{item.id}}" bindtap="expand">
+      <!-- 缩略图 -->
+      <view class="goods-thumb-box">
+        <image wx:if="{{item.items && item.items[0] && item.items[0].product_img}}" 
+               class="goods-img" 
+               src="{{item.items[0].product_img}}" 
+               mode="aspectFill" />
+        <view wx:else class="goods-img-placeholder">
+          <text class="seal-char">老卤</text>
+        </view>
+        <view class="goods-count-badge" wx:if="{{item.items && item.items.length > 1}}">
+          共{{item.items.length}}种
+        </view>
+      </view>
+
+      <!-- 菜品文字与批次 -->
+      <view class="goods-info-col">
+        <view class="goods-title-line">
+          <text class="goods-main-name">{{item.summary_text}}</text>
+        </view>
+        <view class="batch-schedule-strip">
+          <text class="strip-icon">🕒</text>
+          <text class="strip-text">预约出炉：{{item.expect_time_slot}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- C. 自提提货专属凭证卡 (到店自提且已付款时展示，精简现代取餐码) -->
+    <view wx:if="{{item.delivery_type === 2 && item.payment_state === 'PAID' && item.order_status !== 40 && item.order_status !== 50 && item.order_status !== 60}}" class="pickup-voucher-card">
+      <view class="voucher-top-row">
+        <view class="voucher-left">
+          <text class="voucher-sub-title">自提取餐码</text>
+          <text class="voucher-big-code" data-code="{{item.pickup_code}}" bindtap="copyPickupCode">{{item.pickup_code}}</text>
+        </view>
+        <view class="voucher-status-pill {{item.order_status === 25 ? 'ready' : 'cooking'}}">
+          <text class="pill-dot"></text>
+          <text class="pill-text">{{item.order_status === 25 ? '已出炉，可取餐' : '老卤慢煨备餐中'}}</text>
+        </view>
+      </view>
+      <view class="voucher-bottom-addr">
+        <view class="addr-line">
+          <text class="addr-icon">📍</text>
+          <text class="addr-text">{{item.receiver_address || '门店自提地址'}}</text>
+        </view>
+        <view class="btn-copy-addr" data-id="{{item.id}}" catchtap="copyPickupAddress">复制地址</view>
+      </view>
+    </view>
+
+    <!-- D. 金额与折叠明细条 -->
+    <view class="order-price-bar" data-id="{{item.id}}" bindtap="expand">
+      <view class="price-bar-left">
+        <text class="price-type-label">{{item.payment_state === 'PAID' ? '实付款' : '订单应付'}}</text>
+        <text class="price-amount-symbol">¥</text>
+        <text class="price-amount-num">{{item.final_pay_amount}}</text>
+        <text class="price-saved-badge" wx:if="{{item.member_discount > 0}}">已省¥{{item.member_discount}}</text>
+      </view>
+      <view class="price-bar-right">
+        <text class="detail-toggle-text">{{expandedId === item.id ? '收起明细 ▴' : '费用明细 ▾'}}</text>
+      </view>
+    </view>
+
+    <!-- 各种状态提示条 -->
+    <view wx:if="{{item.legacy}}" class="cooking-hint-box">历史订单付款记录待掌柜核对，请联系掌柜处理</view>
+    <view wx:if="{{item.order_status === 10 && !item.legacy}}" class="cooking-hint-box">
+      <view wx:if="{{paymentTimers[item.id] && !paymentTimers[item.id].expired}}">
+        ⏱️ 付款剩余约 <text class="timer-hl">{{paymentTimers[item.id].remaining}}</text>
+      </view>
+      <view wx:elif="{{paymentTimers[item.id] && paymentTimers[item.id].expired}}">
+        付款时限已到，等待服务端核对关单。若已付款，请查询支付结果，勿重复下单。
+      </view>
+      <view wx:else>
+        付款截止 {{item.expires_at}}（北京时间）。超时关单后返还已占用积分。
+      </view>
+    </view>
+    <view wx:if="{{item.order_status === 70}}" class="cooking-hint-box">微信退款处理中，资金及积分以渠道确认结果为准。{{item.refund_error}}</view>
+    <view wx:if="{{item.refund_reason}}" class="cooking-hint-box">售后退款原因：{{item.refund_reason}}</view>
+
+    <!-- E. 展开的费用与配送明细 -->
+    <view wx:if="{{expandedId === item.id}}" class="expanded-detail-section">
+      <view class="expanded-contact-box">
+        <view class="detail-info-row">
+          <text class="info-k">联络人：</text>
+          <text class="info-v">{{item.receiver_name}} {{item.receiver_phone}}</text>
+        </view>
+        <view class="detail-info-row">
+          <text class="info-k">{{item.delivery_type === 1 ? '送达地址：' : '取餐地址：'}}</text>
+          <text class="info-v">{{item.receiver_address}}</text>
+        </view>
+        <view class="detail-info-row" wx:if="{{item.delivery_type === 2}}">
+          <button size="mini" class="copy-order-address" data-id="{{item.id}}" bindtap="copyPickupAddress">复制此订单取餐地址</button>
+        </view>
+        <view class="detail-info-row" wx:if="{{item.order_remark}}">
+          <text class="info-k">口味备注：</text>
+          <text class="info-v">{{item.order_remark}}</text>
+        </view>
+        <view class="detail-info-row">
+          <text class="info-k">下单时间：</text>
+          <text class="info-v">{{item.create_time_formatted}}</text>
+        </view>
+      </view>
+
+      <view class="expanded-goods-list">
+        <view wx:for="{{item.items}}" wx:for-item="dish" wx:key="id" class="dish-item-row">
+          <text class="item-name">{{dish.product_title}}</text>
+          <text class="item-qty">×{{dish.quantity}}</text>
+          <text class="item-subtotal">¥{{dish.subtotal}}</text>
+        </view>
+      </view>
+
+      <view class="expanded-bill-list">
+        <view class="bill-row">
+          <text>商品原价</text>
+          <text>¥{{item.goods_origin_total}}</text>
+        </view>
+        <view class="bill-row red" wx:if="{{item.member_discount > 0}}">
+          <text>会员专享优惠</text>
+          <text>-¥{{item.member_discount}}</text>
+        </view>
+        <view class="bill-row orange" wx:if="{{item.normal_deduct > 0}}">
+          <text>普通积分抵扣</text>
+          <text>-¥{{item.normal_deduct}}</text>
+        </view>
+        <view class="bill-row red" wx:if="{{item.red_deduct > 0}}">
+          <text>推荐红包冲抵</text>
+          <text>-¥{{item.red_deduct}}</text>
+        </view>
+        <view class="bill-row">
+          <text>{{item.delivery_type === 1 ? '作坊自送配送费' : '门店自提'}}</text>
+          <text>{{item.delivery_fee > 0 ? '+¥' + item.delivery_fee : '免运费'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- F. 操作按钮区域 (主次分明、右对齐) -->
+    <view class="order-actions" wx:if="{{!item.legacy}}">
+      <button class="order-action" wx:if="{{item.order_status === 10}}" size="mini" data-id="{{item.id}}" bindtap="queryPayment" disabled="{{!!busyId}}">查询支付结果</button>
+      <button class="order-action cancel" wx:if="{{item.order_status === 10 || item.order_status === 20}}" size="mini" data-id="{{item.id}}" bindtap="cancel" disabled="{{!!busyId}}">{{item.order_status === 10 ? '取消订单' : '取消并退款'}}</button>
+      <button class="order-action primary" wx:if="{{item.order_status === 10}}" size="mini" data-id="{{item.id}}" bindtap="pay" disabled="{{!!busyId || (paymentTimers[item.id] && paymentTimers[item.id].expired)}}" loading="{{busyId === item.id}}">继续付款</button>
+      <button class="order-action primary" wx:if="{{item.order_status === 30}}" size="mini" data-id="{{item.id}}" bindtap="confirm" disabled="{{!!busyId}}">确认收货</button>
+      <button class="order-action primary" wx:if="{{item.order_status === 40}}" size="mini" data-id="{{item.id}}" bindtap="reorder">再来一单</button>
+    </view>
+
+    <!-- G. 卡片底栏：单号与售后/联系掌柜 -->
+    <view class="order-card-footer">
+      <view class="footer-sn-box" data-sn="{{item.order_sn}}" bindtap="copyOrderSn">
+        <text class="footer-sn-text">单号 {{item.order_sn}}</text>
+        <text class="footer-copy-tag">复制</text>
+      </view>
+      <view class="footer-service-actions">
+        <text class="service-link" bindtap="support" data-id="{{item.id}}">售后进度 ›</text>
+        <text class="service-sep">|</text>
+        <text class="service-link contact" bindtap="contact">联系掌柜</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="empty-desc">正在加载订单…</view>
+  <view wx:elif="{{nextCursor}}" class="empty-desc">上拉加载更多订单</view>
 </view>
