@@ -1386,10 +1386,15 @@
 .loc-icon-circle { font-size: 23rpx; }
 .address-edit-btn { padding: 14rpx; border-radius: 10rpx; font-size: 23rpx; }
 .champagne-vip-bar { margin: 22rpx 28rpx 0; padding: 22rpx; border-radius: 18rpx; box-shadow: none; background: #EEE5D7; border: 0; gap: 12rpx; }
-.vip-left-pack,.vip-text-pack { min-width: 0; }
+.vip-left-pack,.vip-text-pack { min-width: 0; flex: 1; }
+.vip-title-row { display: flex; align-items: center; gap: 12rpx; flex-wrap: wrap; margin-bottom: 4rpx; }
 .vip-title { font-size: 26rpx; font-weight: 600; color: #745130; }
-.vip-desc { font-size: 22rpx; line-height: 1.6; color: #9C7F61; }
-.vip-enter-pill { flex-shrink: 0; background: transparent; color: #94643B; padding: 8rpx; font-size: 22rpx; }
+.vip-asset-chips { display: flex; align-items: center; gap: 8rpx; }
+.vip-chip-item { font-size: 20rpx; font-weight: 600; padding: 2rpx 10rpx; border-radius: 8rpx; line-height: 1.4; }
+.vip-chip-item.gold { background: #FAF0E4; color: #9A5B23; border: 1rpx solid #E9D5BD; }
+.vip-chip-item.red { background: #FDE8E8; color: #C53030; border: 1rpx solid #F8B4B4; }
+.vip-desc { font-size: 22rpx; line-height: 1.5; color: #9C7F61; }
+.vip-enter-pill { flex-shrink: 0; background: transparent; color: #94643B; padding: 8rpx; font-size: 22rpx; font-weight: 600; }
 .modern-category-row { padding-top: 22rpx; padding-bottom: 22rpx; }
 .cat-capsule { border-radius: 12rpx; padding: 18rpx 24rpx; background: #ECE8E1; border: 0; font-size: 25rpx; }
 .cat-capsule.active { background: #A94728; box-shadow: none; transform: none; }

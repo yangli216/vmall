@@ -48,16 +48,22 @@
     </view>
   </view>
 
-  <!-- 2. 香槟金尊享会员卡通栏 -->
+  <!-- 2. 香槟金尊享会员卡通栏 (集成实时积分与红包外显) -->
   <view class="champagne-vip-bar btn-press" bindtap="navToMember">
     <view class="vip-left-pack">
       <view class="vip-star-gold">👑</view>
       <view class="vip-text-pack">
-        <view class="vip-title">{{isMember ? '正在享受菜品会员价' : '潘小兜会员 · 菜品专享价'}}</view>
-        <view class="vip-desc">{{isMember ? '订单完成赠积分，推荐消费享奖励' : (config.MEMBER_ENTRY_MODE === 'FREE' ? '当前可免费开通会员' : '入会规则请前往会员中心查看')}}</view>
+        <view class="vip-title-row">
+          <text class="vip-title">{{isMember ? '正在享受菜品会员价' : '潘小兜会员 · 菜品专享价'}}</text>
+          <view class="vip-asset-chips" wx:if="{{isMember}}">
+            <text class="vip-chip-item gold">🪙 {{userNormalPoints || 0}}分</text>
+            <text class="vip-chip-item red">🧧 ¥{{userRedPoints || '0.00'}}</text>
+          </view>
+        </view>
+        <view class="vip-desc">{{isMember ? '积分可抵扣现金，推荐好友下单享现金返利' : (config.MEMBER_ENTRY_MODE === 'FREE' ? '当前可免费开通会员，即享会员价与下单送积分' : '入会规则请前往会员中心查看')}}</view>
       </view>
     </view>
-    <view class="vip-enter-pill">去查看 ></view>
+    <view class="vip-enter-pill">{{isMember ? '明细 >' : '去查看 >'}}</view>
   </view>
 
   <!-- 3. 现代化匠心品类导航栏 (独立矢量图标 + 规范胶囊按钮与文字比例) -->
