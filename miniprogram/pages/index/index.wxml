@@ -155,22 +155,27 @@
 
     <!-- 2. 中间可滚动区域 (聚焦核心信息，设置明确高度保证纵向滚动顺畅) -->
     <scroll-view scroll-y="true" class="drawer-body-scroll" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
-      <!-- 履约与配送信息一体化卡片 (配送地址与配送人统一归属配送信息，作为一个整体统一修改) -->
-      <view class="drawer-fulfillment-card" bindtap="openDeliveryModal">
-        <!-- 头部行：标签 + 统一修改按钮 -->
+      <!-- 履约与配送信息一体化卡片 (支持直接切换自送/自提，整体统一修改) -->
+      <view class="drawer-fulfillment-card">
+        <!-- 头部行：切换自送/自提分段器 + 统一修改按钮 -->
         <view class="fulfillment-card-head">
-          <view class="head-title-tag">
-            <text class="head-icon">{{deliveryType === 1 ? '📍' : '🏪'}}</text>
-            <text class="head-label">{{deliveryType === 1 ? '配送信息' : '自提信息'}}</text>
-            <text class="head-badge" wx:if="{{deliveryType === 1 && deliveryArea}}">{{deliveryArea}}</text>
+          <view class="drawer-delivery-switch">
+            <view class="switch-tab {{deliveryType === 1 ? 'active' : ''}}" catchtap="changeDrawerDelType" data-type="1">
+              <text class="tab-icon">🛵</text>
+              <text class="tab-text">作坊自送</text>
+            </view>
+            <view class="switch-tab {{deliveryType === 2 ? 'active' : ''}}" catchtap="changeDrawerDelType" data-type="2">
+              <text class="tab-icon">🏪</text>
+              <text class="tab-text">到店自提</text>
+            </view>
           </view>
-          <view class="head-action">
+          <view class="head-action" catchtap="openDeliveryModal">
             <text class="action-btn-text">修改 ›</text>
           </view>
         </view>
 
-        <!-- 内容整体：地址 + 联系人统一展示 -->
-        <view class="fulfillment-card-body">
+        <!-- 内容整体：地址 + 联系人统一展示 (点击唤起修改) -->
+        <view class="fulfillment-card-body" bindtap="openDeliveryModal">
           <!-- 模式 1：周边自送 -->
           <block wx:if="{{deliveryType === 1}}">
             <view class="card-address-line" wx:if="{{destAddress}}">
@@ -181,7 +186,7 @@
               <text class="contact-phone">{{receiverPhone || '未填手机号'}}</text>
             </view>
             <view class="card-empty-line" wx:if="{{!destAddress && !receiverName}}">
-              <text class="empty-hint">点击设置配送信息（收货地址与联系人）</text>
+              <text class="empty-hint">📍 点击设置配送地址与收货人 ›</text>
             </view>
           </block>
 

@@ -637,6 +637,37 @@
   border-bottom: 1rpx dashed #EAE0D5;
 }
 
+/* 抽屉内自送/自提分段选择器 */
+.drawer-delivery-switch {
+  display: inline-flex;
+  background: #EFE4D6;
+  padding: 4rpx;
+  border-radius: 12rpx;
+}
+
+.switch-tab {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 9rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #7D6B5A;
+  transition: all 0.2s ease;
+}
+
+.switch-tab.active {
+  background: #FFFFFF;
+  color: #AA4624;
+  font-weight: 700;
+  box-shadow: 0 2rpx 8rpx rgba(100, 70, 30, 0.08);
+}
+
+.switch-tab .tab-icon {
+  font-size: 22rpx;
+}
+
 .fulfillment-card-head .head-title-tag {
   display: flex;
   align-items: center;
@@ -1686,4 +1717,93 @@
   font-weight: 600;
   padding: 2rpx 8rpx;
   border-radius: 6rpx;
+}
+
+/* 通用高层级遮罩蒙层 (确保浮于抽屉之上的 1000 级) */
+.poster-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+  box-sizing: border-box;
+}
+
+/* 快速修改自提联络信息弹窗 */
+.contact-modal-dialog {
+  width: 100%;
+  max-width: 600rpx;
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  box-sizing: border-box;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.2);
+}
+
+.contact-modal-dialog .modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28rpx;
+}
+
+.contact-modal-dialog .modal-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.contact-modal-dialog .modal-close {
+  font-size: 32rpx;
+  color: #9CA3AF;
+  padding: 8rpx;
+  line-height: 1;
+}
+
+.contact-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-bottom: 28rpx;
+}
+
+.contact-input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.contact-field-label {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #4B5563;
+}
+
+.contact-modal-input {
+  height: 80rpx;
+  background: #F9FAFB;
+  border: 1.5rpx solid #E5E7EB;
+  border-radius: 14rpx;
+  padding: 0 20rpx;
+  font-size: 27rpx;
+  color: #1F2937;
+  box-sizing: border-box;
+}
+
+.modal-foot .btn-contact-save {
+  width: 100% !important;
+  background: #AA4624 !important;
+  color: #FFFFFF !important;
+  font-size: 28rpx !important;
+  font-weight: 700;
+  padding: 22rpx 0 !important;
+  border-radius: 16rpx;
+  border: none;
+  line-height: 1.4;
 }

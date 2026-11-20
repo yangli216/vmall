@@ -88,6 +88,33 @@ Page({
   filterDishes() { this.setData({ dishes: this.data.currentCatId === 0 ? this.data.allDishes : this.data.allDishes.filter(p => p.category_id === this.data.currentCatId) }); },
   selectCategory(e) { this.setData({ currentCatId: Number(e.currentTarget.dataset.id) }); this.filterDishes(); },
   changeDelType(e) { if(this.data.submitting)return; this.invalidateBill(); this.setData({ deliveryType: Number(e.currentTarget.dataset.type) }); if (this.data.isDrawerOpen) this.calculateBill(); },
+  changeDrawerDelType(e) {
+    if (this.data.submitting) return;
+    const type = Number(e.currentTarget.dataset.type);
+    if (this.data.deliveryType === type) return;
+    this.invalidateBill();
+    this.setData({ deliveryType: type });
+    if (type === 1 && !this.data.destAddress) {
+      const def = addressUtil.getDefaultAddress();
+      if (def) {
+        const address = def.detail || '';
+        let matchedArea = '';
+        if (def.area && this.data.deliveryAreas.includes(def.area)) {
+          matchedArea = def.area;
+        } else {
+          matchedArea = this.data.deliveryAreas.find(a => address.includes(a)) || (this.data.deliveryAreas[0] || '');
+        }
+        this.setData({
+          destAddress: address,
+          receiverName: def.name || '',
+          receiverPhone: def.phone || '',
+          deliveryArea: matchedArea
+        });
+        this.saveContact();
+      }
+    }
+    this.calculateBill();
+  },
   updateCartState(cart) {
     this.invalidateBill();
     let count = 0, total = 0;
