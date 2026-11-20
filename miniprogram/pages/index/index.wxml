@@ -336,25 +336,27 @@
       </view>
     </view>
 
-  <!-- 统一修改配送信息弹窗 (收货地址与联系人作为一个整体，统一修改/切换/导入) -->
+  <!-- 统一修改与选择配送地址弹窗 (精致卡片化重构) -->
   <view class="poster-backdrop" wx:if="{{showDeliveryModal || showAddressPicker}}" catchtouchmove="preventTouchMove" bindtap="closeDeliveryModal">
     <view class="delivery-modal-dialog" catchtap="stopBubble">
       <view class="modal-head">
-        <text class="modal-title">修改配送信息</text>
+        <text class="modal-title">选择配送地址</text>
         <view class="modal-close" bindtap="closeDeliveryModal">✕</view>
       </view>
 
-      <!-- 快捷操作区 -->
+      <!-- 快捷操作区：微信导入 / 手动新增 -->
       <view class="delivery-modal-actions">
-        <button size="mini" class="btn-modal-action wx-import btn-press" bindtap="importAddressFromWechat">
-          <text class="btn-icon">📥</text> 从微信一键导入
-        </button>
-        <button size="mini" class="btn-modal-action manual-edit btn-press" bindtap="toggleDeliveryEditForm">
-          <text class="btn-icon">{{showManualEdit ? '📋 查看已有地址' : '✏️ 手动填写/编辑'}}</text>
-        </button>
+        <view class="btn-modal-action wx-import btn-press" bindtap="importAddressFromWechat">
+          <text class="btn-icon">📥</text>
+          <text class="btn-text">微信一键导入</text>
+        </view>
+        <view class="btn-modal-action manual-edit btn-press" bindtap="toggleDeliveryEditForm">
+          <text class="btn-icon">{{showManualEdit ? '📋' : '✏️'}}</text>
+          <text class="btn-text">{{showManualEdit ? '查看已有地址' : '手动新增地址'}}</text>
+        </view>
       </view>
 
-      <!-- 模式 A：直接表单编辑 (收件人 + 电话 + 小区 + 详细地址 作为一个整体统一编辑) -->
+      <!-- 模式 A：直接表单新增/编辑 -->
       <view class="delivery-edit-form" wx:if="{{showManualEdit}}">
         <view class="form-item">
           <text class="form-label">收件人姓名</text>
@@ -374,17 +376,21 @@
           <text class="form-label">详细地址</text>
           <input class="form-input" placeholder="楼幢、门牌号（如：10幢202）" value="{{editDestAddress}}" bindinput="onEditAddressInput" maxlength="100" />
         </view>
-        <button class="btn-save-delivery btn-press" bindtap="saveUnifiedDelivery">保存并使用此配送信息</button>
+        <button class="btn-save-delivery btn-press" bindtap="saveUnifiedDelivery">保存并使用此配送地址</button>
       </view>
 
       <!-- 模式 B：已有地址列表选择 (每一项均包含收件人、电话与详细门牌，点击整体切换) -->
       <scroll-view scroll-y="true" class="address-scroll-list" wx:else>
         <view wx:if="{{!addressList.length}}" class="address-empty-box">
           <text class="empty-icon">📍</text>
-          <text class="empty-text">暂无已维护的配送信息</text>
-          <text class="empty-sub">支持点击上方按钮从微信一键导入或手动填写</text>
+          <text class="empty-text">暂无已维护的配送地址</text>
+          <text class="empty-sub">支持点击上方按钮从微信导入或手动添加</text>
         </view>
-        <view class="address-card-item {{item.detail === destAddress && item.name === receiverName ? 'is-selected' : ''}}" wx:for="{{addressList}}" wx:key="id" data-id="{{item.id}}" bindtap="selectAddress">
+        <view class="address-card-item {{item.detail === destAddress && item.name === receiverName ? 'is-selected' : ''}}" 
+              wx:for="{{addressList}}" 
+              wx:key="id" 
+              data-id="{{item.id}}" 
+              bindtap="selectAddress">
           <view class="addr-item-main">
             <view class="addr-user-line">
               <text class="addr-user-name">{{item.name}}</text>
@@ -394,14 +400,17 @@
             </view>
             <view class="addr-detail-text">{{item.area ? item.area + ' ' : ''}}{{item.detail}}</view>
           </view>
-          <view class="addr-select-tag">使用 ›</view>
+          <view class="addr-card-right">
+            <view class="select-check-circle {{item.detail === destAddress && item.name === receiverName ? 'checked' : ''}}">
+              <text wx:if="{{item.detail === destAddress && item.name === receiverName}}">✓</text>
+            </view>
+          </view>
         </view>
       </scroll-view>
 
       <view class="nav-address-manager-row" bindtap="navToMemberAddress">
         <text class="nav-link-text">⚙️ 前往「会员中心」完整维护地址库 ›</text>
       </view>
-      <button class="btn-dialog-done btn-press" wx:if="{{!showManualEdit}}" bindtap="closeDeliveryModal">取消</button>
     </view>
   </view>
 

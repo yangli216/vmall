@@ -1439,191 +1439,256 @@
 .drawer-info-box .copy-pickup-button { margin: 16rpx 0 0; padding: 12rpx 20rpx; font-size: 24rpx; line-height: 1.6; color: #8A6D51; background: #FFFCF7; border-radius: 10rpx; }
 .copy-pickup-button::after { border: 1rpx solid #E5DACB; }
 
-/* 快速选择配送地址弹窗 */
+/* 统一地址管理与选择弹窗 */
+.delivery-modal-dialog,
 .address-picker-dialog {
   width: 100%;
   max-width: 650rpx;
   background: #FFFFFF;
-  border-radius: 28rpx;
-  padding: 36rpx 32rpx;
+  border-radius: 32rpx;
+  padding: 34rpx 30rpx 28rpx;
   box-sizing: border-box;
-  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.16);
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.18);
 }
+
+.delivery-modal-dialog .modal-head,
 .address-picker-dialog .modal-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24rpx;
+  margin-bottom: 22rpx;
 }
+
+.delivery-modal-dialog .modal-title,
 .address-picker-dialog .modal-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #1F2937;
+  color: #2C241E;
 }
+
+.delivery-modal-dialog .modal-close,
 .address-picker-dialog .modal-close {
   font-size: 32rpx;
   color: #9CA3AF;
   padding: 8rpx;
   line-height: 1;
 }
-.address-picker-dialog .address-quick-actions {
+
+/* 快捷操作区 (微信导入 / 手动新增) */
+.delivery-modal-actions,
+.address-quick-actions {
   display: flex;
+  gap: 14rpx;
   margin-bottom: 20rpx;
 }
-.address-picker-dialog .btn-import-wx {
+
+.btn-modal-action {
   flex: 1;
-  background: #ECFDF5 !important;
-  color: #059669 !important;
-  border: 1rpx solid #A7F3D0 !important;
-  border-radius: 14rpx;
-  font-size: 25rpx !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 72rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
   font-weight: 600;
-  padding: 16rpx 10rpx !important;
-  line-height: 1.4;
-  margin: 0 !important;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
 }
-.address-picker-dialog .address-scroll-list {
-  max-height: 50vh;
-  margin-bottom: 24rpx;
+
+.btn-modal-action.wx-import {
+  background: #F0FDF4;
+  color: #15803D;
+  border: 1.5rpx solid #86EFAC;
 }
-.address-picker-dialog .address-empty-box {
+
+.btn-modal-action.manual-edit {
+  background: #FFF7ED;
+  color: #C2410C;
+  border: 1.5rpx solid #FDBA74;
+}
+
+.btn-modal-action .btn-icon {
+  font-size: 28rpx;
+}
+
+.btn-modal-action .btn-text {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+/* 地址滚动列表区 */
+.address-scroll-list {
+  max-height: 480rpx;
+  margin-bottom: 16rpx;
+}
+
+.address-empty-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40rpx 0;
+  justify-content: center;
+  padding: 48rpx 20rpx;
 }
-.address-picker-dialog .empty-icon {
-  font-size: 52rpx;
-  margin-bottom: 10rpx;
+
+.address-empty-box .empty-icon {
+  font-size: 56rpx;
+  margin-bottom: 12rpx;
 }
-.address-picker-dialog .empty-text {
+
+.address-empty-box .empty-text {
   font-size: 28rpx;
-  color: #4B5563;
-  font-weight: 600;
+  font-weight: 700;
+  color: #4B3F35;
 }
-.address-picker-dialog .empty-sub {
-  font-size: 23rpx;
+
+.address-empty-box .empty-sub {
+  font-size: 22rpx;
   color: #9CA3AF;
   margin-top: 6rpx;
 }
-.address-picker-dialog .address-card-item {
-  background: #F9FAFB;
-  border: 1.5rpx solid #E5E7EB;
+
+/* 地址卡片项目 */
+.address-card-item {
+  background: #FAF8F5;
+  border: 1.5rpx solid #EFE4D6;
   border-radius: 18rpx;
-  padding: 22rpx 20rpx;
-  margin-bottom: 16rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 14rpx;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  transition: all 0.2s ease;
 }
-.address-picker-dialog .address-card-item.is-default {
-  background: #FFFDF9;
-  border-color: rgba(217, 72, 15, 0.4);
+
+.address-card-item.is-selected {
+  background: #FFF9F6;
+  border: 2rpx solid #AA4624;
+  box-shadow: 0 4rpx 14rpx rgba(170, 70, 36, 0.08);
 }
-.address-picker-dialog .addr-item-main {
+
+.addr-item-main {
   flex: 1;
   min-width: 0;
-  padding-right: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
 }
-.address-picker-dialog .addr-user-line {
+
+.addr-user-line {
   display: flex;
   align-items: center;
-  gap: 14rpx;
-  margin-bottom: 6rpx;
+  flex-wrap: wrap;
+  gap: 12rpx;
 }
-.address-picker-dialog .addr-user-name {
+
+.addr-user-name {
   font-size: 28rpx;
   font-weight: 700;
-  color: #1F2937;
+  color: #2D251E;
 }
-.address-picker-dialog .addr-user-phone {
+
+.addr-user-phone {
   font-size: 26rpx;
-  color: #6B7280;
+  color: #786655;
+  font-weight: 500;
 }
-.address-picker-dialog .addr-badge-default {
-  background: #FFF1E6;
-  color: #D9480F;
-  font-size: 20rpx;
+
+.addr-badge-default {
+  font-size: 19rpx;
   font-weight: 600;
+  background: #FEF3C7;
+  color: #B45309;
   padding: 2rpx 10rpx;
   border-radius: 6rpx;
 }
-.address-picker-dialog .addr-detail-text {
-  font-size: 24rpx;
-  color: #4B5563;
-  line-height: 1.4;
-}
-.address-picker-dialog .addr-select-tag {
-  flex-shrink: 0;
-  font-size: 23rpx;
-  color: #D9480F;
+
+.addr-badge-active {
+  font-size: 19rpx;
   font-weight: 600;
-}
-.address-picker-dialog .btn-dialog-done {
-  background: #F3F4F6;
-  color: #4B5563;
-  font-size: 27rpx;
-  font-weight: 600;
-  border-radius: 16rpx;
-  padding: 18rpx 0;
-  width: 100%;
-  border: 0;
+  background: #AA4624;
+  color: #FFFFFF;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
 }
 
-/* 快速修改联系人弹窗 */
-.contact-modal-dialog {
-  width: 100%;
-  max-width: 620rpx;
-  background: #FFFFFF;
-  border-radius: 28rpx;
-  padding: 36rpx 32rpx;
-  box-sizing: border-box;
-  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.16);
+.addr-detail-text {
+  font-size: 25rpx;
+  color: #524336;
+  line-height: 1.45;
+  word-break: break-all;
 }
-.contact-modal-dialog .modal-head {
+
+/* 右侧圆圈选择指示器 */
+.addr-card-right {
+  flex-shrink: 0;
+}
+
+.select-check-circle {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 2rpx solid #D5C7B7;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 28rpx;
+  justify-content: center;
+  box-sizing: border-box;
 }
-.contact-modal-dialog .modal-title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #1F2937;
+
+.select-check-circle.checked {
+  background: #AA4624;
+  border-color: #AA4624;
+  color: #FFFFFF;
+  font-size: 22rpx;
+  font-weight: 800;
 }
-.contact-modal-dialog .modal-close {
-  font-size: 32rpx;
-  color: #9CA3AF;
-  padding: 8rpx;
-  line-height: 1;
-}
-.contact-modal-body {
+
+/* 手动表单模式 */
+.delivery-edit-form {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
-  margin-bottom: 32rpx;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
 }
-.contact-input-field {
+
+.delivery-edit-form .form-item {
   display: flex;
   flex-direction: column;
-  gap: 10rpx;
+  gap: 8rpx;
 }
-.contact-field-label {
-  font-size: 24rpx;
+
+.delivery-edit-form .form-label {
+  font-size: 23rpx;
   font-weight: 600;
-  color: #4B5563;
+  color: #5D4D40;
 }
-.contact-modal-input {
-  height: 84rpx;
-  background: #F9FAFB;
-  border: 1.5rpx solid #E5E7EB;
+
+.delivery-edit-form .form-input {
+  height: 76rpx;
+  background: #FAF8F5;
+  border: 1.5rpx solid #E5D9CC;
   border-radius: 14rpx;
   padding: 0 20rpx;
-  font-size: 28rpx;
-  color: #1F2937;
+  font-size: 26rpx;
+  color: #2D251E;
   box-sizing: border-box;
 }
-.btn-contact-save {
+
+.delivery-edit-form .form-picker-val {
+  height: 76rpx;
+  background: #FAF8F5;
+  border: 1.5rpx solid #E5D9CC;
+  border-radius: 14rpx;
+  padding: 0 20rpx;
+  font-size: 26rpx;
+  color: #2D251E;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.btn-save-delivery {
   width: 100% !important;
   background: #AA4624 !important;
   color: #FFFFFF !important;
@@ -1632,138 +1697,10 @@
   padding: 20rpx 0 !important;
   border-radius: 16rpx;
   border: none;
-  line-height: 1.4;
-}
-
-/* 统一配送信息弹窗 */
-.delivery-modal-dialog {
-  width: 100%;
-  max-width: 650rpx;
-  background: #FFFFFF;
-  border-radius: 28rpx;
-  padding: 36rpx 32rpx;
-  box-sizing: border-box;
-  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.16);
-}
-.delivery-modal-dialog .modal-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24rpx;
-}
-.delivery-modal-dialog .modal-title {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #1F2937;
-}
-.delivery-modal-dialog .modal-close {
-  font-size: 32rpx;
-  color: #9CA3AF;
-  padding: 8rpx;
-  line-height: 1;
-}
-.delivery-modal-actions {
-  display: flex;
-  gap: 16rpx;
-  margin-bottom: 22rpx;
-}
-.btn-modal-action {
-  flex: 1;
-  border-radius: 14rpx;
-  font-size: 24rpx !important;
-  font-weight: 600;
-  padding: 16rpx 8rpx !important;
-  line-height: 1.4;
-  margin: 0 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6rpx;
-}
-.btn-modal-action.wx-import {
-  background: #ECFDF5 !important;
-  color: #059669 !important;
-  border: 1.5rpx solid #A7F3D0 !important;
-}
-.btn-modal-action.manual-edit,
-.btn-toggle-edit {
-  background: #FFF7ED !important;
-  color: #C2410C !important;
-  border: 1.5rpx solid #FFEDD5 !important;
-  flex: 1;
-  border-radius: 14rpx;
-  font-size: 24rpx !important;
-  font-weight: 600;
-  padding: 16rpx 8rpx !important;
-  line-height: 1.4;
-  margin: 0 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6rpx;
-}
-.delivery-edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-  margin-bottom: 20rpx;
-}
-.delivery-edit-form .form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-.delivery-edit-form .form-label {
-  font-size: 24rpx;
-  font-weight: 600;
-  color: #4B5563;
-}
-.delivery-edit-form .form-input {
-  height: 80rpx;
-  background: #F9FAFB;
-  border: 1.5rpx solid #E5E7EB;
-  border-radius: 14rpx;
-  padding: 0 20rpx;
-  font-size: 27rpx;
-  color: #1F2937;
-  box-sizing: border-box;
-}
-.delivery-edit-form .form-picker-val {
-  height: 80rpx;
-  background: #F9FAFB;
-  border: 1.5rpx solid #E5E7EB;
-  border-radius: 14rpx;
-  padding: 0 20rpx;
-  font-size: 27rpx;
-  color: #1F2937;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-}
-.btn-save-delivery {
-  width: 100% !important;
-  background: #AA4624 !important;
-  color: #FFFFFF !important;
-  font-size: 28rpx !important;
-  font-weight: 700;
-  padding: 22rpx 0 !important;
-  border-radius: 16rpx;
-  border: none;
   margin-top: 10rpx !important;
   line-height: 1.4;
 }
-.address-card-item.is-selected {
-  background: #FFF8F3 !important;
-  border-color: #AA4624 !important;
-}
-.addr-badge-active {
-  background: #AA4624;
-  color: #FFFFFF;
-  font-size: 19rpx;
-  font-weight: 600;
-  padding: 2rpx 8rpx;
-  border-radius: 6rpx;
-}
+
 
 /* 通用高层级遮罩蒙层 (确保浮于抽屉之上的 1000 级) */
 .poster-backdrop {
