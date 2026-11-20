@@ -50,6 +50,14 @@
     ]
   },
   "usingComponents": {"dev-banner":"/components/dev-banner/dev-banner"},
+  "permission": {
+    "scope.userLocation": {
+      "desc": "你的位置信息将用于快速定位并选择配送地址"
+    }
+  },
+  "requiredPrivateInfos": [
+    "chooseLocation"
+  ],
   "style": "v2",
   "sitemapLocation": "sitemap.json"
 }

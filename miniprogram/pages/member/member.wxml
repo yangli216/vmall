@@ -291,10 +291,13 @@
       </view>
       <view class="address-quick-actions">
         <button size="mini" class="btn-import-wx btn-press" bindtap="importWechatAddress">
-          <text class="btn-icon">📥</text> 从微信一键导入地址
+          <text class="btn-icon">📥</text> 微信导入
+        </button>
+        <button size="mini" class="btn-location-add btn-press" bindtap="chooseLocationForAddAddress">
+          <text class="btn-icon">📍</text> 地图定位
         </button>
         <button size="mini" class="btn-add-new btn-press" bindtap="openAddAddressModal">
-          <text class="btn-icon">＋</text> 新增地址
+          <text class="btn-icon">＋</text> 手动新增
         </button>
       </view>
       <scroll-view scroll-y="true" class="address-scroll-list">
@@ -345,12 +348,17 @@
           <input class="form-input" type="number" maxlength="11" placeholder="11位手机号（必填）" value="{{addressForm.phone}}" data-field="phone" bindinput="onAddressFormInput" />
         </view>
         <view class="form-row">
-          <text class="form-label">所在小区/区域</text>
+          <view class="form-label-bar">
+            <text class="form-label">所在小区/区域</text>
+            <text class="form-link-locate" bindtap="chooseLocationForForm">📍 地图定位</text>
+          </view>
           <input class="form-input" placeholder="如：锦城街道/春天花园" value="{{addressForm.area}}" data-field="area" bindinput="onAddressFormInput" />
         </view>
         <view class="form-row">
-          <text class="form-label">详细地址</text>
-          <input class="form-input" placeholder="楼幢、门牌号（必填）" value="{{addressForm.detail}}" data-field="detail" bindinput="onAddressFormInput" />
+          <view class="form-label-bar">
+            <text class="form-label">详细地址</text>
+          </view>
+          <input class="form-input" placeholder="楼幢、门牌号（如：5幢302）" value="{{addressForm.detail}}" data-field="detail" bindinput="onAddressFormInput" />
         </view>
         <view class="form-row form-row-switch">
           <text class="form-label">设为默认地址</text>

@@ -337,6 +337,30 @@ Page({
       }
     }
   },
+  async chooseLocationForDelivery() {
+    if (this.data.submitting) return;
+    try {
+      const res = await addressUtil.chooseLocation();
+      const poiName = res.name || '';
+      const address = res.detail || res.cleanAddress || '';
+      const areas = this.data.deliveryAreas || [];
+      const matchedArea = areas.find(a => (address + ' ' + poiName).includes(a)) || poiName || '';
+      const areaIndex = areas.findIndex(a => a === matchedArea);
+
+      this.setData({
+        showManualEdit: true,
+        editDeliveryArea: matchedArea,
+        editSelectedArea: matchedArea,
+        editAreaIndex: areaIndex >= 0 ? areaIndex : 0,
+        editDestAddress: address
+      });
+      wx.showToast({ title: '已定位，请补充门牌号', icon: 'none', duration: 2500 });
+    } catch (err) {
+      if (!/cancel/i.test((err && err.message) || (err && err.errMsg) || '')) {
+        wx.showToast({ title: '定位未完成或未授权', icon: 'none' });
+      }
+    }
+  },
   onContactInput(e) { if(this.data.submitting)return; const field = e.currentTarget.dataset.field; if (!['receiverName','receiverPhone','destAddress'].includes(field)) return; this.setData({ [field]: e.detail.value }); this.requestId = null; this.saveContact(); },
   onAreaChange(e) { if(this.data.submitting)return; this.setData({ deliveryArea: this.data.deliveryAreas[Number(e.detail.value)] }); this.requestId = null; this.saveContact(); },
   saveContact() { wx.setStorageSync('pandou_contact', { receiverName: this.data.receiverName, receiverPhone: this.data.receiverPhone, destAddress: this.data.destAddress, deliveryArea: this.data.deliveryArea }); },

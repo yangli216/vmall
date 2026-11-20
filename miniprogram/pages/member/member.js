@@ -209,6 +209,48 @@ Page({
     }
   },
 
+  async chooseLocationForAddAddress() {
+    try {
+      const res = await addressUtil.chooseLocation();
+      const poiName = res.name || '';
+      const address = res.detail || res.cleanAddress || '';
+      const u = this.data.userInfo || {};
+      this.setData({
+        showAddressEditModal: true,
+        addressForm: {
+          id: '',
+          name: u.name || u.nickname || '',
+          phone: u.phone || '',
+          area: poiName || res.area || '临安锦城',
+          detail: address,
+          is_default: this.data.addressList.length === 0
+        }
+      });
+      wx.showToast({ title: '已定位，请补充门牌号', icon: 'none', duration: 2500 });
+    } catch (err) {
+      if (!/cancel/i.test((err && err.message) || (err && err.errMsg) || '')) {
+        wx.showToast({ title: '定位未完成或未授权', icon: 'none' });
+      }
+    }
+  },
+
+  async chooseLocationForForm() {
+    try {
+      const res = await addressUtil.chooseLocation();
+      const poiName = res.name || '';
+      const address = res.detail || res.cleanAddress || '';
+      this.setData({
+        'addressForm.area': poiName || res.area || this.data.addressForm.area || '临安锦城',
+        'addressForm.detail': address
+      });
+      wx.showToast({ title: '已定位，请补充门牌号', icon: 'none', duration: 2500 });
+    } catch (err) {
+      if (!/cancel/i.test((err && err.message) || (err && err.errMsg) || '')) {
+        wx.showToast({ title: '定位未完成或未授权', icon: 'none' });
+      }
+    }
+  },
+
   openAddAddressModal() {
     this.setData({
       showAddressEditModal: true,

@@ -344,15 +344,19 @@
         <view class="modal-close" bindtap="closeDeliveryModal">✕</view>
       </view>
 
-      <!-- 快捷操作区：微信导入 / 手动新增 -->
+      <!-- 快捷操作区：微信导入 / 地图定位 / 手动新增 -->
       <view class="delivery-modal-actions">
         <view class="btn-modal-action wx-import btn-press" bindtap="importAddressFromWechat">
           <text class="btn-icon">📥</text>
-          <text class="btn-text">微信一键导入</text>
+          <text class="btn-text">微信导入</text>
+        </view>
+        <view class="btn-modal-action location-btn btn-press" bindtap="chooseLocationForDelivery">
+          <text class="btn-icon">📍</text>
+          <text class="btn-text">地图定位</text>
         </view>
         <view class="btn-modal-action manual-edit btn-press" bindtap="toggleDeliveryEditForm">
           <text class="btn-icon">{{showManualEdit ? '📋' : '✏️'}}</text>
-          <text class="btn-text">{{showManualEdit ? '查看已有地址' : '手动新增地址'}}</text>
+          <text class="btn-text">{{showManualEdit ? '已有地址' : '手动新增'}}</text>
         </view>
       </view>
 
@@ -373,7 +377,10 @@
           </picker>
         </view>
         <view class="form-item">
-          <text class="form-label">详细地址</text>
+          <view class="form-label-row">
+            <text class="form-label">详细地址</text>
+            <text class="form-label-action" bindtap="chooseLocationForDelivery">📍 地图定位</text>
+          </view>
           <input class="form-input" placeholder="楼幢、门牌号（如：10幢202）" value="{{editDestAddress}}" bindinput="onEditAddressInput" maxlength="100" />
         </view>
         <button class="btn-save-delivery btn-press" bindtap="saveUnifiedDelivery">保存并使用此配送地址</button>

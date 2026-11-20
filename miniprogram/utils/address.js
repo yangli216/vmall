@@ -141,6 +141,40 @@ function importFromWechat() {
   });
 }
 
+function chooseLocation() {
+  return new Promise((resolve, reject) => {
+    wx.chooseLocation({
+      success: (res) => {
+        const poiName = (res.name || '').trim();
+        const fullAddr = (res.address || '').trim();
+        const cleanAddr = fullAddr.replace(/^(浙江省\s*|杭州市\s*)+/g, '').trim();
+
+        const area = poiName || cleanAddr;
+        const detail = poiName && cleanAddr && !cleanAddr.includes(poiName) 
+          ? `${cleanAddr} ${poiName}` 
+          : (cleanAddr || poiName);
+
+        resolve({
+          name: poiName,
+          address: fullAddr,
+          cleanAddress: cleanAddr,
+          area,
+          detail,
+          latitude: res.latitude,
+          longitude: res.longitude
+        });
+      },
+      fail: (err) => {
+        if (err && (err.errMsg || '').includes('cancel')) {
+          reject(new Error('cancel'));
+        } else {
+          reject(err || new Error('定位选址失败'));
+        }
+      }
+    });
+  });
+}
+
 module.exports = {
   ADDRESS_KEY,
   CONTACT_KEY,
@@ -150,5 +184,6 @@ module.exports = {
   deleteAddress,
   setDefaultAddress,
   importFromWechat,
+  chooseLocation,
   syncToContact
 };

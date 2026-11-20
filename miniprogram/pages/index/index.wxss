@@ -1502,6 +1502,12 @@
   border: 1.5rpx solid #86EFAC;
 }
 
+.btn-modal-action.location-btn {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1.5rpx solid #93C5FD;
+}
+
 .btn-modal-action.manual-edit {
   background: #FFF7ED;
   color: #C2410C;
@@ -1662,6 +1668,18 @@
   font-size: 23rpx;
   font-weight: 600;
   color: #5D4D40;
+}
+
+.delivery-edit-form .form-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delivery-edit-form .form-label-action {
+  font-size: 22rpx;
+  color: #1D4ED8;
+  font-weight: 600;
 }
 
 .delivery-edit-form .form-input {
