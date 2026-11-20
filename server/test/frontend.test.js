@@ -492,3 +492,34 @@ test('index checkout rapidly selects maintained address and recalculates bills',
  assert.equal(page.data.deliveryArea,'锦城小区');
  assert.equal(page.data.showAddressPicker,false);
 });
+
+test('index checkout autofills default address and guides address selection on submit without address', async () => {
+ const storage=new Map([['pandou_addresses',[{id:'addr_default',name:'李掌柜',phone:'13800000000',area:'青山湖小区',detail:'青山湖小区10幢202',is_default:true}]]]);
+ let toastMsg = '';
+ const {page}=loadPage('index',{},{
+   getStorageSync:k=>storage.get(k),
+   setStorageSync:(k,v)=>storage.set(k,v),
+   removeStorageSync:k=>storage.delete(k),
+   showToast:(opt)=>{ toastMsg = opt.title; }
+ });
+ page.data.cartCount = 2;
+ page.data.slots = [{date:'2026-11-20',time:'16:30'}];
+ page.data.deliveryAreas = ['青山湖小区'];
+ page.data.deliveryType = 1;
+ page.data.destAddress = '';
+
+ // Opening sheet auto-populates default address
+ page.openCheckoutSheet();
+ assert.equal(page.data.destAddress, '青山湖小区10幢202');
+ assert.equal(page.data.receiverName, '李掌柜');
+ assert.equal(page.data.receiverPhone, '13800000000');
+ assert.equal(page.data.deliveryArea, '青山湖小区');
+
+ // If address was cleared and submit is called, it pops toast and opens address picker
+ page.data.destAddress = '';
+ page.data.calcReady = true;
+ await page.submitOrderPay();
+ assert.equal(toastMsg, '请选择或完善配送地址');
+ assert.equal(page.data.showAddressPicker, true);
+});
+

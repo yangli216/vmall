@@ -104,7 +104,25 @@ Page({
   },
   decreaseCart(e) { if(this.data.submitting)return; const id = e.currentTarget.dataset.dish.id, cart = Object.assign({}, this.data.cart); if (!cart[id]) return; cart[id] = Object.assign({}, cart[id], { quantity: cart[id].quantity - 1 }); if (!cart[id].quantity) delete cart[id]; this.updateCartState(cart); },
   clearCart() { if(this.data.submitting)return; wx.showModal({ title: '清空购物车', content: '确认清空已选菜品？', success: r => { if (r.confirm && !this.data.submitting) this.updateCartState({}); } }); },
-  openCheckoutSheet() { if (!this.data.cartCount || !this.data.slots.length) return wx.showToast({ title: '请先选择批次和菜品', icon: 'none' }); this.setData({ isDrawerOpen: true }); this.calculateBill(); },
+  openCheckoutSheet() {
+    if (!this.data.cartCount || !this.data.slots.length) return wx.showToast({ title: '请先选择批次和菜品', icon: 'none' });
+    if (this.data.deliveryType === 1 && !this.data.destAddress) {
+      const def = addressUtil.getDefaultAddress();
+      if (def) {
+        const address = def.detail || '';
+        const matchedArea = this.data.deliveryAreas.find(a => address.includes(a) || (def.area && def.area.includes(a))) || def.area || '';
+        this.setData({
+          destAddress: address,
+          receiverName: def.name || '',
+          receiverPhone: def.phone || '',
+          deliveryArea: matchedArea
+        });
+        this.saveContact();
+      }
+    }
+    this.setData({ isDrawerOpen: true });
+    this.calculateBill();
+  },
   closeCheckoutSheet() { if (!this.data.submitting) this.setData({ isDrawerOpen: false }); },
   editAddress() {
     if (this.data.submitting) return;
@@ -192,11 +210,30 @@ Page({
   },
   async submitOrderPay() {
     if (this.data.submitting || !this.data.calcReady) return;
-    if (!this.data.receiverName.trim() || !/^1[3-9]\d{9}$/.test(this.data.receiverPhone)) return wx.showToast({ title: '请填写联系人和有效手机号', icon: 'none' });
-    if (this.data.deliveryType === 1 && (!this.data.deliveryArea || !this.data.destAddress.includes(this.data.deliveryArea))) return wx.showToast({ title: '请选择配送小区并填写完整地址', icon: 'none' });
-    const payload = Object.assign(this.payload(), { receiver_name: this.data.receiverName.trim(), receiver_phone: this.data.receiverPhone,
-      receiver_address: this.data.destAddress, delivery_area: this.data.deliveryArea, order_remark: this.data.orderRemark,
-      expected_pay_amount: this.data.calcResult.final_pay_amount });
+    const receiverName = (this.data.receiverName || '').trim() || (this.data.deliveryType === 2 ? '自提顾客' : '');
+    const receiverPhone = (this.data.receiverPhone || '').trim();
+    if (this.data.deliveryType === 1) {
+      if (!this.data.destAddress || !receiverName || !/^1[3-9]\d{9}$/.test(receiverPhone)) {
+        wx.showToast({ title: '请选择或完善配送地址', icon: 'none' });
+        this.openAddressPicker();
+        return;
+      }
+      if (!this.data.deliveryArea || !this.data.destAddress.includes(this.data.deliveryArea)) {
+        return wx.showToast({ title: '收货地址需在配送支持的小区内', icon: 'none' });
+      }
+    } else {
+      if (!/^1[3-9]\d{9}$/.test(receiverPhone)) {
+        return wx.showToast({ title: '请填写提货有效手机号', icon: 'none' });
+      }
+    }
+    const payload = Object.assign(this.payload(), {
+      receiver_name: receiverName,
+      receiver_phone: receiverPhone,
+      receiver_address: this.data.deliveryType === 1 ? this.data.destAddress : (this.data.config.WORKSHOP_ADDRESS || ''),
+      delivery_area: this.data.deliveryArea || '',
+      order_remark: this.data.orderRemark || '',
+      expected_pay_amount: this.data.calcResult.final_pay_amount
+    });
     // Preserve the same key for a retry after a lost response, including across app restarts.
     const fingerprint = JSON.stringify(payload), pending = wx.getStorageSync('pandou_pending_checkout');
     this.requestId = pending && pending.fingerprint === fingerprint ? pending.requestId : `order_${Date.now()}_${Math.random().toString(36).slice(2,12)}`;

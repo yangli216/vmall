@@ -146,130 +146,157 @@
   <!-- 7. 结算明细半屏抽屉 (BottomSheet) -->
   <view class="drawer-backdrop {{isDrawerOpen ? 'open' : ''}}">
     <view class="drawer-content-sheet">
+      <!-- 1. 顶栏 (固定吸顶) -->
       <view class="drawer-bar-title">
         <text class="drawer-h2">确认这一份好卤</text>
         <view class="drawer-close" bindtap="closeCheckoutSheet">✕</view>
       </view>
 
-      <!-- 配送信息条 -->
-      <view class="drawer-info-box">
-        <view class="info-row">
-          <text class="info-label">{{deliveryType === 1 ? '配送地址:' : '取餐地址:'}}</text>
-          <text class="info-val">{{deliveryType === 1 ? destAddress : config.WORKSHOP_ADDRESS}}</text>
-        </view>
-        <view class="info-row" wx:if="{{deliveryType === 1}}">
-          <text class="info-label">收件人电话:</text>
-          <text class="info-val highlight">{{receiverName}} ({{receiverPhone}})</text>
-        </view>
-        <view class="info-row">
-          <text class="info-label">预约出炉:</text>
-          <text class="info-val highlight">{{currentBatchText}}</text>
-        </view>
-        <button wx:if="{{deliveryType === 1}}" size="mini" class="copy-pickup-button" bindtap="openAddressPicker">切换常用地址 / 微信导入</button>
-        <button wx:if="{{deliveryType === 2}}" size="mini" class="copy-pickup-button" bindtap="copyShopAddress">复制门店自提地址</button>
-      </view>
-
-      <view class="checkout-contact">
-        <input class="contact-input" disabled="{{submitting}}" placeholder="联系人（必填）" maxlength="50" value="{{receiverName}}" data-field="receiverName" bindinput="onContactInput" />
-        <input class="contact-input" disabled="{{submitting}}" placeholder="手机号（必填）" type="number" maxlength="11" value="{{receiverPhone}}" data-field="receiverPhone" bindinput="onContactInput" />
-        <block wx:if="{{deliveryType === 1}}">
-          <picker disabled="{{submitting}}" range="{{deliveryAreas}}" bindchange="onAreaChange"><view>配送小区：{{deliveryArea || '请选择 ▾'}}</view></picker>
-          <input class="contact-input" disabled="{{submitting}}" placeholder="小区、楼幢、门牌号（必填）" maxlength="255" value="{{destAddress}}" data-field="destAddress" bindinput="onContactInput" />
-          <text wx:if="{{!deliveryAreas.length}}">当前未开放自送，请选择到店自提</text>
-        </block>
-      </view>
-      <!-- 已选老卤清单明细 (支持增减与清空) -->
-      <view class="drawer-cart-list">
-        <view class="drawer-cart-title-row">
-          <text class="cart-list-title">已选老卤清单 ({{cartCount}}份)</text>
-          <text class="cart-list-clear" bindtap="clearCart">清空</text>
-        </view>
-        <scroll-view scroll-y class="drawer-cart-scroll">
-          <view wx:for="{{cartList}}" wx:key="id" class="drawer-cart-item">
-            <view class="item-meta">
-              <text class="item-name">{{item.dish.title}}</text>
-              <text class="item-unit-price">¥{{isMember ? item.dish.member_price : item.dish.origin_price}}</text>
+      <!-- 2. 中间可滚动区域 (聚焦核心信息，去除繁杂大输入框) -->
+      <scroll-view scroll-y class="drawer-body-scroll">
+        <!-- 履约与地址精炼卡片 (地址单独管理，此处仅负责查看与快速切换) -->
+        <view class="drawer-fulfillment-card">
+          <!-- 模式 1：周边自送 -->
+          <block wx:if="{{deliveryType === 1}}">
+            <view class="drawer-address-row" bindtap="openAddressPicker">
+              <view class="addr-icon">📍</view>
+              <view class="addr-main" wx:if="{{destAddress}}">
+                <view class="addr-line-top">
+                  <text class="addr-name">{{receiverName}}</text>
+                  <text class="addr-phone">{{receiverPhone}}</text>
+                  <text class="addr-area-tag" wx:if="{{deliveryArea}}">{{deliveryArea}}</text>
+                </view>
+                <view class="addr-line-bottom">{{destAddress}}</view>
+              </view>
+              <view class="addr-main empty" wx:else>
+                <text class="addr-empty-hint">请选择或从微信导入配送地址</text>
+              </view>
+              <view class="addr-arrow">切换 ›</view>
             </view>
-            <view class="cart-stepper-row in-drawer">
-              <view class="btn-stepper minus btn-press" catchtap="decreaseCart" data-dish="{{item.dish}}">-</view>
-              <text class="stepper-count">{{item.quantity}}</text>
-              <view class="btn-stepper plus btn-press" catchtap="addToCart" data-dish="{{item.dish}}">+</view>
+          </block>
+
+          <!-- 模式 2：到店自提 -->
+          <block wx:else>
+            <view class="drawer-pickup-row">
+              <view class="pickup-left">
+                <view class="pickup-title-line">
+                  <text class="pickup-shop-badge">到店自提</text>
+                  <text class="pickup-address">{{config.WORKSHOP_ADDRESS}}</text>
+                </view>
+                <view class="pickup-phone-line">
+                  <text class="pickup-phone-label">提货手机：</text>
+                  <input class="pickup-phone-input" disabled="{{submitting}}" placeholder="填写提货手机号" type="number" maxlength="11" value="{{receiverPhone}}" data-field="receiverPhone" bindinput="onContactInput" />
+                </view>
+              </view>
+              <button size="mini" class="btn-copy-address" bindtap="copyShopAddress">复制地址</button>
+            </view>
+          </block>
+
+          <!-- 预约出炉时段 -->
+          <view class="drawer-schedule-line">
+            <text class="sched-label">预约出炉批次：</text>
+            <text class="sched-val">{{currentBatchText}}</text>
+          </view>
+        </view>
+
+        <!-- 已选老卤清单明细 (支持增减与清空) -->
+        <view class="drawer-cart-list">
+          <view class="drawer-cart-title-row">
+            <text class="cart-list-title">已选老卤清单 ({{cartCount}}份)</text>
+            <text class="cart-list-clear" bindtap="clearCart">清空</text>
+          </view>
+          <view class="drawer-cart-items">
+            <view wx:for="{{cartList}}" wx:key="id" class="drawer-cart-item">
+              <view class="item-meta">
+                <text class="item-name">{{item.dish.title}}</text>
+                <text class="item-unit-price">¥{{isMember ? item.dish.member_price : item.dish.origin_price}}</text>
+              </view>
+              <view class="cart-stepper-row in-drawer">
+                <view class="btn-stepper minus btn-press" catchtap="decreaseCart" data-dish="{{item.dish}}">-</view>
+                <text class="stepper-count">{{item.quantity}}</text>
+                <view class="btn-stepper plus btn-press" catchtap="addToCart" data-dish="{{item.dish}}">+</view>
+              </view>
             </view>
           </view>
-        </scroll-view>
-      </view>
+        </view>
 
-      <!-- 口味备注输入 -->
-      <view class="remark-input-box">
-        <input disabled="{{submitting}}" class="remark-input" placeholder="口味备注 (如：微辣/多带点卤汁/切薄片)" maxlength="255" bindinput="onRemarkInput" value="{{orderRemark}}" />
-      </view>
+        <!-- 口味备注输入 -->
+        <view class="remark-input-box">
+          <input disabled="{{submitting}}" class="remark-input" placeholder="口味备注 (如：微辣/多带点卤汁/切薄片)" maxlength="255" bindinput="onRemarkInput" value="{{orderRemark}}" />
+        </view>
 
-      <!-- 双积分抵扣设置卡片 -->
-      <view class="deduct-light-card">
-        <!-- 普通积分 -->
-        <view class="deduct-line-item">
-          <view class="deduct-left">
-            <text class="deduct-name">🪙 普通积分满减</text>
-            <text class="deduct-sub">(可用 {{userNormalPoints}} 分)</text>
+        <!-- 双积分抵扣设置卡片 -->
+        <view class="deduct-light-card">
+          <!-- 普通积分 -->
+          <view class="deduct-line-item">
+            <view class="deduct-left">
+              <text class="deduct-name">🪙 普通积分满减</text>
+              <text class="deduct-sub">(可用 {{userNormalPoints}} 分)</text>
+            </view>
+            <switch disabled="{{submitting}}" checked="{{useNormalPoints}}" color="#D9480F" bindchange="toggleNormalPoints" />
           </view>
-          <switch disabled="{{submitting}}" checked="{{useNormalPoints}}" color="#D9480F" bindchange="toggleNormalPoints" />
-        </view>
-        <view class="deduct-tip-text">- 消耗 100 积分满减抵扣 ¥5.00</view>
+          <view class="deduct-tip-text">- 消耗 100 积分满减抵扣 ¥5.00</view>
 
-        <!-- 红包积分 (动态上限受后台控制) -->
-        <view class="deduct-line-item border-top">
-          <view class="deduct-left">
-            <text class="deduct-name red">🧧 推荐红包抵扣货款</text>
-            <text class="deduct-sub red">(余额 ¥{{userRedPoints}})</text>
+          <!-- 红包积分 (动态上限受后台控制) -->
+          <view class="deduct-line-item border-top">
+            <view class="deduct-left">
+              <text class="deduct-name red">🧧 推荐红包抵扣货款</text>
+              <text class="deduct-sub red">(余额 ¥{{userRedPoints}})</text>
+            </view>
+            <switch disabled="{{submitting || !isMember}}" checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
           </view>
-          <switch disabled="{{submitting || !isMember}}" checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
-        </view>
-        <view class="deduct-calc-row">
-          <text class="deduct-limit-hint">抵扣金额 (货款上限{{redLimitPercent}}%):</text>
-          <view class="deduct-input-group">
-            <text class="symbol">-¥</text>
-            <input disabled="{{submitting || !isMember}}" type="digit" class="red-amount-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />
-          </view>
-        </view>
-      </view>
-
-      <!-- 金额明细列表 -->
-      <view class="bill-summary-list">
-        <view class="bill-row">
-          <text>商品原价总额</text>
-          <text>¥{{calcResult.goods_origin_total || '0.00'}}</text>
-        </view>
-        <view class="bill-row red" wx:if="{{calcResult.member_discount > 0}}">
-          <text>会员价优惠</text>
-          <text>-¥{{calcResult.member_discount}}</text>
-        </view>
-        <view class="bill-row orange" wx:if="{{useNormalPoints && calcResult.normal_deduct > 0}}">
-          <text>普通积分满减</text>
-          <text>-¥{{calcResult.normal_deduct}}</text>
-        </view>
-        <view class="bill-row red bold" wx:if="{{useRedPoints && calcResult.red_deduct > 0}}">
-          <text>红包积分冲抵货款</text>
-          <text>-¥{{calcResult.red_deduct}}</text>
-        </view>
-        <view class="bill-row">
-          <text>作坊自送补贴运费</text>
-          <text>+¥{{calcResult.delivery_fee || '0.00'}}</text>
-        </view>
-        <view class="bill-final-row">
-          <text class="final-title">本单实付</text>
-          <view class="final-price-box">
-            <text class="final-price-num">¥{{calcResult.final_pay_amount || '0.00'}}</text>
-            <view class="final-rebate-hint">出炉时间不等于送达时间，请留意订单状态</view>
+          <view class="deduct-calc-row">
+            <text class="deduct-limit-hint">抵扣金额 (货款上限{{redLimitPercent}}%):</text>
+            <view class="deduct-input-group">
+              <text class="symbol">-¥</text>
+              <input disabled="{{submitting || !isMember}}" type="digit" class="red-amount-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />
+            </view>
           </view>
         </view>
-      </view>
 
-      <view class="checkout-rule-link" bindtap="showRules">查看预约、配送、会员及退款规则 ›</view>
-      <!-- 微信支付提交按钮 -->
-      <view class="checkout-error" wx:if="{{calcError}}" bindtap="calculateBill">{{calcError}} · 点此重新核算</view>
-      <button class="btn-wxpay-submit btn-press" disabled="{{!calcReady || submitting}}" loading="{{calculating || submitting}}" bindtap="submitOrderPay">
-        {{calculating ? '正在核算' : '确认订单并支付'}}
-      </button>
+        <!-- 金额明细列表 -->
+        <view class="bill-summary-list">
+          <view class="bill-row">
+            <text>商品原价总额</text>
+            <text>¥{{calcResult.goods_origin_total || '0.00'}}</text>
+          </view>
+          <view class="bill-row red" wx:if="{{calcResult.member_discount > 0}}">
+            <text>会员价优惠</text>
+            <text>-¥{{calcResult.member_discount}}</text>
+          </view>
+          <view class="bill-row orange" wx:if="{{useNormalPoints && calcResult.normal_deduct > 0}}">
+            <text>普通积分满减</text>
+            <text>-¥{{calcResult.normal_deduct}}</text>
+          </view>
+          <view class="bill-row red bold" wx:if="{{useRedPoints && calcResult.red_deduct > 0}}">
+            <text>红包积分冲抵货款</text>
+            <text>-¥{{calcResult.red_deduct}}</text>
+          </view>
+          <view class="bill-row">
+            <text>作坊自送补贴运费</text>
+            <text>+¥{{calcResult.delivery_fee || '0.00'}}</text>
+          </view>
+        </view>
+
+        <view class="checkout-rule-link" bindtap="showRules">查看预约、配送、会员及退款规则 ›</view>
+      </scroll-view>
+
+      <!-- 3. 底部结算确认条 (吸底常驻，无需滚动即可确认支付！) -->
+      <view class="drawer-footer-bar">
+        <view class="footer-left">
+          <view class="footer-final-price-box">
+            <text class="footer-label">本单实付</text>
+            <text class="footer-price-num">¥{{calcResult.final_pay_amount || '0.00'}}</text>
+          </view>
+          <view class="footer-discount-hint" wx:if="{{calcResult.member_discount > 0 || calcResult.normal_deduct > 0 || calcResult.red_deduct > 0}}">已享受会员/积分优惠</view>
+        </view>
+        <view class="footer-right">
+          <view class="checkout-error" wx:if="{{calcError}}" bindtap="calculateBill">{{calcError}} · 重试</view>
+          <button class="btn-wxpay-submit btn-press" disabled="{{!calcReady || submitting}}" loading="{{calculating || submitting}}" bindtap="submitOrderPay">
+            {{calculating ? '正在核算' : '确认订单并支付'}}
+          </button>
+        </view>
+      </view>
     </view>
   </view>
 

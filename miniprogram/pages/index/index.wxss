@@ -554,12 +554,14 @@
 }
 
 .drawer-content-sheet {
-  background: #FFFFFF;
-  border-top-left-radius: 48rpx;
-  border-top-right-radius: 48rpx;
-  padding: 36rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+  background: #FFFEFC;
+  border-top-left-radius: 36rpx;
+  border-top-right-radius: 36rpx;
+  padding: 0;
   max-height: 85vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -569,15 +571,17 @@
 }
 
 .drawer-bar-title {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 20rpx;
-  border-bottom: 1rpx solid var(--border-soft);
+  padding: 28rpx 32rpx 20rpx;
+  border-bottom: 1rpx solid #EAE5DF;
+  background: #FFFEFC;
 }
 
 .drawer-h2 {
-  font-size: 30rpx;
+  font-size: 32rpx;
   font-weight: 700;
   color: var(--text-main);
 }
@@ -592,6 +596,270 @@
   justify-content: center;
   color: var(--text-sub);
   font-size: 26rpx;
+}
+
+/* 结算中间滚动区：聚焦核心，收纳菜品与抵扣项 */
+.drawer-body-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24rpx 32rpx 20rpx;
+  box-sizing: border-box;
+}
+
+/* 履约卡片与收货地址行 (卡片化独立管理，界面精炼聚焦) */
+.drawer-fulfillment-card {
+  background: #FDF9F4;
+  border: 1rpx solid #EFE4D6;
+  border-radius: 20rpx;
+  padding: 20rpx 22rpx;
+  margin-bottom: 22rpx;
+}
+
+.drawer-address-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  min-height: 64rpx;
+}
+
+.drawer-address-row .addr-icon {
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.drawer-address-row .addr-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-address-row .addr-line-top {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 6rpx;
+}
+
+.drawer-address-row .addr-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #332C25;
+}
+
+.drawer-address-row .addr-phone {
+  font-size: 26rpx;
+  color: #665C54;
+  font-weight: 500;
+}
+
+.drawer-address-row .addr-area-tag {
+  font-size: 20rpx;
+  color: #AA4624;
+  background: #FFF0E4;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  font-weight: 600;
+}
+
+.drawer-address-row .addr-line-bottom {
+  font-size: 24rpx;
+  color: #554A40;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.drawer-address-row .addr-empty-hint {
+  font-size: 26rpx;
+  color: #AA4624;
+  font-weight: 600;
+}
+
+.drawer-address-row .addr-arrow {
+  font-size: 24rpx;
+  color: #AA4624;
+  font-weight: 600;
+  flex-shrink: 0;
+  padding-left: 12rpx;
+}
+
+/* 自提门店行 */
+.drawer-pickup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.drawer-pickup-row .pickup-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.drawer-pickup-row .pickup-title-line {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.drawer-pickup-row .pickup-shop-badge {
+  font-size: 20rpx;
+  font-weight: 700;
+  background: #EAE0D5;
+  color: #5D432C;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  flex-shrink: 0;
+}
+
+.drawer-pickup-row .pickup-address {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #332C25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-pickup-row .pickup-phone-line {
+  display: flex;
+  align-items: center;
+}
+
+.drawer-pickup-row .pickup-phone-label {
+  font-size: 24rpx;
+  color: #7A6F65;
+  flex-shrink: 0;
+}
+
+.drawer-pickup-row .pickup-phone-input {
+  flex: 1;
+  height: 56rpx;
+  background: #FFFFFF;
+  border: 1rpx solid #E8DFD4;
+  border-radius: 10rpx;
+  padding: 0 16rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #332C25;
+}
+
+.drawer-pickup-row .btn-copy-address {
+  font-size: 22rpx !important;
+  color: #8A6D51 !important;
+  background: #FFFFFF !important;
+  border: 1rpx solid #E5DACB !important;
+  border-radius: 10rpx;
+  padding: 8rpx 16rpx !important;
+  line-height: 1.5;
+  margin: 0 !important;
+}
+
+/* 出炉时段行 */
+.drawer-schedule-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx dashed #EAE0D5;
+}
+
+.drawer-schedule-line .sched-label {
+  font-size: 23rpx;
+  color: #8C7D70;
+}
+
+.drawer-schedule-line .sched-val {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #AA4624;
+}
+
+/* 底部常驻结算条 (吸底保证一屏可见确认按钮) */
+.drawer-footer-bar {
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border-top: 1rpx solid #EAE5DF;
+  padding: 18rpx 32rpx calc(20rpx + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05);
+  z-index: 10;
+}
+
+.drawer-footer-bar .footer-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.drawer-footer-bar .footer-final-price-box {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.drawer-footer-bar .footer-label {
+  font-size: 24rpx;
+  color: #7A6F65;
+  font-weight: 500;
+}
+
+.drawer-footer-bar .footer-price-num {
+  font-size: 40rpx;
+  font-weight: 900;
+  color: #AA4624;
+}
+
+.drawer-footer-bar .footer-discount-hint {
+  font-size: 20rpx;
+  color: #059669;
+  font-weight: 500;
+  margin-top: 2rpx;
+}
+
+.drawer-footer-bar .footer-right {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  flex-shrink: 0;
+}
+
+.drawer-footer-bar .checkout-error {
+  font-size: 22rpx;
+  color: #DC2626;
+  padding: 4rpx;
+  max-width: 200rpx;
+  text-align: right;
+  line-height: 1.3;
+}
+
+.drawer-footer-bar .btn-wxpay-submit {
+  margin-top: 0;
+  min-width: 250rpx;
+  padding: 20rpx 32rpx;
+  border-radius: 36rpx;
+  background: #278464;
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 20rpx rgba(39, 132, 100, 0.28);
+  border: none;
+  line-height: 1.4;
+}
+
+.drawer-footer-bar .btn-wxpay-submit[disabled] {
+  background: #D1D5DB !important;
+  color: #9CA3AF !important;
+  box-shadow: none !important;
 }
 
 .drawer-info-box {
@@ -939,7 +1207,6 @@
 .checkout-contact input, .checkout-contact picker { margin: 16rpx 0; min-height: 52rpx; font-size: 26rpx; }
 .checkout-error { color: #B42318; padding: 16rpx; font-size: 24rpx; }
 .shop-announcement { font-size: 24rpx; color: #9A3412; margin-top: 16rpx; }
-.drawer-content-sheet { max-height: 88vh; overflow-y: auto; }
 
 .checkout-rule-link {font-size:24rpx;color:#9A3412;padding:20rpx 0;text-align:center;}
 .dish-photo-placeholder {height:100%;display:flex;align-items:center;justify-content:center;background:#FFF1E5;font-size:64rpx;}
@@ -1000,7 +1267,6 @@
 .cart-summary-text { min-width: 0; flex-wrap: wrap; gap: 8rpx; }
 .cart-total-num { font-size: 36rpx; color: #AA4624; }
 .btn-dock-confirm { background: #AA4624; border-radius: 16rpx; padding: 22rpx 32rpx; font-size: 26rpx; white-space: nowrap; box-shadow: none; }
-.drawer-content-sheet { border-radius: 28rpx 28rpx 0 0; background: #FFFEFC; padding: 30rpx 28rpx calc(40rpx + env(safe-area-inset-bottom)); }
 .drawer-h2 { font-size: 32rpx; font-weight: 600; }
 .drawer-info-box { border-radius: 16rpx; background: #F5F1EA; }
 .info-row { gap: 20rpx; font-size: 24rpx; line-height: 1.7; }
