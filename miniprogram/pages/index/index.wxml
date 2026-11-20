@@ -216,7 +216,14 @@
             <view wx:for="{{cartList}}" wx:key="id" class="drawer-cart-item">
               <view class="item-meta">
                 <text class="item-name">{{item.dish.title}}</text>
-                <text class="item-unit-price">¥{{isMember ? item.dish.member_price : item.dish.origin_price}}</text>
+                <view class="item-price-row">
+                  <text class="item-unit-price">¥{{isMember ? item.dish.member_price : item.dish.origin_price}}</text>
+                  <!-- 会员专享：划线原价 + 会员标，与下方账单的原价与会员立减完美呼应 -->
+                  <text class="item-origin-price" wx:if="{{isMember && item.dish.member_price !== item.dish.origin_price}}">¥{{item.dish.origin_price}}</text>
+                  <text class="item-vip-badge" wx:if="{{isMember && item.dish.member_price !== item.dish.origin_price}}">会员价</text>
+                  <!-- 非会员：引导会员价 -->
+                  <text class="item-nonmember-tip" wx:if="{{!isMember && item.dish.member_price !== item.dish.origin_price}}">会员¥{{item.dish.member_price}}</text>
+                </view>
               </view>
               <view class="cart-stepper-row in-drawer">
                 <view class="btn-stepper minus btn-press" catchtap="decreaseCart" data-dish="{{item.dish}}">-</view>
@@ -270,7 +277,7 @@
         <!-- 金额明细列表 (紧凑直观明细) -->
         <view class="bill-summary-list">
           <view class="bill-row">
-            <text class="bill-row-label">商品金额</text>
+            <text class="bill-row-label">{{calcResult.member_discount > 0 ? '商品原价' : '商品金额'}}</text>
             <text class="bill-row-val">¥{{calcResult.goods_origin_total || '0.00'}}</text>
           </view>
           <view class="bill-row red" wx:if="{{calcResult.member_discount > 0}}">
@@ -301,7 +308,10 @@
             <text class="footer-label">本单实付</text>
             <text class="footer-price-num">¥{{calcResult.final_pay_amount || '0.00'}}</text>
           </view>
-          <view class="footer-discount-hint" wx:if="{{calcResult.member_discount > 0 || calcResult.normal_deduct > 0 || calcResult.red_deduct > 0}}">已享受会员/积分优惠</view>
+          <view class="footer-discount-hint" wx:if="{{calcResult.member_discount > 0 || calcResult.normal_deduct > 0 || calcResult.red_deduct > 0}}">
+            <text class="hint-saved-tag" wx:if="{{calcResult.member_discount > 0}}">已省¥{{calcResult.member_discount}}</text>
+            <text class="hint-desc">已享会员/抵扣特惠</text>
+          </view>
         </view>
         <view class="footer-right">
           <view class="checkout-error" wx:if="{{calcError}}" bindtap="calculateBill">{{calcError}} · 重试</view>
