@@ -537,5 +537,21 @@ test('index checkout autofills default address and guides address selection on s
  assert.equal(page.data.receiverPhone, '13738027508');
  assert.equal(storage.get('pandou_contact').receiverName, '杨力');
  assert.equal(storage.get('pandou_contact').receiverPhone, '13738027508');
+
+ // Delivery modal allows unified modification of recipient, phone and address together
+ page.data.deliveryType = 1;
+ page.openDeliveryModal();
+ assert.equal(page.data.showDeliveryModal, true);
+ page.onEditNameInput({ detail: { value: '陈女士' } });
+ page.onEditPhoneInput({ detail: { value: '13912345678' } });
+ page.onEditAddressInput({ detail: { value: '青山湖小区18幢601' } });
+ page.saveUnifiedDelivery();
+
+ assert.equal(page.data.showDeliveryModal, false);
+ assert.equal(page.data.receiverName, '陈女士');
+ assert.equal(page.data.receiverPhone, '13912345678');
+ assert.ok(page.data.destAddress.includes('青山湖小区18幢601'));
+ assert.equal(storage.get('pandou_contact').receiverName, '陈女士');
+ assert.equal(storage.get('pandou_contact').receiverPhone, '13912345678');
 });
 

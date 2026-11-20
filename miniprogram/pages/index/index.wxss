@@ -620,125 +620,124 @@
   box-sizing: border-box;
 }
 
-/* 履约卡片：顶部两栏显示，一栏配送地址，另一栏是联系方式 */
+/* 履约与配送信息一体化卡片 (配送地址与联系人统一归属配送信息，作为一个整体展示) */
 .drawer-fulfillment-card {
   background: #FDF9F4;
-  border: 1rpx solid #EFE4D6;
+  border: 1.5rpx solid #EFE4D6;
   border-radius: 20rpx;
-  padding: 8rpx 20rpx;
+  padding: 18rpx 22rpx 12rpx;
   margin-bottom: 20rpx;
 }
 
-.compact-info-row {
+.fulfillment-card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16rpx 4rpx;
-  min-height: 72rpx;
-  box-sizing: border-box;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx dashed #EAE0D5;
 }
 
-.compact-info-row .info-row-left {
-  display: flex;
-  align-items: center;
-  gap: 14rpx;
-  flex: 1;
-  min-width: 0;
-}
-
-.compact-info-row .row-icon {
-  font-size: 32rpx;
-  flex-shrink: 0;
-}
-
-.compact-info-row .row-text-block {
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-  flex: 1;
-  min-width: 0;
-}
-
-.compact-info-row .row-title-line {
+.fulfillment-card-head .head-title-tag {
   display: flex;
   align-items: center;
   gap: 10rpx;
 }
 
-.compact-info-row .row-label {
-  font-size: 20rpx;
-  color: #8C7D70;
-  font-weight: 500;
+.fulfillment-card-head .head-icon {
+  font-size: 28rpx;
 }
 
-.compact-info-row .row-badge {
+.fulfillment-card-head .head-label {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #7A634E;
+}
+
+.fulfillment-card-head .head-badge {
   font-size: 19rpx;
   color: #AA4624;
   background: #FFF0E4;
-  padding: 1rpx 8rpx;
+  padding: 2rpx 10rpx;
   border-radius: 6rpx;
   font-weight: 600;
 }
 
-.compact-info-row .row-val {
-  font-size: 26rpx;
+.fulfillment-card-head .head-action .action-btn-text {
+  font-size: 24rpx;
+  color: #AA4624;
+  font-weight: 700;
+}
+
+.fulfillment-card-body {
+  padding: 14rpx 0 10rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.card-address-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.card-address-line .addr-text {
+  font-size: 28rpx;
   font-weight: 700;
   color: #332C25;
   line-height: 1.35;
+  word-break: break-all;
 }
 
-.compact-info-row .row-val.ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.card-address-line .btn-copy-tag {
+  font-size: 20rpx;
+  color: #8A6D51;
+  background: #FFFFFF;
+  border: 1rpx solid #E5DACB;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  flex-shrink: 0;
 }
 
-.compact-info-row .row-val.empty {
-  font-size: 25rpx;
-  font-weight: 600;
-  color: #AA4624;
-}
-
-.compact-info-row .row-val-contact {
+.card-contact-line {
   display: flex;
   align-items: center;
   gap: 16rpx;
 }
 
-.compact-info-row .contact-name {
-  font-size: 26rpx;
-  font-weight: 700;
-  color: #332C25;
+.card-contact-line .contact-label {
+  font-size: 24rpx;
+  color: #8C7D70;
 }
 
-.compact-info-row .contact-phone {
-  font-size: 25rpx;
+.card-contact-line .contact-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #4A3E35;
+}
+
+.card-contact-line .contact-phone {
+  font-size: 26rpx;
   font-weight: 600;
   color: #665C54;
 }
 
-.compact-info-row .row-action {
-  flex-shrink: 0;
-  padding-left: 16rpx;
+.card-empty-line {
+  padding: 6rpx 0;
 }
 
-.compact-info-row .action-btn-text {
-  font-size: 24rpx;
+.card-empty-line .empty-hint {
+  font-size: 26rpx;
   color: #AA4624;
   font-weight: 600;
-}
-
-.compact-row-divider {
-  height: 1rpx;
-  background: #EAE0D5;
-  margin: 0 4rpx;
 }
 
 .compact-schedule-strip {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  padding: 12rpx 4rpx 6rpx;
+  padding: 10rpx 0 2rpx;
   border-top: 1rpx dashed #EAE0D5;
 }
 
@@ -1457,4 +1456,134 @@
   border-radius: 16rpx;
   border: none;
   line-height: 1.4;
+}
+
+/* 统一配送信息弹窗 */
+.delivery-modal-dialog {
+  width: 100%;
+  max-width: 650rpx;
+  background: #FFFFFF;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx;
+  box-sizing: border-box;
+  box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.16);
+}
+.delivery-modal-dialog .modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+.delivery-modal-dialog .modal-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1F2937;
+}
+.delivery-modal-dialog .modal-close {
+  font-size: 32rpx;
+  color: #9CA3AF;
+  padding: 8rpx;
+  line-height: 1;
+}
+.delivery-modal-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 22rpx;
+}
+.btn-modal-action {
+  flex: 1;
+  border-radius: 14rpx;
+  font-size: 24rpx !important;
+  font-weight: 600;
+  padding: 16rpx 8rpx !important;
+  line-height: 1.4;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+.btn-modal-action.wx-import {
+  background: #ECFDF5 !important;
+  color: #059669 !important;
+  border: 1.5rpx solid #A7F3D0 !important;
+}
+.btn-modal-action.manual-edit,
+.btn-toggle-edit {
+  background: #FFF7ED !important;
+  color: #C2410C !important;
+  border: 1.5rpx solid #FFEDD5 !important;
+  flex: 1;
+  border-radius: 14rpx;
+  font-size: 24rpx !important;
+  font-weight: 600;
+  padding: 16rpx 8rpx !important;
+  line-height: 1.4;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+.delivery-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+  margin-bottom: 20rpx;
+}
+.delivery-edit-form .form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.delivery-edit-form .form-label {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #4B5563;
+}
+.delivery-edit-form .form-input {
+  height: 80rpx;
+  background: #F9FAFB;
+  border: 1.5rpx solid #E5E7EB;
+  border-radius: 14rpx;
+  padding: 0 20rpx;
+  font-size: 27rpx;
+  color: #1F2937;
+  box-sizing: border-box;
+}
+.delivery-edit-form .form-picker-val {
+  height: 80rpx;
+  background: #F9FAFB;
+  border: 1.5rpx solid #E5E7EB;
+  border-radius: 14rpx;
+  padding: 0 20rpx;
+  font-size: 27rpx;
+  color: #1F2937;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+.btn-save-delivery {
+  width: 100% !important;
+  background: #AA4624 !important;
+  color: #FFFFFF !important;
+  font-size: 28rpx !important;
+  font-weight: 700;
+  padding: 22rpx 0 !important;
+  border-radius: 16rpx;
+  border: none;
+  margin-top: 10rpx !important;
+  line-height: 1.4;
+}
+.address-card-item.is-selected {
+  background: #FFF8F3 !important;
+  border-color: #AA4624 !important;
+}
+.addr-badge-active {
+  background: #AA4624;
+  color: #FFFFFF;
+  font-size: 19rpx;
+  font-weight: 600;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
 }

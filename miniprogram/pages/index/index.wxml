@@ -155,45 +155,48 @@
 
     <!-- 2. 中间可滚动区域 (聚焦核心信息，设置明确高度保证纵向滚动顺畅) -->
     <scroll-view scroll-y="true" class="drawer-body-scroll" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
-      <!-- 履约与联系人紧凑两栏 (两栏均支持点击弹窗修改，不占多余版面) -->
-      <view class="drawer-fulfillment-card">
-        <!-- 第一栏：配送地址 / 自提门店 (点击修改或复制) -->
-        <view class="compact-info-row" bindtap="{{deliveryType === 1 ? 'openAddressPicker' : 'copyShopAddress'}}">
-          <view class="info-row-left">
-            <text class="row-icon">📍</text>
-            <view class="row-text-block">
-              <view class="row-title-line">
-                <text class="row-label">{{deliveryType === 1 ? '配送地址' : '取餐门店'}}</text>
-                <text class="row-badge" wx:if="{{deliveryType === 1 && deliveryArea}}">{{deliveryArea}}</text>
-              </view>
-              <text class="row-val ellipsis" wx:if="{{deliveryType === 1}}">{{destAddress || '点击选择或从微信导入配送地址'}}</text>
-              <text class="row-val ellipsis" wx:else>{{config.WORKSHOP_ADDRESS || '门店自提地址'}}</text>
-            </view>
+      <!-- 履约与配送信息一体化卡片 (配送地址与配送人统一归属配送信息，作为一个整体统一修改) -->
+      <view class="drawer-fulfillment-card" bindtap="openDeliveryModal">
+        <!-- 头部行：标签 + 统一修改按钮 -->
+        <view class="fulfillment-card-head">
+          <view class="head-title-tag">
+            <text class="head-icon">{{deliveryType === 1 ? '📍' : '🏪'}}</text>
+            <text class="head-label">{{deliveryType === 1 ? '配送信息' : '自提信息'}}</text>
+            <text class="head-badge" wx:if="{{deliveryType === 1 && deliveryArea}}">{{deliveryArea}}</text>
           </view>
-          <view class="row-action">
-            <text class="action-btn-text">{{deliveryType === 1 ? '修改 ›' : '复制'}}</text>
+          <view class="head-action">
+            <text class="action-btn-text">修改 ›</text>
           </view>
         </view>
 
-        <!-- 分隔线 -->
-        <view class="compact-row-divider"></view>
-
-        <!-- 第二栏：配送人 / 提货人及联系方式 (点击弹窗修改姓名和手机号) -->
-        <view class="compact-info-row" bindtap="openContactModal">
-          <view class="info-row-left">
-            <text class="row-icon">👤</text>
-            <view class="row-text-block">
-              <text class="row-label">{{deliveryType === 1 ? '配送人与联系方式' : '提货人与联系电话'}}</text>
-              <view class="row-val-contact" wx:if="{{receiverName || receiverPhone}}">
-                <text class="contact-name">{{receiverName || '未填联系人'}}</text>
-                <text class="contact-phone">{{receiverPhone || '未填手机号'}}</text>
-              </view>
-              <text class="row-val empty" wx:else>点击填写联系人和手机号</text>
+        <!-- 内容整体：地址 + 联系人统一展示 -->
+        <view class="fulfillment-card-body">
+          <!-- 模式 1：周边自送 -->
+          <block wx:if="{{deliveryType === 1}}">
+            <view class="card-address-line" wx:if="{{destAddress}}">
+              <text class="addr-text">{{destAddress}}</text>
             </view>
-          </view>
-          <view class="row-action">
-            <text class="action-btn-text">修改 ›</text>
-          </view>
+            <view class="card-contact-line" wx:if="{{receiverName || receiverPhone}}">
+              <text class="contact-name">{{receiverName || '未填联系人'}}</text>
+              <text class="contact-phone">{{receiverPhone || '未填手机号'}}</text>
+            </view>
+            <view class="card-empty-line" wx:if="{{!destAddress && !receiverName}}">
+              <text class="empty-hint">点击设置配送信息（收货地址与联系人）</text>
+            </view>
+          </block>
+
+          <!-- 模式 2：到店自提 -->
+          <block wx:else>
+            <view class="card-address-line">
+              <text class="addr-text">{{config.WORKSHOP_ADDRESS || '门店自提地址'}}</text>
+              <text class="btn-copy-tag" catchtap="copyShopAddress">复制</text>
+            </view>
+            <view class="card-contact-line">
+              <text class="contact-label">提货联络：</text>
+              <text class="contact-name">{{receiverName || '自提顾客'}}</text>
+              <text class="contact-phone">{{receiverPhone || '请填写提货手机号'}}</text>
+            </view>
+          </block>
         </view>
 
         <!-- 预约出炉时段轻量栏 -->
@@ -303,54 +306,86 @@
       </view>
     </view>
 
-  <!-- 快速选择收货地址弹窗 -->
-  <view class="poster-backdrop" wx:if="{{showAddressPicker}}" catchtouchmove="preventTouchMove" bindtap="closeAddressPicker">
-    <view class="address-picker-dialog" catchtap="stopBubble">
+  <!-- 统一修改配送信息弹窗 (收货地址与联系人作为一个整体，统一修改/切换/导入) -->
+  <view class="poster-backdrop" wx:if="{{showDeliveryModal || showAddressPicker}}" catchtouchmove="preventTouchMove" bindtap="closeDeliveryModal">
+    <view class="delivery-modal-dialog" catchtap="stopBubble">
       <view class="modal-head">
-        <text class="modal-title">选择配送地址</text>
-        <view class="modal-close" bindtap="closeAddressPicker">✕</view>
+        <text class="modal-title">修改配送信息</text>
+        <view class="modal-close" bindtap="closeDeliveryModal">✕</view>
       </view>
-      <view class="address-quick-actions">
-        <button size="mini" class="btn-import-wx btn-press" bindtap="importAddressFromWechat">
-          <text class="btn-icon">📥</text> 从微信一键导入新地址
+
+      <!-- 快捷操作区 -->
+      <view class="delivery-modal-actions">
+        <button size="mini" class="btn-modal-action wx-import btn-press" bindtap="importAddressFromWechat">
+          <text class="btn-icon">📥</text> 从微信一键导入
+        </button>
+        <button size="mini" class="btn-modal-action manual-edit btn-press" bindtap="toggleDeliveryEditForm">
+          <text class="btn-icon">{{showManualEdit ? '📋 查看已有地址' : '✏️ 手动填写/编辑'}}</text>
         </button>
       </view>
-      <scroll-view scroll-y="true" class="address-scroll-list">
+
+      <!-- 模式 A：直接表单编辑 (收件人 + 电话 + 小区 + 详细地址 作为一个整体统一编辑) -->
+      <view class="delivery-edit-form" wx:if="{{showManualEdit}}">
+        <view class="form-item">
+          <text class="form-label">收件人姓名</text>
+          <input class="form-input" placeholder="请填写收件人姓名" value="{{editReceiverName}}" bindinput="onEditNameInput" maxlength="20" />
+        </view>
+        <view class="form-item">
+          <text class="form-label">联系电话</text>
+          <input class="form-input" type="number" placeholder="请填写11位手机号" value="{{editReceiverPhone}}" bindinput="onEditPhoneInput" maxlength="11" />
+        </view>
+        <view class="form-item" wx:if="{{deliveryAreas.length > 0}}">
+          <text class="form-label">配送小区</text>
+          <picker range="{{deliveryAreas}}" value="{{editAreaIndex}}" bindchange="onEditAreaChange">
+            <view class="form-picker-val">{{editDeliveryArea || '请选择配送小区 ▾'}}</view>
+          </picker>
+        </view>
+        <view class="form-item">
+          <text class="form-label">详细地址</text>
+          <input class="form-input" placeholder="楼幢、门牌号（如：10幢202）" value="{{editDestAddress}}" bindinput="onEditAddressInput" maxlength="100" />
+        </view>
+        <button class="btn-save-delivery btn-press" bindtap="saveUnifiedDelivery">保存并使用此配送信息</button>
+      </view>
+
+      <!-- 模式 B：已有地址列表选择 (每一项均包含收件人、电话与详细门牌，点击整体切换) -->
+      <scroll-view scroll-y="true" class="address-scroll-list" wx:else>
         <view wx:if="{{!addressList.length}}" class="address-empty-box">
           <text class="empty-icon">📍</text>
-          <text class="empty-text">暂无已维护的配送地址</text>
-          <text class="empty-sub">支持点击上方按钮直接从微信导入</text>
+          <text class="empty-text">暂无已维护的配送信息</text>
+          <text class="empty-sub">支持点击上方按钮从微信一键导入或手动填写</text>
         </view>
-        <view class="address-card-item {{item.is_default ? 'is-default' : ''}}" wx:for="{{addressList}}" wx:key="id" data-id="{{item.id}}" bindtap="selectAddress">
+        <view class="address-card-item {{item.detail === destAddress && item.name === receiverName ? 'is-selected' : ''}}" wx:for="{{addressList}}" wx:key="id" data-id="{{item.id}}" bindtap="selectAddress">
           <view class="addr-item-main">
             <view class="addr-user-line">
               <text class="addr-user-name">{{item.name}}</text>
               <text class="addr-user-phone">{{item.phone}}</text>
               <text class="addr-badge-default" wx:if="{{item.is_default}}">默认</text>
+              <text class="addr-badge-active" wx:if="{{item.detail === destAddress && item.name === receiverName}}">当前使用</text>
             </view>
             <view class="addr-detail-text">{{item.area ? item.area + ' ' : ''}}{{item.detail}}</view>
           </view>
-          <view class="addr-select-tag">点击选择 ›</view>
+          <view class="addr-select-tag">使用 ›</view>
         </view>
       </scroll-view>
-      <button class="btn-dialog-done btn-press" bindtap="closeAddressPicker">取消</button>
+
+      <button class="btn-dialog-done btn-press" wx:if="{{!showManualEdit}}" bindtap="closeDeliveryModal">取消</button>
     </view>
   </view>
 
-  <!-- 快速修改联系方式弹窗 -->
+  <!-- 快速修改自提联系方式弹窗 -->
   <view class="poster-backdrop" wx:if="{{showContactModal}}" catchtouchmove="preventTouchMove" bindtap="closeContactModal">
     <view class="contact-modal-dialog" catchtap="stopBubble">
       <view class="modal-head">
-        <text class="modal-title">{{deliveryType === 1 ? '修改配送联系人' : '修改提货人信息'}}</text>
+        <text class="modal-title">修改自提联络信息</text>
         <view class="modal-close" bindtap="closeContactModal">✕</view>
       </view>
       <view class="contact-modal-body">
         <view class="contact-input-field">
-          <text class="contact-field-label">联系人姓名</text>
+          <text class="contact-field-label">提货人姓名</text>
           <input class="contact-modal-input" placeholder="请填写姓名" maxlength="20" value="{{tempReceiverName}}" bindinput="onTempNameInput" />
         </view>
         <view class="contact-input-field">
-          <text class="contact-field-label">联系手机号</text>
+          <text class="contact-field-label">提货手机号</text>
           <input class="contact-modal-input" type="number" placeholder="请填写11位手机号" maxlength="11" value="{{tempReceiverPhone}}" bindinput="onTempPhoneInput" />
         </view>
       </view>

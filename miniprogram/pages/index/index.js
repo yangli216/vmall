@@ -15,7 +15,9 @@ Page({
     inputRedAmount: '0.00', loadingProducts: true, productError: '', calcError: '', calcReady: false, calculating: false, submitting: false,
     redLimitPercent: 50, calcResult: {}, contactFormOpen: false,
     showAddressPicker: false, addressList: [],
-    showContactModal: false, tempReceiverName: '', tempReceiverPhone: ''
+    showContactModal: false, tempReceiverName: '', tempReceiverPhone: '',
+    showDeliveryModal: false, showManualEdit: false,
+    editReceiverName: '', editReceiverPhone: '', editDestAddress: '', editDeliveryArea: '', editAreaIndex: 0
   },
   onLoad(options) {
     captureReferral(options);
@@ -127,21 +129,94 @@ Page({
   closeCheckoutSheet() { if (!this.data.submitting) this.setData({ isDrawerOpen: false }); },
   editAddress() {
     if (this.data.submitting) return;
-    if (this.data.deliveryType === 2) { this.setData({ isDrawerOpen: this.data.cartCount > 0 }); return; }
-    const list = addressUtil.getAddressList();
-    if (list.length > 0) {
-      this.openAddressPicker();
-    } else {
-      this.importAddressFromWechat();
+    this.openDeliveryModal();
+  },
+  openDeliveryModal() {
+    if (this.data.submitting) return;
+    if (this.data.deliveryType === 2) {
+      this.openContactModal();
+      return;
     }
+    const list = addressUtil.getAddressList();
+    const areaIndex = this.data.deliveryAreas.findIndex(a => a === this.data.deliveryArea);
+    this.setData({
+      addressList: list,
+      showDeliveryModal: true,
+      showAddressPicker: true,
+      showManualEdit: list.length === 0,
+      editReceiverName: this.data.receiverName || '',
+      editReceiverPhone: this.data.receiverPhone || '',
+      editDestAddress: this.data.destAddress || '',
+      editDeliveryArea: this.data.deliveryArea || (this.data.deliveryAreas[0] || ''),
+      editAreaIndex: areaIndex >= 0 ? areaIndex : 0
+    });
+  },
+  closeDeliveryModal() {
+    this.setData({ showDeliveryModal: false, showAddressPicker: false, showManualEdit: false });
+  },
+  toggleDeliveryEditForm() {
+    this.setData({ showManualEdit: !this.data.showManualEdit });
+  },
+  onEditNameInput(e) { this.setData({ editReceiverName: e.detail.value }); },
+  onEditPhoneInput(e) { this.setData({ editReceiverPhone: e.detail.value }); },
+  onEditAddressInput(e) { this.setData({ editDestAddress: e.detail.value }); },
+  onEditAreaChange(e) {
+    const idx = Number(e.detail.value);
+    this.setData({
+      editAreaIndex: idx,
+      editDeliveryArea: this.data.deliveryAreas[idx] || ''
+    });
+  },
+  saveUnifiedDelivery() {
+    const name = (this.data.editReceiverName || '').trim();
+    const phone = (this.data.editReceiverPhone || '').trim();
+    let detail = (this.data.editDestAddress || '').trim();
+    const area = (this.data.editDeliveryArea || '').trim();
+
+    if (!name) return wx.showToast({ title: '请填写收件人姓名', icon: 'none' });
+    if (!/^1[3-9]\d{9}$/.test(phone)) return wx.showToast({ title: '请填写11位有效手机号', icon: 'none' });
+    if (!detail) return wx.showToast({ title: '请填写详细收货地址', icon: 'none' });
+
+    if (area && !detail.includes(area)) {
+      detail = area + ' ' + detail;
+    }
+
+    try {
+      addressUtil.saveAddress({
+        name,
+        phone,
+        area,
+        detail,
+        is_default: this.data.addressList.length === 0
+      });
+    } catch (e) {}
+
+    const list = addressUtil.getAddressList();
+    this.setData({
+      receiverName: name,
+      receiverPhone: phone,
+      deliveryArea: area,
+      destAddress: detail,
+      addressList: list,
+      showDeliveryModal: false,
+      showAddressPicker: false,
+      showManualEdit: false
+    });
+    this.saveContact();
+    this.invalidateBill();
+    wx.showToast({ title: '配送信息已更新', icon: 'success' });
   },
   openAddressPicker() {
     if (this.data.submitting) return;
     const list = addressUtil.getAddressList();
-    this.setData({ addressList: list, showAddressPicker: true });
+    this.setData({
+      addressList: list,
+      showAddressPicker: true,
+      showDeliveryModal: true
+    });
   },
   closeAddressPicker() {
-    this.setData({ showAddressPicker: false });
+    this.closeDeliveryModal();
   },
   openContactModal() {
     if (this.data.submitting) return;
@@ -188,12 +263,14 @@ Page({
       receiverName: target.name || '',
       receiverPhone: target.phone || '',
       deliveryArea: matchedArea,
-      showAddressPicker: false
+      showAddressPicker: false,
+      showDeliveryModal: false,
+      showManualEdit: false
     });
     this.requestId = null;
     this.saveContact();
     this.invalidateBill();
-    wx.showToast({ title: '已选择地址', icon: 'success' });
+    wx.showToast({ title: '已选择配送信息', icon: 'success' });
   },
   async importAddressFromWechat() {
     if (this.data.submitting) return;
@@ -208,12 +285,14 @@ Page({
         receiverName: record.name,
         receiverPhone: record.phone,
         deliveryArea: matchedArea,
-        showAddressPicker: false
+        showAddressPicker: false,
+        showDeliveryModal: false,
+        showManualEdit: false
       });
       this.requestId = null;
       this.saveContact();
       this.invalidateBill();
-      wx.showToast({ title: '已导入微信地址', icon: 'success' });
+      wx.showToast({ title: '已导入微信配送信息', icon: 'success' });
     } catch (err) {
       if (!/cancel/i.test(err.errMsg || '')) {
         wx.showToast({ title: '未获取到微信地址', icon: 'none' });
