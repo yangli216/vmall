@@ -21,7 +21,7 @@ async function rewardDebt(conn: PoolConnection, userId: number, kind: RewardKind
   requireValue(rows.length, '账户不存在', 404);
   return {field, value:kind === 'NORMAL_POINT' ? Number(rows[0].debt) : fen(rows[0].debt)};
 }
-async function writeDebt(conn: PoolConnection, userId: number, kind: RewardKind, field: string, before: number, after: number, orderId: number, reason: string) {
+async function writeDebt(conn: PoolConnection, userId: number, kind: RewardKind, field: string, before: number, after: number, orderId: number | null, reason: string) {
   const format = (v: number) => kind === 'NORMAL_POINT' ? String(v) : yuan(v);
   await conn.execute(`UPDATE t_user SET ${field}=? WHERE id=?`, [format(after),userId]);
   await conn.execute(`INSERT INTO t_account_flow (user_id,order_id,account_type,event_type,amount,before_val,after_val,reason) VALUES (?,?,?,?,?,?,?,?)`,
@@ -50,7 +50,7 @@ export async function recoverReward(conn: PoolConnection, userId: number, kind: 
   if (recovered) await changeBalance(conn,userId,kind,-recovered,'REFUND_REWARD_REVERSE',orderId,'退款冲回已发奖励');
   if (amount>recovered) await writeDebt(conn,userId,kind,debt.field,debt.value,debt.value+amount-recovered,orderId,'已用奖励待冲回，后续同类奖励先抵回');
 }
-export async function creditReward(conn: PoolConnection, userId: number, kind: RewardKind, amount: number, event: string, orderId: number, reason: string) {
+export async function creditReward(conn: PoolConnection, userId: number, kind: RewardKind, amount: number, event: string, orderId: number | null, reason: string) {
   requireValue(Number.isSafeInteger(amount) && amount >= 0, '奖励数量无效');
   if (!amount) return;
   const debt = await rewardDebt(conn,userId,kind);

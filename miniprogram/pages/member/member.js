@@ -13,6 +13,10 @@ Page({
     switchingTestAccount: false,
     showTimelineGuide: false,
 
+    // 每日签到
+    signInInfo: { is_signed_today: false, continuous_days: 0, reward_points: 10 },
+    signingIn: false,
+
     // 微信资料授权与会员注册弹窗
     showProfileModal: false,
     editAvatarUrl: '',
@@ -79,19 +83,50 @@ Page({
   async loadData() {
     this.setData({ loading: true, error: '' });
     try {
-      const [u, c] = await Promise.all([app.api('/api/user/info'), app.api('/api/config/all')]);
+      const [u, c, signRes] = await Promise.all([
+        app.api('/api/user/info'),
+        app.api('/api/config/all'),
+        app.api('/api/user/signin-status').catch(() => null)
+      ]);
       const threshold = Number(c.MEMBER_ENTRY_THRESHOLD), total = Number(u.total_consumption);
       this.setData({
         userInfo: u,
         isMember: u.is_member === 1,
         config: c,
-        progressPercent: threshold > 0 ? Math.min(100, Math.floor(total / threshold * 100)) : 100
+        progressPercent: threshold > 0 ? Math.min(100, Math.floor(total / threshold * 100)) : 100,
+        signInInfo: signRes || this.data.signInInfo
       });
     } catch (error) {
       this.setData({ error: error.message });
       wx.showToast({ title: error.message, icon: 'none' });
     } finally {
       this.setData({ loading: false });
+    }
+  },
+
+  async handleDailySignIn() {
+    if (this.data.signingIn || this.data.signInInfo.is_signed_today) return;
+    this.setData({ signingIn: true });
+    try {
+      const res = await app.api('/api/user/signin', 'POST', {});
+      wx.showToast({
+        title: `🎉 签到成功 +${res.points_earned || 10}分`,
+        icon: 'success',
+        duration: 2500
+      });
+      this.setData({
+        'signInInfo.is_signed_today': true,
+        'signInInfo.continuous_days': res.continuous_days,
+        'userInfo.normal_points': res.total_normal_points
+      });
+      this.loadData();
+    } catch (err) {
+      wx.showToast({
+        title: err.message || '签到失败',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ signingIn: false });
     }
   },
 

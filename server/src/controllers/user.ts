@@ -2,8 +2,9 @@ import { Context } from 'koa';
 import { query, withTransaction } from '../db';
 import { requireValue, text } from '../domain/errors';
 import { getConfigs } from '../services/config';
-import { changeBalance } from '../services/ledger';
+import { changeBalance, creditReward } from '../services/ledger';
 import { fen } from '../domain/pricing';
+import { chinaDate } from '../domain/batches';
 
 export async function getOrCreateCurrentUser(ctx: Context) {
   const rows: any = await query(`SELECT u.*, r.invite_code AS referrer_code, r.nickname AS referrer_name
@@ -89,4 +90,97 @@ export async function accountFlows(ctx: Context) {
   requireValue(Number.isSafeInteger(before) && before >= 0, '分页参数无效');
   const rows = await query('SELECT * FROM t_account_flow WHERE user_id = ? AND (? = 0 OR id < ?) ORDER BY id DESC LIMIT 30', [ctx.state.user.id, before, before]);
   ctx.body = { code: 0, data: rows };
+}
+
+export async function getSignInStatus(ctx: Context) {
+  const userId = ctx.state.user.id;
+  const today = chinaDate();
+  const rewardPoints = 10;
+
+  const rows: any = await query(
+    'SELECT sign_date FROM t_user_sign_in WHERE user_id = ? ORDER BY sign_date DESC LIMIT 40',
+    [userId]
+  );
+  const dateStrings = rows.map((r: any) => {
+    if (r.sign_date instanceof Date) return chinaDate(r.sign_date);
+    return String(r.sign_date).slice(0, 10);
+  });
+  const dateSet = new Set<string>(dateStrings);
+
+  const isSignedToday = dateSet.has(today);
+  let continuousDays = 0;
+  let checkDate = new Date(Date.parse(`${today}T00:00:00+08:00`));
+  if (!isSignedToday) {
+    checkDate = new Date(checkDate.getTime() - 86400000);
+  }
+  while (dateSet.has(chinaDate(checkDate))) {
+    continuousDays++;
+    checkDate = new Date(checkDate.getTime() - 86400000);
+  }
+
+  ctx.body = {
+    code: 0,
+    msg: 'ok',
+    data: {
+      is_signed_today: isSignedToday,
+      continuous_days: continuousDays,
+      reward_points: rewardPoints,
+      today
+    }
+  };
+}
+
+export async function doSignIn(ctx: Context) {
+  const userId = ctx.state.user.id;
+  const today = chinaDate();
+  const rewardPoints = 10;
+
+  const result = await withTransaction(async conn => {
+    const [existing]: any = await conn.execute(
+      'SELECT id FROM t_user_sign_in WHERE user_id = ? AND sign_date = ? FOR UPDATE',
+      [userId, today]
+    );
+    requireValue(!existing.length, '今日已完成签到，明天再来领积分吧', 409);
+
+    await conn.execute(
+      'INSERT INTO t_user_sign_in (user_id, sign_date, points_reward) VALUES (?, ?, ?)',
+      [userId, today, rewardPoints]
+    );
+
+    await creditReward(conn, userId, 'NORMAL_POINT', rewardPoints, 'SIGN_IN', null, '每日签到赠送普通积分');
+
+    const [userRows]: any = await conn.execute(
+      'SELECT normal_points FROM t_user WHERE id = ?',
+      [userId]
+    );
+
+    const [history]: any = await conn.execute(
+      'SELECT sign_date FROM t_user_sign_in WHERE user_id = ? ORDER BY sign_date DESC LIMIT 40',
+      [userId]
+    );
+    const dateStrings = history.map((r: any) => {
+      if (r.sign_date instanceof Date) return chinaDate(r.sign_date);
+      return String(r.sign_date).slice(0, 10);
+    });
+    const dateSet = new Set<string>(dateStrings);
+    let continuousDays = 0;
+    let checkDate = new Date(Date.parse(`${today}T00:00:00+08:00`));
+    while (dateSet.has(chinaDate(checkDate))) {
+      continuousDays++;
+      checkDate = new Date(checkDate.getTime() - 86400000);
+    }
+
+    return {
+      points_earned: rewardPoints,
+      continuous_days: continuousDays,
+      total_normal_points: Number(userRows[0]?.normal_points || 0),
+      is_signed_today: true
+    };
+  });
+
+  ctx.body = {
+    code: 0,
+    msg: `签到成功，已赠送 ${rewardPoints} 积分`,
+    data: result
+  };
 }

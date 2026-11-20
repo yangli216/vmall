@@ -62,6 +62,7 @@ export function createApp() {
     await query('SELECT file_id,state FROM t_product_image LIMIT 0');
     await query('SELECT active_user_id,status FROM t_privacy_request LIMIT 0');
     await query('SELECT payer_paid_amount,payer_refund_amount FROM t_order LIMIT 0');
+    await query('SELECT sign_date FROM t_user_sign_in LIMIT 0');
     if(simulated)await query('SELECT out_trade_no,trade_state FROM t_dev_payment LIMIT 0');
     ctx.body={status:'UP',...(simulated?{payment_mode:'mock',local_development:true}:{})};
   });
@@ -71,6 +72,8 @@ export function createApp() {
   router.post('/admin/verify',user.verifyAdminPasscode);
   router.post('/order/pay-success',order.payOrderSuccess);
   router.get('/user/info',userRequired,user.getOrCreateCurrentUser);
+  router.get('/user/signin-status',userRequired,user.getSignInStatus);
+  router.post('/user/signin',userRequired,user.doSignIn);
   router.get('/user/privacy',userRequired,privacy.myRequests);
   router.post('/user/privacy/request',userRequired,privacy.createRequest);
   router.post('/user/privacy/cancel',userRequired,privacy.cancelRequest);

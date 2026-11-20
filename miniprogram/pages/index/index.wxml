@@ -58,6 +58,7 @@
           <view class="vip-asset-chips" wx:if="{{isMember}}">
             <text class="vip-chip-item gold">🪙 {{userNormalPoints || 0}}分</text>
             <text class="vip-chip-item red">🧧 ¥{{userRedPoints || '0.00'}}</text>
+            <text class="vip-chip-item signin" wx:if="{{!isSignedToday}}">🎁 签到+10</text>
           </view>
         </view>
         <view class="vip-desc">{{isMember ? '积分可抵扣现金，推荐好友下单享现金返利' : (config.MEMBER_ENTRY_MODE === 'FREE' ? '当前可免费开通会员，即享会员价与下单送积分' : '入会规则请前往会员中心查看')}}</view>

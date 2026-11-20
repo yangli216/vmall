@@ -1393,6 +1393,7 @@
 .vip-chip-item { font-size: 20rpx; font-weight: 600; padding: 2rpx 10rpx; border-radius: 8rpx; line-height: 1.4; }
 .vip-chip-item.gold { background: #FAF0E4; color: #9A5B23; border: 1rpx solid #E9D5BD; }
 .vip-chip-item.red { background: #FDE8E8; color: #C53030; border: 1rpx solid #F8B4B4; }
+.vip-chip-item.signin { background: #FFF7ED; color: #C2410C; border: 1rpx solid #FDBA74; font-weight: 700; }
 .vip-desc { font-size: 22rpx; line-height: 1.5; color: #9C7F61; }
 .vip-enter-pill { flex-shrink: 0; background: transparent; color: #94643B; padding: 8rpx; font-size: 22rpx; font-weight: 600; }
 .modern-category-row { padding-top: 22rpx; padding-bottom: 22rpx; }

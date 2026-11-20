@@ -98,6 +98,20 @@ test('MySQL8 migration, live HTTP, competing last-item orders, zero-payment idem
     const malformed=await fetch(base+'/api/admin/product/image',{method:'POST',headers:{'content-type':'application/json','x-dev-openid':'test-admin'},body:'{bad'});assert.equal(malformed.status,400);
    }finally{imageService.productImageStorage.put=savedPut;envKeys.forEach((k,i)=>original[i]===undefined?delete process.env[k]:process.env[k]=original[i]);}
   });
+  await t.test('daily sign in grants points once per day, prevents duplicates and records ledger flow',async()=>{
+   const who='signin-buyer';await api('/api/user/info',null,who);
+   const initialStatus=await api('/api/user/signin-status',null,who);
+   assert.equal(initialStatus.code,0);assert.equal(initialStatus.data.is_signed_today,false);assert.equal(initialStatus.data.reward_points,10);
+   const signResult=await api('/api/user/signin',{},who);
+   assert.equal(signResult.code,0);assert.equal(signResult.data.points_earned,10);assert.equal(signResult.data.is_signed_today,true);assert.equal(signResult.data.continuous_days,1);
+   const duplicate=await api('/api/user/signin',{},who);
+   assert.equal(duplicate.code,409);
+   const afterStatus=await api('/api/user/signin-status',null,who);
+   assert.equal(afterStatus.data.is_signed_today,true);assert.equal(afterStatus.data.continuous_days,1);
+   const user=(await api('/api/user/info',null,who)).data;assert.equal(user.normal_points,10);
+   const flows=(await api('/api/user/account-flows',null,who)).data;
+   const signFlow=flows.find(f=>f.event_type==='SIGN_IN');assert.ok(signFlow);assert.equal(Number(signFlow.amount),10);
+  });
   await t.test('personal information requests are private, deduplicate concurrent retries, retain replies and commit with admin audit',async()=>{
    const who='privacy-buyer';await api('/api/user/info',null,who);
    await admin.execute("UPDATE t_user SET phone='13958001122',nickname='隐私测试',avatar_url='https://example.com/a.jpg',normal_points=123,red_packet_points=4,is_member=1 WHERE openid=?",[who]);
@@ -528,6 +542,8 @@ test('MySQL8 migration, live HTTP, competing last-item orders, zero-payment idem
     const [privacy]=await upgrade.query('SELECT COUNT(*) AS total FROM t_privacy_request');assert.equal(privacy[0].total,0);
     await upgrade.execute("INSERT INTO t_order(order_sn,user_id,delivery_type,goods_total_amount,pay_amount,order_status,payment_state,pay_time,closed_time) VALUES('UPGRADE-ZERO-REFUND',?,2,10,0,50,'REFUNDED',NOW(),NOW()),('UPGRADE-ZERO-LEGACY',?,2,10,0,40,'LEGACY',NOW(),NULL),('UPGRADE-ZERO-UNPAID',?,2,10,0,10,'UNPAID',NULL,NULL)",[userId,userId,userId]);
     fs.copyFileSync(path.join(__dirname,'../migrations/009_report_payment_amounts.sql'),path.join(stage,'migrations/009_report_payment_amounts.sql'));run();run();
+    fs.copyFileSync(path.join(__dirname,'../migrations/010_daily_signin.sql'),path.join(stage,'migrations/010_daily_signin.sql'));run();run();
+    const [signins]=await upgrade.query('SELECT COUNT(*) AS total FROM t_user_sign_in');assert.equal(signins[0].total,0);
     const [amounts]=await upgrade.execute('SELECT payer_paid_amount,payer_refund_amount FROM t_order WHERE id=?',[completed.insertId]);assert.equal(amounts[0].payer_paid_amount,null);assert.equal(amounts[0].payer_refund_amount,null);
     const [zeros]=await upgrade.query("SELECT order_sn,payer_paid_amount,payer_refund_amount FROM t_order WHERE order_sn LIKE 'UPGRADE-ZERO-%'");
     const zeroRefund=zeros.find(r=>r.order_sn==='UPGRADE-ZERO-REFUND');assert.equal(Number(zeroRefund.payer_paid_amount),0);assert.equal(Number(zeroRefund.payer_refund_amount),0);

@@ -42,16 +42,16 @@ Page({
     this.invalidateBill();
     this.setData({ loadingProducts: true, productError: '' });
     try {
-      const results = await Promise.all([app.api('/api/batches'), app.api('/api/user/info')]);
+      const results = await Promise.all([app.api('/api/batches'), app.api('/api/user/info'), app.api('/api/user/signin-status').catch(() => null)]);
       if (sequence !== this.refreshSequence) return;
-      const business = results[0], user = results[1], previous = this.data.slots[this.data.slotIndex];
+      const business = results[0], user = results[1], signRes = results[2], previous = this.data.slots[this.data.slotIndex];
       let slotIndex = previous ? business.slots.findIndex(s => s.date === previous.date && s.time === previous.time) : 0;
       if (slotIndex < 0) slotIndex = 0;
       const fullBatchText=(business.full_batch_labels || []).join('、');
       this.setData({ slots: business.slots, slotIndex,fullBatchText, currentBatchText: business.slots[slotIndex] ? business.slots[slotIndex].label : fullBatchText ? '可预约批次已接满' : '当前暂无可预约批次',
         config: business.config, deliveryAreas: business.delivery_areas, redLimitPercent: Math.round(Number(business.config.RED_PACKET_MAX_DEDUCT_RATIO) * 100),
         isMember: user.is_member === 1, myReferralCode: user.invite_code || '', userNormalPoints: user.normal_points, userRedPoints: user.red_packet_points,
-        inputRedAmount: user.red_packet_points });
+        inputRedAmount: user.red_packet_points, isSignedToday: signRes ? Boolean(signRes.is_signed_today) : false });
       const pending = wx.getStorageSync('pandou_pending_referrer');
       if (pending) {
         try { await app.api('/api/user/bind-referrer', 'POST', { invite_code: pending }); wx.removeStorageSync('pandou_pending_referrer'); wx.showToast({ title: '已绑定推荐好友', icon: 'success' }); }

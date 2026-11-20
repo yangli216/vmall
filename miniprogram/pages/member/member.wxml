@@ -58,7 +58,33 @@
     </view>
   </view>
 
-  <!-- 2. 双积分账户看板 -->
+  <!-- 2. 每日签到领积分卡片 -->
+  <view class="signin-section-card">
+    <view class="signin-card-main">
+      <view class="signin-icon-box">
+        <text class="signin-calendar-icon">🎁</text>
+      </view>
+      <view class="signin-info-col">
+        <view class="signin-title-line">
+          <text class="signin-title">每日签到领积分</text>
+          <text class="signin-streak-badge" wx:if="{{signInInfo.continuous_days > 0}}">连签 {{signInInfo.continuous_days}} 天</text>
+        </view>
+        <view class="signin-desc-text">
+          <text wx:if="{{signInInfo.is_signed_today}}">今日已签到，明日继续领 +{{signInInfo.reward_points || 10}} 积分</text>
+          <text wx:else>今日打卡立赠 +{{signInInfo.reward_points || 10}} 普通积分，下单可抵扣</text>
+        </view>
+      </view>
+    </view>
+    <button 
+      class="btn-signin-action btn-press {{signInInfo.is_signed_today ? 'is-signed' : ''}}" 
+      disabled="{{signInInfo.is_signed_today || signingIn}}" 
+      loading="{{signingIn}}" 
+      bindtap="handleDailySignIn">
+      {{signInInfo.is_signed_today ? '✓ 今日已签' : '签到 +10分'}}
+    </button>
+  </view>
+
+  <!-- 3. 双积分账户看板 -->
   <view class="asset-heading" bindtap="showAccountFlows"><text>我的资产</text><text class="asset-detail">收支明细 ›</text></view>
   <view class="points-board-grid" bindtap="showAccountFlows">
     <!-- 普通积分 -->
