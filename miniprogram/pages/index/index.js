@@ -256,6 +256,17 @@ Page({
   closeContactModal() {
     this.setData({ showContactModal: false });
   },
+  navToMemberAddress() {
+    this.setData({ isDrawerOpen: false, showDeliveryModal: false, showAddressPicker: false, showContactModal: false });
+    app.globalData = app.globalData || {};
+    app.globalData.openAddressManager = true;
+    wx.switchTab({ url: '/pages/member/member' });
+  },
+  switchToDeliveryAndManageAddress() {
+    this.setData({ showContactModal: false });
+    this.changeDrawerDelType({ currentTarget: { dataset: { type: 1 } } });
+    this.openAddressPicker();
+  },
   onTempNameInput(e) {
     this.setData({ tempReceiverName: e.detail.value });
   },

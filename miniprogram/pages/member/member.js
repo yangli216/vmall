@@ -35,6 +35,10 @@ Page({
     });
     this.loadData();
     this.refreshAddressSummary();
+    if (app.globalData && app.globalData.openAddressManager) {
+      app.globalData.openAddressManager = false;
+      this.openAddressManager();
+    }
   },
 
   onPullDownRefresh() {

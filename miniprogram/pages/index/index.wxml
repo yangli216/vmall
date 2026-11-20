@@ -155,22 +155,31 @@
 
     <!-- 2. 中间可滚动区域 (聚焦核心信息，设置明确高度保证纵向滚动顺畅) -->
     <scroll-view scroll-y="true" class="drawer-body-scroll" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
-      <!-- 履约与配送信息一体化卡片 (支持直接切换自送/自提，整体统一修改) -->
+      <!-- 顶置醒目履约方式大 Tab：作坊自送 / 到店自提 (全宽双分栏胶囊，一眼看清，支持随时切换) -->
+      <view class="checkout-delivery-tabs">
+        <view class="delivery-tab-btn {{deliveryType === 1 ? 'active' : ''}}" catchtap="changeDrawerDelType" data-type="1">
+          <text class="tab-emoji">🛵</text>
+          <text class="tab-main-text">作坊自送</text>
+          <text class="tab-sub-tip">送货上门</text>
+        </view>
+        <view class="delivery-tab-btn {{deliveryType === 2 ? 'active' : ''}}" catchtap="changeDrawerDelType" data-type="2">
+          <text class="tab-emoji">🏪</text>
+          <text class="tab-main-text">到店自提</text>
+          <text class="tab-sub-tip">免运费</text>
+        </view>
+      </view>
+
+      <!-- 履约与配送信息卡片 -->
       <view class="drawer-fulfillment-card">
-        <!-- 头部行：切换自送/自提分段器 + 统一修改按钮 -->
+        <!-- 头部行：标签与针对当前模式的修改按钮 -->
         <view class="fulfillment-card-head">
-          <view class="drawer-delivery-switch">
-            <view class="switch-tab {{deliveryType === 1 ? 'active' : ''}}" catchtap="changeDrawerDelType" data-type="1">
-              <text class="tab-icon">🛵</text>
-              <text class="tab-text">作坊自送</text>
-            </view>
-            <view class="switch-tab {{deliveryType === 2 ? 'active' : ''}}" catchtap="changeDrawerDelType" data-type="2">
-              <text class="tab-icon">🏪</text>
-              <text class="tab-text">到店自提</text>
-            </view>
+          <view class="head-title-tag">
+            <text class="head-icon">{{deliveryType === 1 ? '📍' : '🏪'}}</text>
+            <text class="head-label">{{deliveryType === 1 ? '配送信息（送货上门）' : '自提信息（到店取餐）'}}</text>
+            <text class="head-badge" wx:if="{{deliveryType === 1 && deliveryArea}}">{{deliveryArea}}</text>
           </view>
           <view class="head-action" catchtap="openDeliveryModal">
-            <text class="action-btn-text">修改 ›</text>
+            <text class="action-btn-text">{{deliveryType === 1 ? '修改地址 ›' : '修改提货人 ›'}}</text>
           </view>
         </view>
 
@@ -182,11 +191,11 @@
               <text class="addr-text">{{destAddress}}</text>
             </view>
             <view class="card-contact-line" wx:if="{{receiverName || receiverPhone}}">
-              <text class="contact-name">{{receiverName || '未填联系人'}}</text>
+              <text class="contact-name">{{receiverName || '未填收件人'}}</text>
               <text class="contact-phone">{{receiverPhone || '未填手机号'}}</text>
             </view>
             <view class="card-empty-line" wx:if="{{!destAddress && !receiverName}}">
-              <text class="empty-hint">📍 点击设置配送地址与收货人 ›</text>
+              <text class="empty-hint">📍 暂未设置配送地址，点击添加 ›</text>
             </view>
           </block>
 
@@ -389,6 +398,9 @@
         </view>
       </scroll-view>
 
+      <view class="nav-address-manager-row" bindtap="navToMemberAddress">
+        <text class="nav-link-text">⚙️ 前往「会员中心」完整维护地址库 ›</text>
+      </view>
       <button class="btn-dialog-done btn-press" wx:if="{{!showManualEdit}}" bindtap="closeDeliveryModal">取消</button>
     </view>
   </view>
@@ -401,6 +413,10 @@
         <view class="modal-close" bindtap="closeContactModal">✕</view>
       </view>
       <view class="contact-modal-body">
+        <view class="switch-to-delivery-hint btn-press" bindtap="switchToDeliveryAndManageAddress">
+          <text class="hint-icon">🛵</text>
+          <text class="hint-text">需要送货上门？点击切换为作坊自送 ›</text>
+        </view>
         <view class="contact-input-field">
           <text class="contact-field-label">提货人姓名</text>
           <input class="contact-modal-input" placeholder="请填写姓名" maxlength="20" value="{{tempReceiverName}}" bindinput="onTempNameInput" />
@@ -412,6 +428,9 @@
       </view>
       <view class="modal-foot">
         <button class="btn-contact-save btn-press" bindtap="saveContactModal">确认保存</button>
+        <view class="nav-address-manager-row" bindtap="navToMemberAddress">
+          <text class="nav-link-text">⚙️ 前往「会员中心」维护收货地址库 ›</text>
+        </view>
       </view>
     </view>
   </view>
