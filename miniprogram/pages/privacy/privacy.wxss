@@ -8,8 +8,10 @@ page { background:#f7f5f2; color:#292524; }
 .label { display:block; font-size:26rpx; margin:20rpx 0 10rpx; }
 input,.field,textarea { box-sizing:border-box; background:#faf8f5; border:1rpx solid #e7e2dc; border-radius:10rpx; padding:20rpx; font-size:28rpx; }
 input { height:86rpx; } textarea { width:100%; min-height:180rpx; margin:20rpx 0; }
-button { margin-top:20rpx; font-size:28rpx; color:#fff; background:#bb4c1b; }
-button.secondary { background:#fff; color:#675e58; border:1rpx solid #ded6cb; }
-.confirmation { display:block; font-size:24rpx; line-height:1.8; color:#675e58; }
+.page-button { width:100% !important; margin-top:20rpx; padding:12rpx 20rpx; line-height:1.5; font-size:28rpx; color:#fff; background:#bb4c1b; }
+.page-button.secondary { background:#fff; color:#675e58; border:1rpx solid #ded6cb; }
+.confirmation { display:flex; align-items:flex-start; gap:12rpx; font-size:24rpx; line-height:1.8; color:#675e58; }
+.confirmation-check { flex-shrink:0; }
+.confirmation-text { flex:1; min-width:0; }
 .description { white-space:pre-wrap; overflow-wrap:break-word; font-size:28rpx; line-height:1.7; }
 .reply { border-top:1rpx solid #eee; margin-top:20rpx; padding-top:20rpx; }

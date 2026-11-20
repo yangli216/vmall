@@ -6,10 +6,10 @@
   <view class="invite-hero-card">
     <view class="invite-card-tag">街坊有礼 · 会员专享</view>
     <view class="hero-title">好卤味，和街坊一起享</view>
-    <view class="hero-sub">有效会员邀请好友消费，收货后按有效货款 {{commissionRatePercent}}% 获得奖励</view>
+    <view class="hero-sub">有效会员推荐的好友完成订单后，按有效现金货款 {{commissionRatePercent}}% 获得奖励</view>
 
     <!-- 邀请码展示与复制 -->
-    <view class="invite-code-box">
+    <view wx:if="{{isMember && myReferralCode}}" class="invite-code-box">
       <view class="code-left">
         <text class="code-label">专属邀请码</text>
         <text class="code-value">{{myReferralCode}}</text>
@@ -41,7 +41,7 @@
   <view wx:if="{{!isMember}}" class="guest-invite-banner">
     <view class="guest-banner-tag">街坊好味 · 现做老卤</view>
     <view class="guest-banner-title">老街坊邀您品尝手工老卤</view>
-    <view class="guest-banner-sub">成为有效会员后可获得推荐奖励，新客首次下单可享街坊专享福利</view>
+    <view class="guest-banner-sub">成为有效会员后，推荐好友完成订单可获得红包奖励</view>
     <button class="btn-guest-order btn-press" bindtap="goToIndex">立即前往选购老卤</button>
   </view>
   <canvas type="2d" id="referralPosterCanvas" class="poster-canvas"></canvas>
@@ -78,9 +78,9 @@
       <view wx:if="{{posterError}}" class="poster-note">{{posterError}}</view>
       <image wx:if="{{posterPath}}" class="poster-preview" src="{{posterPath}}" mode="widthFix" bindtap="previewPoster" />
       <view class="poster-note" wx:if="{{posterPath}}">点击图片可放大预览，长按识别小程序码。好友仅在首次下单前可绑定推荐人。</view>
-      <button wx:if="{{posterPath}}" bindtap="savePoster" loading="{{posterSaving}}" disabled="{{posterSaving}}">保存到相册</button>
-      <button wx:if="{{posterError}}" bindtap="generatePoster">重新生成</button>
-      <button bindtap="closePoster" disabled="{{posterSaving}}">关闭</button>
+      <button class="poster-action" wx:if="{{posterPath}}" bindtap="savePoster" loading="{{posterSaving}}" disabled="{{posterSaving}}">保存到相册</button>
+      <button class="poster-action" wx:if="{{posterError}}" bindtap="generatePoster">重新生成</button>
+      <button class="poster-action poster-close" bindtap="closePoster" disabled="{{posterSaving}}">关闭</button>
     </view>
   </view>
   <!-- 2. 推荐奖励示意测算 -->
@@ -96,7 +96,7 @@
     <!-- 好友订单原价 -->
     <view class="slider-block">
       <view class="slider-label-row">
-        <text class="slider-title">好友订单消费金额</text>
+        <text class="slider-title">好友折后货款</text>
         <text class="slider-num">¥{{simOrderAmount}}</text>
       </view>
       <slider 
@@ -132,16 +132,16 @@
     <!-- 试算结果看板与防刷规则说明 -->
     <view class="formula-result-card">
       <view class="formula-line">
-        <text class="f-label">有效微信实付基数：</text>
+        <text class="f-label">有效现金货款：</text>
         <text class="f-calc">¥{{simOrderAmount}} - ¥{{simRedDeduct}} = <text class="highlight">¥{{simActualCash}}</text></text>
       </view>
       <view class="formula-line">
-        <text class="f-label">你将获得红包积分：</text>
+        <text class="f-label">预计获得推荐红包：</text>
         <text class="f-result">¥{{simActualCash}} × {{commissionRatePercent}}% = <text class="final-earn">+¥{{simEarnCommission}}</text></text>
       </view>
       <view class="anti-fraud-alert">
         <text class="alert-icon">🛡️</text>
-        <text class="alert-text">仅按扣除各类优惠和配送费后的有效现金货款奖励；示例未含配送费与普通积分，实际以订单流水为准，收货后到账。</text>
+        <text class="alert-text">仅按扣除各类优惠和配送费后的有效现金货款奖励；示例未含配送费与普通积分，实际以订单流水为准，订单完成后到账。</text>
       </view>
     </view>
   </view>

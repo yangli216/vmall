@@ -48,7 +48,7 @@
       </view>
       <view class="upgrade-action-row" wx:if="{{config.MEMBER_ENTRY_MODE === 'FREE'}}">
         <text class="free-tip">🎉 当前作坊开启「新客免费升级」活动</text>
-        <button class="btn-free-upgrade" bindtap="openRegisterModal">微信资料一键注册会员</button>
+        <button class="btn-free-upgrade" bindtap="openRegisterModal">填写资料并免费开通会员</button>
       </view>
       <view wx:elif="{{userInfo.member_opt_out}}">你已主动退出会员，如需重新开通请联系掌柜。</view>
       <view wx:elif="{{config.MEMBER_ENTRY_MODE === 'MANUAL'}}">当前由掌柜邀请开通会员，可联系掌柜咨询。</view>
@@ -65,14 +65,14 @@
     <view class="point-account-card">
       <view class="point-card-header">
         <text class="point-name">普通积分</text>
-        <text class="point-desc">收货后赠送</text>
+        <text class="point-desc">订单完成后赠送</text>
       </view>
       <view class="point-value-row">
         <text class="point-num">{{userInfo.normal_points || 0}}</text>
         <text class="point-unit">分</text>
       </view>
       <view class="point-rule-tip">
-        有效货款每¥1赠1分，收货后到账；100分抵¥5
+        有效货款每¥1赠1分，订单完成后到账；100分抵¥5
       </view>
       <view class="point-rule-tip" wx:if="{{userInfo.normal_points_debt > 0}}">退款已用奖励待抵回 {{userInfo.normal_points_debt}} 分，后续赠分先抵回</view>
     </view>
@@ -87,7 +87,7 @@
         <text class="point-num red">¥{{userInfo.red_packet_points || '0.00'}}</text>
       </view>
       <view class="point-rule-tip">
-        有效货款 {{config.COMMISSION_RATE * 100}}% · 收货后到账，仅抵货款
+        好友有效现金货款的 {{config.COMMISSION_RATE * 100}}% · 订单完成后到账
       </view>
       <view class="point-rule-tip" wx:if="{{userInfo.red_packet_debt > 0}}">退款已用奖励待抵回 ¥{{userInfo.red_packet_debt}}，后续推荐奖励先抵回</view>
     </view>
@@ -136,7 +136,7 @@
         <view class="priv-icon-box">🎁</view>
         <view class="priv-info">
           <view class="priv-name">双重积分权益</view>
-          <view class="priv-sub">普通积分满减 + 红包抵现</view>
+          <view class="priv-sub">普通积分抵扣 + 红包抵货款</view>
         </view>
       </view>
       <view class="priv-item">
@@ -253,7 +253,7 @@
   <view class="poster-backdrop" wx:if="{{showProfileModal}}">
     <view class="profile-modal-dialog">
       <view class="modal-head">
-        <text class="modal-title">{{!isMember && config.MEMBER_ENTRY_MODE === 'FREE' ? '注册会员 · 授权微信信息' : '完善个人资料'}}</text>
+        <text class="modal-title">{{!isMember && config.MEMBER_ENTRY_MODE === 'FREE' ? '填写资料 · 开通会员' : '完善个人资料'}}</text>
         <view class="modal-close" bindtap="closeProfileModal">✕</view>
       </view>
       <view class="profile-avatar-row">
@@ -273,10 +273,10 @@
           <input type="number" maxlength="11" class="modal-input" placeholder="常用手机号（自送/提货联络）" value="{{editPhone}}" bindinput="onPhoneInput" />
         </view>
       </view>
-      <view class="modal-footnote">信息仅用于出炉提货与周边自送联络，严格保障隐私</view>
+      <view class="modal-footnote">资料手机号用于账户资料展示；订单联系人和电话请在结算时填写。</view>
       <view class="modal-btn-row">
         <button class="btn-submit-profile btn-press" loading="{{profileSubmitting}}" disabled="{{profileSubmitting}}" bindtap="submitProfileAndRegister">
-          {{!isMember && config.MEMBER_ENTRY_MODE === 'FREE' ? '同步资料并免费开通会员' : '保存微信个人资料'}}
+          {{!isMember && config.MEMBER_ENTRY_MODE === 'FREE' ? '同步资料并免费开通会员' : '保存个人资料'}}
         </button>
       </view>
     </view>

@@ -219,13 +219,13 @@
         <!-- 红包积分 (动态上限受后台控制) -->
         <view class="deduct-line-item border-top">
           <view class="deduct-left">
-            <text class="deduct-name red">🧧 红包积分冲抵现金</text>
+            <text class="deduct-name red">🧧 推荐红包抵扣货款</text>
             <text class="deduct-sub red">(余额 ¥{{userRedPoints}})</text>
           </view>
           <switch disabled="{{submitting || !isMember}}" checked="{{useRedPoints}}" color="#D9480F" bindchange="toggleRedPoints" />
         </view>
         <view class="deduct-calc-row">
-          <text class="deduct-limit-hint">抵现金额 (货款上限{{redLimitPercent}}%):</text>
+          <text class="deduct-limit-hint">抵扣金额 (货款上限{{redLimitPercent}}%):</text>
           <view class="deduct-input-group">
             <text class="symbol">-¥</text>
             <input disabled="{{submitting || !isMember}}" type="digit" class="red-amount-input" value="{{inputRedAmount}}" bindinput="onRedAmountChange" />

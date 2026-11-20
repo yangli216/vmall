@@ -395,7 +395,8 @@
 .poster-heading { font-size:34rpx; font-weight:600; text-align:center; margin-bottom:20rpx; }
 .poster-preview { width:100%; display:block; }
 .poster-note { font-size:25rpx; color:#65574f; line-height:1.6; margin:20rpx 0; }
-.poster-dialog button { margin-top:16rpx; }
+.poster-action { width:100% !important; margin:16rpx 0 0; padding:14rpx 20rpx; font-size:26rpx; line-height:1.5; color:#fff; background:#bb4c1b; }
+.poster-close { color:#675e58; background:#fff; border:1rpx solid #ded6cb; }
 .share-actions-row { flex-wrap:wrap; }
 
 /* 街坊邀请：明确奖励性质，分享主按钮独占一行 */
@@ -632,3 +633,6 @@
   border: 0;
   margin: 0;
 }
+
+/* 两个分享入口在窄屏下保持同宽 */
+.share-actions-row .btn-share-channel { grid-column: 1 / -1; width: 100% !important; box-sizing: border-box; }

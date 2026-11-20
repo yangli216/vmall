@@ -8,4 +8,5 @@
 textarea {width:100%;height:220rpx;padding:20rpx;box-sizing:border-box;background:#FAF8F4;border-radius:12rpx;margin:12rpx 0 24rpx;font-size:27rpx;}
 .description {white-space:pre-wrap;word-break:break-all;}
 .reply {margin-top:24rpx;padding:20rpx;background:#FFF6EB;border-radius:12rpx;}
-button {font-size:28rpx;}
+.support-button {width:100% !important; margin:20rpx 0 0; padding:14rpx 20rpx; font-size:28rpx; line-height:1.5; color:#fff; background:#bb4c1b; border-radius:12rpx;}
+.support-button.secondary {color:#675e58; background:#fff; border:1rpx solid #ded6cb;}

@@ -37,7 +37,7 @@
       },
       {
         "pagePath": "pages/promote/promote",
-        "text": "分享赚佣",
+        "text": "推荐有礼",
         "iconPath": "images/tab_promote.png",
         "selectedIconPath": "images/tab_promote_active.png"
       },

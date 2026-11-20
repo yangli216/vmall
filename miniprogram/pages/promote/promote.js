@@ -128,7 +128,7 @@ Page({
   },
 
   showPosterTip: function () {
-    wx.showModal({title:'推荐好友规则',content:'1. 点击「发给微信好友」或「分享到朋友圈」分享专属推荐；\n2. 点击「生成邀请海报」可保存至相册发布到朋友圈；\n3. 好友在首次下单前会自动绑定您为推荐人；\n4. 好友订单收货完成后，推荐奖励将实时存入您的红包账户，下单可直接抵扣货款。',showCancel:false});
+    wx.showModal({title:'推荐好友规则',content:'1. 点击「发给微信好友」或「分享到朋友圈」分享专属推荐；\n2. 点击「生成邀请海报」可保存至相册发布到朋友圈；\n3. 符合条件的好友可在首次下单前绑定推荐人；\n4. 好友订单完成后，按有效现金货款计算推荐红包，可用于抵扣货款，不可提现。',showCancel:false});
   },
   showTimelineGuide: function () {
     this.setData({ showTimelineGuide: true });

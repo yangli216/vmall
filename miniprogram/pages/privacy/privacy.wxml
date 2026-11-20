@@ -8,10 +8,10 @@
     <text class="label">昵称</text><input disabled="{{profileBusy || loading}}" value="{{nickname}}" data-field="nickname" bindinput="editProfile" maxlength="50" />
     <text class="label">资料手机号（可留空）</text><input disabled="{{profileBusy || loading}}" type="number" value="{{phone}}" data-field="phone" bindinput="editProfile" maxlength="11" />
     <view class="notice">修改资料手机号不会修改已提交订单的收货电话。订单信息有误请联系掌柜。</view>
-    <button disabled="{{profileBusy || loading}}" loading="{{profileBusy}}" bindtap="saveProfile">保存资料</button>
-    <button class="secondary" disabled="{{profileBusy || loading}}" bindtap="clearProfile">清除昵称、头像和资料手机号</button>
+    <button class="page-button" disabled="{{profileBusy || loading}}" loading="{{profileBusy}}" bindtap="saveProfile">保存资料</button>
+    <button class="page-button secondary" disabled="{{profileBusy || loading}}" bindtap="clearProfile">清除昵称、头像和资料手机号</button>
   </view>
-  <view class="card"><view class="heading">本机收货资料</view><view class="notice">只清除这台设备保存的收货资料和未提交订单缓存，历史订单保留。</view><button class="secondary" bindtap="clearContact">清除本机收货资料</button></view>
+  <view class="card"><view class="heading">本机收货资料</view><view class="notice">只清除这台设备保存的收货资料和未提交订单缓存，历史订单保留。</view><button class="page-button secondary" bindtap="clearContact">清除本机收货资料</button></view>
   <view class="card">
     <view class="heading">个人信息处理申请</view>
     <view class="notice">申请由掌柜核实身份、交易及售后情况后处理，并在下方回复。涉及必须保留的信息，应说明范围、用途及后续处理方式。请勿提交密码、验证码或支付密钥。</view>
@@ -20,15 +20,15 @@
       <picker disabled="{{submitting || loading}}" range="{{kinds}}" range-key="label" value="{{kindIndex}}" bindchange="changeKind"><view class="field">{{kinds[kindIndex].label}} ▾</view></picker>
       <textarea disabled="{{submitting || loading}}" value="{{description}}" bindinput="editDescription" maxlength="1000" placeholder="请说明需要处理的信息及范围，例如更正哪笔订单的联系方式。" />
       <view wx:if="{{kindIndex === 3}}" class="notice">注销申请将先核对进行中订单、退款、售后及积分红包。确认处理方案前不会自动关闭账号或清零资产。</view>
-      <checkbox-group bindchange="confirmReview"><label class="confirmation"><checkbox value="review" checked="{{reviewConfirmed}}" disabled="{{submitting || loading}}" />我已知晓：提交申请和收到回复不等于已注销账号或删除全部信息，应以具体处理结果为准。</label></checkbox-group>
-      <button loading="{{submitting}}" disabled="{{submitting || loading || !reviewConfirmed}}" bindtap="submitRequest">提交申请给掌柜</button>
+      <checkbox-group bindchange="confirmReview"><label class="confirmation"><checkbox class="confirmation-check" value="review" checked="{{reviewConfirmed}}" disabled="{{submitting || loading}}" /><text class="confirmation-text">我已知晓：提交申请和收到回复不等于已注销账号或删除全部信息，应以具体处理结果为准。</text></label></checkbox-group>
+      <button class="page-button" loading="{{submitting}}" disabled="{{submitting || loading || !reviewConfirmed}}" bindtap="submitRequest">提交申请给掌柜</button>
     </block>
   </view>
   <view class="card" wx:for="{{rows}}" wx:key="id">
     <view class="heading">{{item.kind_title}} · {{item.status_title}}</view><view class="description">{{item.description}}</view><view class="notice">申请编号 {{item.id}} · {{item.create_time}}</view>
     <view wx:if="{{item.resolution}}" class="reply"><view>掌柜回复</view><view class="description">{{item.resolution}}</view><view class="notice">{{item.update_time}}</view></view>
-    <button wx:if="{{item.status === 'OPEN'}}" size="mini" class="secondary" disabled="{{!!cancelBusyId}}" data-id="{{item.id}}" bindtap="cancelRequest">撤回申请</button>
+    <button wx:if="{{item.status === 'OPEN'}}" size="mini" class="page-button secondary" disabled="{{!!cancelBusyId}}" data-id="{{item.id}}" bindtap="cancelRequest">撤回申请</button>
   </view>
   <view wx:if="{{loading}}" class="notice">正在加载…</view><view wx:elif="{{nextCursor}}" class="notice">上拉查看更早的申请</view>
-  <button wx:if="{{shopPhone}}" class="secondary" bindtap="contact">电话联系掌柜</button>
+  <button wx:if="{{shopPhone}}" class="page-button secondary" bindtap="contact">电话联系掌柜</button>
 </view>

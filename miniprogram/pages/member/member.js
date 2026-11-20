@@ -148,14 +148,10 @@ Page({
 
       // 如果当前是非会员且支持免费激活，则一键开通
       if (!this.data.isMember && this.data.config.MEMBER_ENTRY_MODE === 'FREE') {
-        try {
-          await app.api('/api/user/activate-free', 'POST');
-        } catch (e) {
-          // 若已激活则忽略
-        }
+        await app.api('/api/user/activate-free', 'POST');
       }
 
-      wx.showToast({ title: '微信资料已同步', icon: 'success' });
+      wx.showToast({ title: '保存成功', icon: 'success' });
       this.setData({ showProfileModal: false });
       await this.loadData();
     } catch (err) {

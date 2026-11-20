@@ -3,3 +3,6 @@
 .row { background:#fff; padding:24rpx; border-radius:18rpx; margin-bottom:16rpx; }
 .line { display:flex; justify-content:space-between; gap:20rpx; font-size:26rpx; }
 .meta { color:#8A8077; font-size:22rpx; margin-top:14rpx; }
+
+.flow-reason { flex:1; min-width:0; overflow-wrap:anywhere; line-height:1.6; }
+.flow-amount { flex-shrink:0; white-space:nowrap; }

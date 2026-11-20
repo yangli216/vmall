@@ -9,7 +9,7 @@
     <block wx:else>
       <picker disabled="{{submitting}}" range="{{categories}}" range-key="label" value="{{categoryIndex}}" bindchange="changeCategory"><view class="field">问题类型：{{categories[categoryIndex].label}} ▾</view></picker>
       <textarea disabled="{{submitting}}" maxlength="1000" value="{{description}}" placeholder="请描述具体问题，例如缺少哪道菜、质量异常或支付时间。" bindinput="onDescription" />
-      <button disabled="{{submitting || loading}}" loading="{{submitting}}" bindtap="submit">提交给掌柜</button>
+      <button class="support-button" disabled="{{submitting || loading}}" loading="{{submitting}}" bindtap="submit">提交给掌柜</button>
     </block>
   </view>
   <view class="card" wx:for="{{rows}}" wx:key="id">
@@ -19,5 +19,5 @@
   </view>
   <view wx:if="{{loading}}" class="notice">正在加载…</view>
   <view wx:elif="{{nextCursor}}" class="notice">上拉查看更多记录</view>
-  <button wx:if="{{phone}}" bindtap="contact">电话联系掌柜</button>
+  <button class="support-button secondary" wx:if="{{phone}}" bindtap="contact">电话联系掌柜</button>
 </view>

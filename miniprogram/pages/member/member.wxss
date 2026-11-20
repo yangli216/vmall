@@ -937,3 +937,8 @@
   font-size: 27rpx;
   color: #111827;
 }
+
+/* 覆盖微信按钮默认宽度，保持头像选择器为圆形 */
+.btn-choose-avatar { width:130rpx !important; height:130rpx !important; min-width:0; box-sizing:border-box; }
+.member-share-btn-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.member-share-btn { width:100% !important; min-width:0; box-sizing:border-box; }
