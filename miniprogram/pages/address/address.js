@@ -98,17 +98,54 @@ Page({
 
   async importFromWechat() {
     try {
-      const record = await addressUtil.importFromWechat();
+      const record = await addressUtil.importFromWechat(this.data.deliveryAreas);
       this.refreshList();
       if (this.data.mode === 'select') {
+        if (!record.matchedWhitelist) {
+          this.setData({
+            isEditing: true,
+            form: Object.assign({}, record, { area: '' })
+          });
+          wx.showToast({ title: '已导入信息，请选择可自送小区', icon: 'none', duration: 2500 });
+          return;
+        }
         this.selectAndReturn(record);
       } else {
-        wx.showToast({ title: '已导入微信地址', icon: 'success' });
+        wx.showToast({
+          title: record.matchedWhitelist ? '已导入微信地址' : '已导入（注意补充配送小区）',
+          icon: record.matchedWhitelist ? 'success' : 'none'
+        });
       }
     } catch (err) {
-      if (!/cancel/i.test((err && err.errMsg) || (err && err.message) || '')) {
-        wx.showToast({ title: '未获取到微信地址', icon: 'none' });
+      const msg = (err && err.errMsg) || (err && err.message) || '';
+      if (/cancel/i.test(msg)) return;
+      if (err && err.code === 'INVALID_PHONE' && err.draft) {
+        this.setData({
+          isEditing: true,
+          form: {
+            id: '',
+            name: err.draft.name || '',
+            phone: err.draft.phone || '',
+            area: err.draft.area || (this.data.deliveryAreas[0] || ''),
+            detail: err.draft.detail || '',
+            is_default: this.data.addressList.length === 0
+          }
+        });
+        wx.showToast({ title: '已填入地址，请补充11位手机号', icon: 'none', duration: 2500 });
+        return;
       }
+      if (/auth deny|authorize/i.test(msg)) {
+        wx.showModal({
+          title: '未授权获取收货地址',
+          content: '请在小程序设置中开启收货地址权限，或直接手动新增地址。',
+          confirmText: '去设置',
+          success: r => {
+            if (r.confirm && typeof wx.openSetting === 'function') wx.openSetting({});
+          }
+        });
+        return;
+      }
+      wx.showToast({ title: (err && err.message) || '导入失败，请手动新增或地图定位', icon: 'none', duration: 2500 });
     }
   },
 

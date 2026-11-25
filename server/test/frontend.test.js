@@ -540,11 +540,25 @@ test('standalone address page supports whitelist pick, WeChat import, map locate
  assert.equal(indexPage.data.deliveryArea,'锦城小区');
  assert.ok(indexPage.data.destAddress.includes('锦城小区 18幢601'));
 
- // 4. WeChat import in manage mode adds record without empty detail
+ // 4. WeChat import handles +86/formatted phone, whitelist match, and unmatched-area guide in select mode
  addrPage.data.mode='manage';
  await addrPage.importFromWechat();
  assert.equal(addrPage.data.addressList[0].name,'王先生');
  assert.ok(addrPage.data.addressList[0].detail.includes('春天花园1幢'));
+
+ // 4b. In select mode, unmatched community prompts editing form instead of silently failing checkout later
+ addrPage.data.mode='select';
+ await addrPage.importFromWechat();
+ assert.equal(addrPage.data.isEditing,true);
+ assert.equal(addrPage.data.form.area,'');
+
+ // 4c. Matched community + formatted (+86 135-0000-2222) phone auto-cleans, saves and navigates back
+ addrPage.setData({ isEditing: false });
+ storageWx.chooseAddress=o=>o.success({userName:'周女士',telNumber:'+86 135-0000-2222',provinceName:'浙江省',cityName:'杭州市',countyName:'临安区',detailInfo:'锦城小区8幢101'});
+ await addrPage.importFromWechat();
+ assert.equal(shared.get('pandou_contact').receiverName,'周女士');
+ assert.equal(shared.get('pandou_contact').receiverPhone,'13500002222');
+ assert.equal(shared.get('pandou_contact').deliveryArea,'锦城小区');
 
  // 5. Index checkout autofills default address and opens standalone page on submit without address
  indexPage.data.destAddress='';

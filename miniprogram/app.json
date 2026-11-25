@@ -57,6 +57,7 @@
     }
   },
   "requiredPrivateInfos": [
+    "chooseAddress",
     "chooseLocation"
   ],
   "style": "v2",

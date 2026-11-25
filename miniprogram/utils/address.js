@@ -112,24 +112,55 @@ function setDefaultAddress(id) {
   return list;
 }
 
-function importFromWechat() {
+function normalizePhone(raw) {
+  let digits = String(raw || '').replace(/[\s\-()（）]/g, '');
+  if (/^\+?861[3-9]\d{9}$/.test(digits)) {
+    digits = digits.replace(/^\+?86/, '');
+  }
+  return digits;
+}
+
+function importFromWechat(deliveryAreas) {
+  const areas = Array.isArray(deliveryAreas) ? deliveryAreas.filter(Boolean) : [];
   return new Promise((resolve, reject) => {
     wx.chooseAddress({
       success: (res) => {
         try {
-          const area = res.countyName || '临安区';
-          const detail = [res.provinceName, res.cityName, res.countyName, res.detailInfo]
-            .filter(Boolean)
-            .join(' ')
-            .replace(/^(浙江省\s*|杭州市\s*)+/g, '');
+          const county = (res.countyName || '').trim();
+          const rawDetail = (res.detailInfo || '').trim();
+          const matchedArea = areas.find(a => rawDetail.includes(a) || county.includes(a)) || '';
+          const area = matchedArea || county || '临安区';
+          let detail = '';
+          if (matchedArea) {
+            detail = rawDetail.includes(matchedArea) ? rawDetail : `${matchedArea} ${rawDetail}`.trim();
+          } else if (rawDetail) {
+            detail = county && !rawDetail.includes(county) ? `${county} ${rawDetail}` : rawDetail;
+          } else {
+            detail = [res.provinceName, res.cityName, county]
+              .filter(Boolean)
+              .join(' ')
+              .replace(/^(浙江省\s*|杭州市\s*)+/g, '')
+              .trim();
+          }
+          const name = (res.userName || '顾客').trim();
+          const phone = normalizePhone(res.telNumber);
+          if (!/^1[3-9]\d{9}$/.test(phone)) {
+            const err = new Error('微信地址缺少11位有效手机号，请手动补充');
+            err.code = 'INVALID_PHONE';
+            err.draft = { name, phone: (res.telNumber || '').trim(), area: matchedArea || county, detail };
+            reject(err);
+            return;
+          }
           const record = saveAddress({
-            name: res.userName || '顾客',
-            phone: res.telNumber || '',
+            name,
+            phone,
             area,
-            detail: res.detailInfo ? `${area} ${res.detailInfo}` : detail,
+            detail,
             is_default: true
           });
-          resolve(record);
+          resolve(Object.assign({}, record, {
+            matchedWhitelist: areas.length === 0 || Boolean(matchedArea)
+          }));
         } catch (err) {
           reject(err);
         }
