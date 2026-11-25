@@ -1,13 +1,38 @@
 <view class="page">
  <dev-banner />
-  <view class="title">经营日报</view>
-  <picker mode="date" value="{{date}}" bindchange="changeDate"><view class="date">{{date}} ▾</view></picker>
+  <view class="header-row">
+    <view class="title">经营日报</view>
+    <view class="today-pill" wx:if="{{date !== today}}" bindtap="goToday">回到今天</view>
+  </view>
+  <view class="date-bar">
+    <view class="date-nav-btn" data-delta="-1" bindtap="shiftDate">‹ 前一天</view>
+    <picker class="date-picker-wrap" mode="date" value="{{date}}" bindchange="changeDate"><view class="date">{{date}} ▾</view></picker>
+    <view class="date-nav-btn" data-delta="1" bindtap="shiftDate">后一天 ›</view>
+  </view>
   <view class="notice">按北京时间查看。资金按服务端确认支付/退款的入账日统计；预约日订单和菜品单独展示。今日数据会变化，下拉刷新。</view>
   <view wx:if="{{summaryError}}" class="notice error" bindtap="retrySummary">{{summaryError}} · 汇总未更新，点击重试</view>
   <view wx:if="{{summaryLoading}}" class="notice">正在汇总…</view>
   <block wx:if="{{summary}}">
     <view class="card">
       <view class="heading">{{date}} 资金入账</view>
+      <view class="kpi-grid">
+        <view class="kpi-box accent">
+          <text class="kpi-num">¥{{summary.cash.nominal_net}}</text>
+          <text class="kpi-lbl">订单收退差额</text>
+        </view>
+        <view class="kpi-box">
+          <text class="kpi-num">{{summary.cash.payment_orders}} 笔</text>
+          <text class="kpi-lbl">确认支付 (¥{{summary.cash.nominal_paid}})</text>
+        </view>
+        <view class="kpi-box">
+          <text class="kpi-num">{{summary.cash.refund_orders}} 笔</text>
+          <text class="kpi-lbl">确认退款 (¥{{summary.cash.nominal_refunded}})</text>
+        </view>
+        <view class="kpi-box">
+          <text class="kpi-num">¥{{summary.cash.payer_amounts_complete ? summary.cash.payer_net : summary.cash.known_payer_paid}}</text>
+          <text class="kpi-lbl">{{summary.cash.payer_amounts_complete ? '顾客现金净额' : '已记录顾客实付'}}</text>
+        </view>
+      </view>
       <view class="row"><text>确认支付</text><text>{{summary.cash.payment_orders}} 笔（零元 {{summary.cash.zero_orders}} 笔）</text></view>
       <view class="row"><text>订单支付金额</text><text>¥{{summary.cash.nominal_paid}}</text></view>
       <view class="row"><text>确认退款</text><text>{{summary.cash.refund_orders}} 笔 / ¥{{summary.cash.nominal_refunded}}</text></view>

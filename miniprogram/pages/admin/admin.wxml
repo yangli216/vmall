@@ -1,5 +1,5 @@
 <!-- miniprogram/pages/admin/admin.wxml -->
-<view class="container">
+<view class="container {{activeTab === 'settings' && configLoaded && configDirty ? 'has-sticky-bar' : ''}}">
  <dev-banner />
 
   <!-- 1. 顶部工坊运营概要 -->
@@ -11,300 +11,261 @@
     </view>
   </view>
 
-  <view class="report-entry" bindtap="openReport" role="button"><text>经营日报</text><text class="report-entry-sub">收款、退款与菜品明细</text><text>↗</text></view>
-  <view wx:if="{{!configLoaded && !configLoading}}" class="support-note config-error" bindtap="reloadConfigs">营业设置尚未完整读取，点击重试。{{configError}}</view>
-  <view class="admin-tabs"><view class="admin-tab {{activeTab === 'orders' ? 'selected' : ''}}" data-tab="orders" bindtap="changeAdminTab">备餐</view><view class="admin-tab {{activeTab === 'products' ? 'selected' : ''}}" data-tab="products" bindtap="changeAdminTab">菜品</view><view class="admin-tab {{activeTab === 'members' ? 'selected' : ''}}" data-tab="members" bindtap="changeAdminTab">会员</view><view class="admin-tab {{activeTab === 'support' ? 'selected' : ''}}" data-tab="support" bindtap="changeAdminTab">售后</view><view class="admin-tab {{activeTab === 'privacy' ? 'selected' : ''}}" data-tab="privacy" bindtap="changeAdminTab">信息申请</view><view class="admin-tab {{activeTab === 'settings' ? 'selected' : ''}}" data-tab="settings" bindtap="changeAdminTab">设置</view></view>
-  <view class="section-card activity-panel" wx:if="{{activeTab === 'orders'}}">
-    <view class="section-h2">全部日期待办</view>
-    <view class="support-note">工作台打开期间，每15秒检查新单和售后。点击待办查看全部日期；订单列表需手动刷新。</view>
-    <view class="support-note" wx:if="{{newPaidCount || newSupportCount}}">新付款 {{newPaidCount}} 单 · 新售后 {{newSupportCount}} 条，点击对应待办查看</view>
-    <view class="activity-queues" wx:if="{{activityQueues}}">
-      <button size="mini" data-kind="prepare" bindtap="openActivityQueue">待备餐 {{activityQueues.to_prepare}}</button>
-      <button size="mini" data-kind="pickup" bindtap="openActivityQueue">待取餐 {{activityQueues.ready_pickup}}</button>
-      <button size="mini" data-kind="delivery" bindtap="openActivityQueue">配送中 {{activityQueues.in_delivery}}</button>
-      <button size="mini" data-kind="refund" bindtap="openActivityQueue">退款处理中 {{activityQueues.refund_pending}}</button>
-      <button size="mini" data-kind="support" bindtap="openActivityQueue">待处理售后 {{activityQueues.support_open}}</button>
-      <button size="mini" data-kind="privacy" bindtap="openActivityQueue">待处理信息申请 {{activityQueues.privacy_open || 0}}</button>
-      <button size="mini" wx:if="{{activityQueues.overdue_pickup > 0}}" data-kind="overdue" bindtap="openActivityQueue">往日未取餐 {{activityQueues.overdue_pickup}} · 请联系顾客</button>
-    </view>
-    <view class="support-note" wx:if="{{activityError}}" bindtap="refreshActivity">动态检查失败：{{activityError}}。待办数量可能已过时，点击重试。</view>
-    <view class="support-note" wx:elif="{{!activityCheckedAt}}" bindtap="refreshActivity">正在检查待办…</view>
+  <view class="report-entry btn-press" bindtap="openReport" role="button">
+    <text class="report-entry-title">📊 经营日报</text>
+    <text class="report-entry-sub">收款、退款、积分流水与菜品明细</text>
+    <text class="report-entry-arrow">›</text>
   </view>
-  <view class="section-card" wx:if="{{activeTab === 'support'}}">
-    <view class="section-h2">订单问题与售后</view>
-    <view class="support-filters"><button size="mini" class="{{supportStatus === 'OPEN' ? 'selected' : ''}}" data-status="OPEN" bindtap="changeSupportStatus">待处理</button><button size="mini" class="{{supportStatus === 'PROCESSING' ? 'selected' : ''}}" data-status="PROCESSING" bindtap="changeSupportStatus">处理中</button><button size="mini" class="{{supportStatus === 'RESOLVED' ? 'selected' : ''}}" data-status="RESOLVED" bindtap="changeSupportStatus">已回复</button></view>
-    <view class="support-note">接单后请联系顾客协商，回复具体处理结果。回复不会改变订单资金状态，退款请在订单中操作并核对渠道结果。</view>
-    <view wx:if="{{supportError}}" class="support-note" bindtap="loadSupportTickets">{{supportError}} · 点击重试</view>
-    <view wx:if="{{!supportTickets.length && !supportLoading && !supportError}}" class="support-note">暂无该状态的售后记录</view>
-    <view class="support-ticket" wx:for="{{supportTickets}}" wx:key="id">
-      <view>{{item.category_title}} · {{item.status_title}}</view><view class="support-note">{{item.order_sn}} · {{item.create_time}}</view>
-      <view class="support-description">{{item.description}}</view>
-      <view class="support-note" bindtap="callSupportCustomer" data-phone="{{item.receiver_phone}}">联系 {{item.receiver_name}}：{{item.receiver_phone}} ›</view>
-      <view wx:if="{{item.resolution}}" class="support-description">处理结果：{{item.resolution}}</view>
-      <button size="mini" data-id="{{item.id}}" bindtap="openSupportOrder">查看关联订单</button>
-      <view class="support-actions" wx:if="{{item.status !== 'RESOLVED'}}"><button wx:if="{{item.status === 'OPEN'}}" size="mini" disabled="{{!!supportBusyId}}" data-id="{{item.id}}" bindtap="acceptSupportTicket">接单处理</button><button size="mini" disabled="{{!!supportBusyId}}" data-id="{{item.id}}" bindtap="replySupportTicket">回复处理结果</button></view>
-    </view>
-    <button wx:if="{{supportNextCursor}}" loading="{{supportLoading}}" disabled="{{supportLoading}}" bindtap="moreSupportTickets">加载更多售后</button>
-    <view wx:if="{{supportLoading}}" class="support-note">正在加载…</view>
+
+  <view wx:if="{{!configLoaded && !configLoading}}" class="support-note config-error card-alert" bindtap="reloadConfigs">
+    营业设置尚未完整读取，点击重试。{{configError}}
   </view>
-  <view class="section-card" wx:if="{{activeTab === 'privacy'}}">
-    <view class="section-h2">个人信息处理申请</view>
-    <view class="support-note">先核实本人身份、订单退款及会员资产，再实际处理并回复。回复只记录说明，不会自动注销账号或删除订单。不得将“退出会员”记为“账号已注销”；仍需保留的信息应说明范围、理由及后续安排。</view>
-    <view class="support-filters"><button size="mini" class="{{privacyStatus === 'OPEN' ? 'selected' : ''}}" data-status="OPEN" bindtap="changePrivacyStatus">待处理</button><button size="mini" class="{{privacyStatus === 'PROCESSING' ? 'selected' : ''}}" data-status="PROCESSING" bindtap="changePrivacyStatus">核实中</button><button size="mini" class="{{privacyStatus === 'RESOLVED' ? 'selected' : ''}}" data-status="RESOLVED" bindtap="changePrivacyStatus">已回复</button><button size="mini" class="{{privacyStatus === 'CANCELLED' ? 'selected' : ''}}" data-status="CANCELLED" bindtap="changePrivacyStatus">已撤回</button></view>
-    <view wx:if="{{privacyError}}" class="support-note" bindtap="loadPrivacyRequests">{{privacyError}} · 点击重试</view>
-    <view wx:if="{{!privacyRequests.length && !privacyLoading && !privacyError}}" class="support-note">暂无该状态的申请</view>
-    <view class="support-ticket" wx:for="{{privacyRequests}}" wx:key="id">
-      <view>{{item.kind_title}} · {{item.status_title}}</view><view class="support-note">申请 {{item.id}} · {{item.nickname}} · {{item.create_time}}</view>
-      <view class="support-description">{{item.description}}</view><view wx:if="{{item.resolution}}" class="support-description">回复：{{item.resolution}}</view>
-      <view wx:if="{{item.status === 'OPEN' || item.status === 'PROCESSING'}}" class="support-actions"><button wx:if="{{item.status === 'OPEN'}}" size="mini" disabled="{{!!privacyBusyId}}" data-id="{{item.id}}" bindtap="acceptPrivacyRequest">接单核实</button><button size="mini" disabled="{{!!privacyBusyId}}" data-id="{{item.id}}" bindtap="replyPrivacyRequest">记录实际处理说明</button></view>
+
+  <!-- 顶部主导航 Tabs（带实时待办数字角标） -->
+  <view class="admin-tabs">
+    <view class="admin-tab {{activeTab === 'orders' ? 'selected' : ''}}" data-tab="orders" bindtap="changeAdminTab">
+      <text>备餐</text>
+      <text class="tab-badge" wx:if="{{activityQueues && (activityQueues.to_prepare + activityQueues.ready_pickup + activityQueues.in_delivery) > 0}}">{{activityQueues.to_prepare + activityQueues.ready_pickup + activityQueues.in_delivery}}</text>
     </view>
-    <button wx:if="{{privacyNextCursor}}" loading="{{privacyLoading}}" disabled="{{privacyLoading}}" bindtap="morePrivacyRequests">加载更多申请</button>
-    <view wx:if="{{privacyLoading}}" class="support-note">正在加载…</view>
+    <view class="admin-tab {{activeTab === 'products' ? 'selected' : ''}}" data-tab="products" bindtap="changeAdminTab">
+      <text>菜品</text>
+    </view>
+    <view class="admin-tab {{activeTab === 'members' ? 'selected' : ''}}" data-tab="members" bindtap="changeAdminTab">
+      <text>会员</text>
+    </view>
+    <view class="admin-tab {{activeTab === 'support' ? 'selected' : ''}}" data-tab="support" bindtap="changeAdminTab">
+      <text>售后</text>
+      <text class="tab-badge danger" wx:if="{{activityQueues && activityQueues.support_open > 0}}">{{activityQueues.support_open}}</text>
+    </view>
+    <view class="admin-tab {{activeTab === 'privacy' ? 'selected' : ''}}" data-tab="privacy" bindtap="changeAdminTab">
+      <text>信息申请</text>
+      <text class="tab-badge danger" wx:if="{{activityQueues && activityQueues.privacy_open > 0}}">{{activityQueues.privacy_open}}</text>
+    </view>
+    <view class="admin-tab {{activeTab === 'settings' ? 'selected' : ''}}" data-tab="settings" bindtap="changeAdminTab">
+      <text>设置</text>
+      <text class="tab-dot" wx:if="{{configDirty}}"></text>
+    </view>
   </view>
-  <view class="admin-filter" wx:if="{{activeTab === 'orders' || activeTab === 'products'}}"><picker mode="date" value="{{orderDate}}" bindchange="changeOrderDate"><text>{{activeTab === 'orders' && allOrderDates ? '全部日期 · 选择日期切换' : '营业日期：' + orderDate}} ▾</text></picker></view>
-  <button wx:if="{{activeTab === 'orders' && allOrderDates}}" size="mini" bindtap="showSelectedDate">仅看 {{orderDate}}</button>
-  <!-- 2. 卤味菜品上下架、编辑与沽清管理 -->
+
+  <!-- 一体化营业日选择条（备餐 / 菜品共用） -->
+  <view class="unified-date-bar" wx:if="{{activeTab === 'orders' || activeTab === 'products'}}">
+    <picker class="date-picker-trigger" mode="date" value="{{orderDate}}" bindchange="changeOrderDate">
+      <view class="date-bar-inner">
+        <text class="date-bar-icon">📅</text>
+        <text class="date-bar-text">{{activeTab === 'orders' && allOrderDates ? '全部日期待办 · 点此切回具体日期' : '营业日期：' + orderDate}}</text>
+        <text class="date-bar-caret">▾</text>
+      </view>
+    </picker>
+    <view wx:if="{{activeTab === 'orders' && allOrderDates}}" class="btn-back-date btn-press" bindtap="showSelectedDate">仅看 {{orderDate}}</view>
+  </view>
+
+  <!-- ==================== TAB 1: 备餐与订单调度 ==================== -->
+  <block wx:if="{{activeTab === 'orders'}}">
+    <!-- 紧凑分级待办面板 -->
+    <view class="section-card activity-panel">
+      <view class="activity-head-row">
+        <text class="section-h2">全局待办监控</text>
+        <text class="activity-poll-tip">{{activityCheckedAt ? '每15秒自动巡检' : '巡检中...'}}</text>
+      </view>
+      <view class="new-event-banner" wx:if="{{newPaidCount || newSupportCount}}">
+        <text>🔔 收到新动态：{{newPaidCount ? '新付款 ' + newPaidCount + ' 单 ' : ''}}{{newSupportCount ? '新售后 ' + newSupportCount + ' 条' : ''}}，请点击下方对应队列查看</text>
+      </view>
+      <view class="activity-queues" wx:if="{{activityQueues}}">
+        <view class="queue-tile {{activityQueues.to_prepare > 0 ? 'urgent' : ''}}" data-kind="prepare" bindtap="openActivityQueue">
+          <text class="q-num">{{activityQueues.to_prepare}}</text>
+          <text class="q-lbl">待备餐</text>
+        </view>
+        <view class="queue-tile {{activityQueues.ready_pickup > 0 ? 'warn' : ''}}" data-kind="pickup" bindtap="openActivityQueue">
+          <text class="q-num">{{activityQueues.ready_pickup}}</text>
+          <text class="q-lbl">待取餐</text>
+        </view>
+        <view class="queue-tile {{activityQueues.in_delivery > 0 ? 'info' : ''}}" data-kind="delivery" bindtap="openActivityQueue">
+          <text class="q-num">{{activityQueues.in_delivery}}</text>
+          <text class="q-lbl">配送中</text>
+        </view>
+        <view class="queue-tile {{activityQueues.refund_pending > 0 ? 'danger' : ''}}" data-kind="refund" bindtap="openActivityQueue">
+          <text class="q-num">{{activityQueues.refund_pending}}</text>
+          <text class="q-lbl">退款中</text>
+        </view>
+        <view class="queue-tile {{activityQueues.support_open > 0 ? 'danger' : ''}}" data-kind="support" bindtap="openActivityQueue">
+          <text class="q-num">{{activityQueues.support_open}}</text>
+          <text class="q-lbl">待处理售后</text>
+        </view>
+        <view class="queue-tile {{activityQueues.privacy_open > 0 ? 'warn' : ''}}" data-kind="privacy" bindtap="openActivityQueue">
+          <text class="q-num">{{activityQueues.privacy_open || 0}}</text>
+          <text class="q-lbl">信息申请</text>
+        </view>
+      </view>
+      <view wx:if="{{activityQueues && activityQueues.overdue_pickup > 0}}" class="overdue-alert-bar btn-press" data-kind="overdue" bindtap="openActivityQueue">
+        <text>⚠️ 往日未取餐 {{activityQueues.overdue_pickup}} 单，点此查看并联系顾客 ›</text>
+      </view>
+      <view class="support-note config-error" wx:if="{{activityError}}" bindtap="refreshActivity">动态检查失败：{{activityError}}，点击重试</view>
+    </view>
+
+    <!-- 订单列表主卡片 -->
+    <view class="section-card">
+      <view class="section-header-row">
+        <view class="header-left">
+          <text class="section-h2">🛵 订单调度 (已加载 {{pendingOrders.length}} 笔)</text>
+          <text class="section-sub">{{allOrderDates ? '全部日期待办视图，包含历史未完结单' : '按所选营业日与筛选条件查看'}}</text>
+        </view>
+        <button class="btn-dispatch btn-press {{dispatchableCount === 0 ? 'is-disabled' : ''}}" bindtap="dispatchAllOrders" disabled="{{orderLoading || dispatchableCount === 0}}" wx:if="{{!allOrderDates}}">
+          本批发车({{dispatchableCount}})
+        </button>
+      </view>
+
+      <!-- 筛选与搜索栏 -->
+      <view class="order-filter-grid">
+        <picker class="filter-pill-picker" range="{{orderFilters}}" range-key="label" value="{{orderFilterIndex}}" bindchange="changeOrderFilter">
+          <view class="picker-pill-inner">{{orderFilters[orderFilterIndex].label}} ▾</view>
+        </picker>
+        <picker class="filter-pill-picker" range="{{orderDeliveryNames}}" value="{{orderDeliveryIndex}}" bindchange="changeOrderDelivery">
+          <view class="picker-pill-inner">{{orderDeliveryNames[orderDeliveryIndex]}} ▾</view>
+        </picker>
+      </view>
+      <view class="member-search-bar order-search-bar">
+        <view class="search-input-wrap">
+          <input class="search-input-field" placeholder="搜索订单号或收件人手机号" value="{{orderKeyword}}" bindinput="onOrderKeyword" bindconfirm="searchOrders" />
+          <text wx:if="{{orderKeyword}}" class="search-clear-x" bindtap="clearOrderKeyword">✕</text>
+        </view>
+        <button class="btn-wk-primary btn-press" bindtap="searchOrders">搜索</button>
+      </view>
+
+      <view wx:if="{{overduePickupOnly}}" class="support-note warn-box">仅显示营业日期早于今天的待取餐订单。请联系顾客协商，核销仍需顾客出示4位自提码。</view>
+      <view class="capacity-chip-note" wx:if="{{batchCapacity}}">
+        📦 本批已接 <text class="bold">{{batchCapacity.used_orders}}</text> 单 · {{batchCapacity.max_orders > 0 ? '上限 ' + batchCapacity.max_orders + ' 单，剩余 ' + batchCapacity.remaining_orders + ' 单' : '未设接单上限'}}（含待付款及已完成单）
+      </view>
+      <view class="support-note config-error" wx:if="{{capacityError}}" bindtap="retryOrders">{{capacityError}} · 点击重试</view>
+
+      <!-- 备餐汇总卡片（含总份数与一键复制） -->
+      <view class="prep-summary-card" wx:if="{{!allOrderDates}}">
+        <view class="prep-header-row">
+          <text class="prep-title">🍲 本批待备餐汇总 <text wx:if="{{prepSummary.length}}" class="prep-total-badge">{{prepSummary.length}}款 · 共{{prepTotalQty}}份</text></text>
+          <text wx:if="{{prepSummary.length}}" class="btn-copy-prep btn-press" bindtap="copyPrepSummary">📋 复制清单</text>
+        </view>
+        <view wx:if="{{prepError}}" class="config-error" bindtap="retryOrders">{{prepError}} · 点击重试</view>
+        <view wx:elif="{{!prepSummary.length}}" class="prep-empty">暂无待备餐菜品</view>
+        <view wx:else class="prep-items-grid">
+          <view class="prep-item-row" wx:for="{{prepSummary}}" wx:key="product_id">
+            <text class="prep-dish-name">{{item.product_title}}</text>
+            <text class="prep-dish-qty">× {{item.quantity}} 份</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{orderError}}" class="support-note config-error" bindtap="retryOrders">{{orderError}} · 点击重试</view>
+      <view wx:if="{{orderLoading}}" class="support-note">正在加载订单…</view>
+      <view wx:if="{{pendingOrders.length === 0 && !orderLoading && !orderError}}" class="empty-pending-box">
+        <text class="empty-hint">所选日期和条件下暂无订单</text>
+      </view>
+
+      <view class="pending-orders-feed">
+        <view wx:for="{{pendingOrders}}" wx:key="id" class="pending-order-item">
+          <view class="pending-meta-row">
+            <text class="pending-sn">{{item.status_title}} · {{item.order_sn}}</text>
+            <text class="pending-badge {{item.delivery_type === 1 ? 'delivery' : 'pickup'}}">{{item.delivery_type === 1 ? '作坊自送' : '到店自提'}}</text>
+          </view>
+          <view class="pending-receiver-info" wx:if="{{item.delivery_type === 1}}" data-address="{{item.receiver_address}}" bindtap="copyOrderAddress">
+            <text class="bold-text">📍 {{item.receiver_address}} <text class="inline-copy-tag">复制</text></text>
+          </view>
+          <view class="pending-receiver-info" wx:else>
+            <text class="bold-text">🏷️ 到店自提码：{{item.pickup_code}}</text>
+          </view>
+          <view class="customer-call-row" bindtap="callSupportCustomer" data-phone="{{item.receiver_phone}}">
+            <text>📞 联系 {{item.receiver_name}}：{{item.receiver_phone}}</text>
+            <text class="call-tag">拨打 ›</text>
+          </view>
+          <view class="pending-dish-text">{{item.expect_time_slot}} · {{item.summary_text}}</view>
+          <view wx:if="{{item.order_remark}}" class="pending-remark-text">备注：{{item.order_remark}}</view>
+          <view class="pending-action-row">
+            <text class="pending-pay-amount">实付 ¥{{item.final_pay_amount}}</text>
+            <view class="order-btns-pack">
+              <button wx:if="{{item.order_status === 20 && item.delivery_type === 1 && item.payment_state === 'PAID'}}" class="btn-wk-success btn-press" bindtap="dispatchSingleOrder" data-id="{{item.id}}">本单发车</button>
+              <button wx:if="{{item.order_status === 20 && item.delivery_type === 2 && item.payment_state === 'PAID'}}" class="btn-wk-warn btn-press" bindtap="preparePickup" data-id="{{item.id}}">备好待取</button>
+              <button wx:if="{{item.order_status === 25}}" class="btn-wk-primary btn-press" bindtap="verifyPickup" data-id="{{item.id}}" disabled="{{!!completionBusyId}}" loading="{{completionBusyId === item.id}}">核销取餐</button>
+              <button wx:if="{{item.order_status === 30 && item.delivery_type === 1 && item.payment_state === 'PAID'}}" class="btn-wk-primary btn-press" bindtap="confirmDelivery" data-id="{{item.id}}" disabled="{{!!completionBusyId}}" loading="{{completionBusyId === item.id}}">核实送达</button>
+              <button wx:if="{{item.order_status === 20 && item.payment_state === 'PAID'}}" class="btn-wk-danger-outline btn-press" bindtap="cancelShopOrder" data-id="{{item.id}}">取消退款</button>
+              <button wx:if="{{(item.order_status === 25 || item.order_status === 30 || item.order_status === 40) && item.payment_state === 'PAID'}}" class="btn-wk-danger-outline btn-press" bindtap="refundShopOrder" data-id="{{item.id}}" disabled="{{!!refundBusyId}}" loading="{{refundBusyId === item.id}}">售后退款</button>
+            </view>
+          </view>
+          <view wx:if="{{item.completion_title}}" class="pending-note-sub">{{item.completion_title}} · {{item.completed_time}}：{{item.completion_note}}</view>
+          <view wx:if="{{item.refund_reason}}" class="pending-note-sub danger">退款原因：{{item.refund_reason}}</view>
+          <view wx:if="{{item.refund_error}}" class="pending-note-sub danger">{{item.refund_error}}</view>
+        </view>
+      </view>
+    </view>
+
+    <button class="btn-wk-loadmore btn-press" wx:if="{{orderNextCursor}}" bindtap="moreOrders" loading="{{orderLoading}}" disabled="{{orderLoading}}">加载更多订单</button>
+  </block>
+
+  <!-- ==================== TAB 2: 菜品与库存管理 ==================== -->
   <view class="section-card products-section" wx:if="{{activeTab === 'products'}}">
     <view class="section-header-row">
       <view class="header-left">
-        <text class="section-h2">菜品管理 <text class="dish-total">{{dishes.length}}款</text></text>
-        <text class="section-sub">上下架与定价 · 库存按所选营业日</text>
+        <text class="section-h2">菜品管理 <text class="dish-total">共{{dishes.length}}款（当前显示{{filteredDishes.length}}）</text></text>
+        <text class="section-sub">上下架与定价 · 库存对应当前所选营业日</text>
       </view>
-      <button size="mini" class="btn-add-dish btn-press" bindtap="openAddModal">＋ 新增</button>
+      <button class="btn-add-dish btn-press" bindtap="openAddModal">＋ 新增</button>
+    </view>
+
+    <!-- 分类与状态快捷筛选 -->
+    <view class="product-filter-bar">
+      <picker class="prod-cat-picker" range="{{categoryOptions}}" range-key="name" value="{{productCategoryFilter}}" bindchange="changeProductCatFilter">
+        <view class="prod-cat-pill">{{categoryOptions[productCategoryFilter].name || '全部分类'}} ▾</view>
+      </picker>
+      <scroll-view scroll-x class="prod-status-scroll" enable-flex>
+        <view class="prod-status-chip {{productStatusFilter === 'ALL' ? 'active' : ''}}" data-status="ALL" bindtap="changeProductStatusFilter">全部</view>
+        <view class="prod-status-chip {{productStatusFilter === 'ON' ? 'active' : ''}}" data-status="ON" bindtap="changeProductStatusFilter">在售</view>
+        <view class="prod-status-chip {{productStatusFilter === 'OFF' ? 'active' : ''}}" data-status="OFF" bindtap="changeProductStatusFilter">已下架</view>
+        <view class="prod-status-chip {{productStatusFilter === 'LOW' ? 'active' : ''}}" data-status="LOW" bindtap="changeProductStatusFilter">低库存(≤5)</view>
+      </scroll-view>
+    </view>
+
+    <view wx:if="{{!filteredDishes.length && !loading}}" class="empty-pending-box">
+      <text class="empty-hint">暂无符合筛选条件的菜品</text>
     </view>
 
     <view class="dish-manage-list">
-      <view wx:for="{{dishes}}" wx:key="id" class="manage-dish-item">
+      <view wx:for="{{filteredDishes}}" wx:key="id" class="manage-dish-item">
         <view class="manage-dish-main">
-        <image wx:if="{{item.cover_img && !item.imageFailed}}" class="manage-dish-img" src="{{item.cover_img}}" mode="aspectFill" binderror="onDishImageError" data-index="{{index}}"></image>
-        <view wx:else class="manage-dish-img dish-image-empty"><text>卤</text><text class="dish-image-caption">待补图片</text></view>
-        <view class="manage-dish-info">
-          <view class="manage-dish-title-row">
-            <text class="manage-dish-name">{{item.title}}</text>
+          <image wx:if="{{item.cover_img && !item.imageFailed}}" class="manage-dish-img" src="{{item.cover_img}}" mode="aspectFill" binderror="onDishImageError" data-id="{{item.id}}" data-index="{{index}}"></image>
+          <view wx:else class="manage-dish-img dish-image-empty"><text>卤</text><text class="dish-image-caption">待补图片</text></view>
+          <view class="manage-dish-info">
+            <view class="manage-dish-title-row">
+              <text class="manage-dish-name">{{item.title}}</text>
+            </view>
+            <text wx:if="{{item.badge}}" class="manage-dish-tag">{{item.badge}}</text>
+            <view class="manage-dish-price"><text>¥{{item.origin_price}}</text><text class="member-price">会员 ¥{{item.member_price}}</text></view>
           </view>
-          <text wx:if="{{item.badge}}" class="manage-dish-tag">{{item.badge}}</text>
-          <view class="manage-dish-price"><text>¥{{item.origin_price}}</text><text class="member-price">会员 ¥{{item.member_price}}</text></view>
-        </view>
         </view>
         <view class="manage-dish-action">
-          <view class="dish-stock" bindtap="adjustStock" data-id="{{item.id}}"><text class="dish-stock-label">本批剩余</text><text class="dish-stock-value">{{item.stock_qty}}</text><text class="dish-stock-label">份</text><text class="dish-stock-edit">调整 ›</text></view>
+          <view class="dish-stock" bindtap="adjustStock" data-id="{{item.id}}">
+            <text class="dish-stock-label">本批剩余</text>
+            <text class="dish-stock-value {{item.stock_qty <= 5 ? 'low' : ''}}">{{item.stock_qty}}</text>
+            <text class="dish-stock-label">份</text>
+            <text class="dish-stock-edit">调整 ›</text>
+          </view>
           <view class="switch-pack">
-            <text class="status-label {{item.status === 1 ? 'online' : 'soldout'}}">
-              {{item.status === 1 ? '在售' : '已下架'}}
-            </text>
-            <switch
-              checked="{{item.status === 1}}"
-              color="#278464"
-              bindchange="toggleProductStatus"
-              data-id="{{item.id}}"
-              data-index="{{index}}"
-            />
+            <text class="status-label {{item.status === 1 ? 'online' : 'soldout'}}">{{item.status === 1 ? '在售' : '已下架'}}</text>
+            <switch checked="{{item.status === 1}}" color="#278464" bindchange="toggleProductStatus" data-id="{{item.id}}" data-index="{{index}}" />
           </view>
         </view>
-          <view class="dish-btn-group">
-            <button size="mini" class="btn-dish-text delete" bindtap="confirmDeleteDish" data-id="{{item.id}}" data-title="{{item.title}}">删除菜品</button>
-            <button size="mini" class="btn-dish-text edit" bindtap="openEditModal" data-dish="{{item}}">编辑菜品</button>
-          </view>
+        <view class="dish-btn-group">
+          <button class="btn-dish-text delete btn-press" bindtap="confirmDeleteDish" data-id="{{item.id}}" data-title="{{item.title}}">删除菜品</button>
+          <button class="btn-dish-text edit btn-press" bindtap="openEditModal" data-dish="{{item}}">编辑菜品</button>
+        </view>
       </view>
     </view>
   </view>
 
-  <!-- 3. 运营配置与履约规则维护 (全量动态参数维护) -->
-  <view class="section-card" wx:if="{{activeTab === 'settings'}}">
-    <view class="section-header-row">
-      <view class="header-left">
-        <text class="section-h2">⚙️ 运营规则与履约参数</text>
-        <text class="section-sub">实时下发至前端点单、结算抽屉与返佣引擎</text>
-      </view>
-    </view>
-
-    <view wx:if="{{configError}}" class="support-note config-error">{{configError}}</view>
-    <view wx:if="{{configLoading}}" class="support-note">正在读取营业设置…</view>
-    <view wx:if="{{!configLoaded && !configLoading}}" class="support-note">尚未读取营业设置，读取成功后才能编辑和保存。</view>
-    <button size="mini" disabled="{{configLoading || configSaving}}" bindtap="reloadConfigs">重新读取营业设置</button>
-    <view wx:if="{{configDirty}}" class="support-note">有尚未保存的修改。保存失败时填写会保留，可重试；重新读取前会询问是否放弃填写。</view>
-    <block wx:if="{{configLoaded}}">
-    <view class="config-block border-top">
-      <view class="config-title">门店自提地址</view>
-      <textarea disabled="{{configLoading || configSaving}}" value="{{config.WORKSHOP_ADDRESS}}" data-field="WORKSHOP_ADDRESS" bindinput="onConfigInput" maxlength="255" placeholder="请填写省市区、街道和门牌号" />
-      <view class="config-title">掌柜 / 自送联系人</view>
-      <input disabled="{{configLoading || configSaving}}" value="{{config.DELIVERY_PERSON_NAME}}" data-field="DELIVERY_PERSON_NAME" bindinput="onConfigInput" maxlength="50" />
-      <view class="support-note">地址用于新建自提订单。历史订单保留原取餐地址；搬址或调整取餐安排时，请主动联系受影响顾客。</view>
-    </view>
-    <!-- 会员升级门槛模式 -->
-    <view class="config-block">
-      <view class="config-label-row config-mode-row">
-        <text class="config-title">会员晋升门槛模式</text>
-        <view class="segment-picker">
-          <view
-            class="seg-item {{config.MEMBER_ENTRY_MODE === 'FREE' ? 'active' : ''}}"
-            bindtap="changeUpgradeType"
-            data-type="FREE"
-          >
-            新客免费开卡
-          </view>
-          <view
-            class="seg-item {{config.MEMBER_ENTRY_MODE === 'CONSUME' ? 'active' : ''}}"
-            bindtap="changeUpgradeType"
-            data-type="CONSUME"
-          >
-            累计消费晋级
-          </view>
-          <view class="seg-item {{config.MEMBER_ENTRY_MODE === 'MANUAL' ? 'active' : ''}}" bindtap="changeUpgradeType" data-type="MANUAL">掌柜邀请</view>
-        </view>
-      </view>
-      <text class="config-desc">
-        {{config.MEMBER_ENTRY_MODE === 'FREE' ? '顾客可主动开通会员' : config.MEMBER_ENTRY_MODE === 'MANUAL' ? '仅由掌柜在会员管理中开通' : '需累计有效现金货款达标后自动晋级，下一单享会员价'}}
-      </text>
-    </view>
-
-    <!-- 累计消费门槛金额 -->
-    <view class="config-block" wx:if="{{config.MEMBER_ENTRY_MODE === 'CONSUME'}}">
-      <view class="config-label-row">
-        <text class="config-title">晋升门槛消费金额</text>
-        <text class="config-val">满 ¥{{config.MEMBER_ENTRY_THRESHOLD}}</text>
-      </view>
-      <input disabled="{{configLoading || configSaving}}" type="digit" value="{{config.MEMBER_ENTRY_THRESHOLD}}" data-field="MEMBER_ENTRY_THRESHOLD" bindinput="onConfigInput" />
-    </view>
-
-    <!-- 红包积分最高冲抵比例 -->
-    <view class="config-block border-top">
-      <view class="config-label-row">
-        <text class="config-title">红包积分单笔抵现上限比例</text>
-        <text class="config-val red">{{redDeductPercent}}%</text>
-      </view>
-      <slider disabled="{{configLoading || configSaving}}"
-        min="0"
-        max="100"
-        step="5"
-        value="{{redDeductPercent}}"
-        activeColor="#D9480F"
-        block-color="#D9480F"
-        bindchange="updateRedRatioSlider"
-      />
-      <text class="config-desc">防亏设置：单笔订单最多允许红包抵现的上限比例。</text>
-    </view>
-
-    <!-- 推荐好友返佣比例 -->
-    <view class="config-block border-top">
-      <view class="config-label-row">
-        <text class="config-title">推荐好友微信实付返佣率</text>
-        <text class="config-val red">{{commissionPercent}}%</text>
-      </view>
-      <slider disabled="{{configLoading || configSaving}}"
-        min="0"
-        max="10"
-        step="1"
-        value="{{commissionPercent}}"
-        activeColor="#B45309"
-        block-color="#B45309"
-        bindchange="updateCommissionSlider"
-      />
-      <text class="config-desc">核心防刷：有效现金货款不含配送费和各类优惠，按微信确认的实际货款计算；好友订单完成后发放奖励。</text>
-    </view>
-
-    <!-- 同城自配送规则 -->
-    <view class="config-block border-top">
-      <view class="config-label-row">
-        <text class="config-title">同城自送基础运费 (元)</text>
-        <input disabled="{{configLoading || configSaving}}" type="digit" class="config-input-inline" value="{{config.DELIVERY_BASE_FEE}}" bindinput="onInputDeliveryFee" />
-      </view>
-      <view class="config-label-row margin-top">
-        <text class="config-title">免运费满额门槛 (元)</text>
-        <input disabled="{{configLoading || configSaving}}" type="digit" class="config-input-inline" value="{{config.DELIVERY_FREE_THRESHOLD}}" bindinput="onInputFreeThreshold" />
-      </view>
-      <view class="config-label-row margin-top">
-        <text class="config-title">掌柜联系电话</text>
-        <input disabled="{{configLoading || configSaving}}" type="number" maxlength="11" class="config-input-inline" value="{{config.DELIVERY_PERSON_PHONE}}" bindinput="onInputPhone" />
-      </view>
-    </view>
-
-    <!-- 作坊主页公告维护 -->
-    <view class="config-block border-top">
-      <view class="config-label-row">
-        <text class="config-title">作坊主页实时出炉公告</text>
-      </view>
-      <input disabled="{{configLoading || configSaving}}" class="config-input-full" placeholder="如：今日傍晚 16:30 准时出锅，临天八弄现捞保温直达" value="{{config.WORKSHOP_ANNOUNCEMENT}}" bindinput="onInputAnnouncement" />
-    </view>
-
-    <view class="config-block">
-      <view>作坊营业 <switch disabled="{{configLoading || configSaving}}" checked="{{config.SHOP_OPEN === '1'}}" bindchange="onShopOpen" /></view>
-      <view>出炉时间<input disabled="{{configLoading || configSaving}}" value="{{config.BATCH_SCHEDULE_TIME}}" data-field="BATCH_SCHEDULE_TIME" bindinput="onConfigInput" placeholder="16:30" /></view>
-      <view>截单时间<input disabled="{{configLoading || configSaving}}" value="{{config.BATCH_CUTOFF_TIME}}" data-field="BATCH_CUTOFF_TIME" bindinput="onConfigInput" placeholder="16:00" /></view>
-      <view>未来可预约天数<input disabled="{{configLoading || configSaving}}" type="number" value="{{config.BOOKING_DAYS}}" data-field="BOOKING_DAYS" bindinput="onConfigInput" /></view>
-      <view>每批接单上限（0表示不限）<input disabled="{{configLoading || configSaving}}" type="number" value="{{config.BATCH_MAX_ORDERS}}" data-field="BATCH_MAX_ORDERS" bindinput="onConfigInput" /></view>
-      <view class="support-note">未付款订单也占名额；取消或备餐前退款完成后释放。已备好、发出或完成的订单仍计入本批工作量。</view>
-      <view>可自送小区（逗号分隔，留空仅自提）<textarea disabled="{{configLoading || configSaving}}" value="{{config.DELIVERY_AREAS}}" data-field="DELIVERY_AREAS" bindinput="onConfigInput" maxlength="255" /></view>
-    </view>
-      <view class="config-block">付款时限（5至30分钟）<input disabled="{{configLoading || configSaving}}" type="number" value="{{config.ORDER_EXPIRE_MINUTES}}" data-field="ORDER_EXPIRE_MINUTES" bindinput="onConfigInput" /></view>
-    <!-- 保存配置按钮 -->
-    <button class="btn-save-config btn-press" disabled="{{configLoading || configSaving}}" loading="{{configSaving}}" bindtap="saveAllConfigs">
-      保存全部营业设置
-    </button>
-    </block>
-  </view>
-
-  <!-- 4. 待出炉订单与发车调度 -->
-  <view class="section-card" wx:if="{{activeTab === 'orders'}}">
-    <view class="section-header-row">
-      <view class="header-left">
-        <text class="section-h2">🛵 订单处理 (已加载 {{pendingOrders.length}} 笔)</text>
-        <text class="section-sub">{{allOrderDates ? '全部日期待办，含历史未完成订单' : '按日期查看，分别处理自送和自提'}}</text>
-      </view>
-      <button class="btn-dispatch btn-press" bindtap="dispatchAllOrders" disabled="{{orderLoading}}" wx:if="{{pendingOrders.length > 0 && !allOrderDates}}">本批自送发车</button>
-    </view>
-
-    <view class="admin-filter"><picker range="{{orderFilters}}" range-key="label" value="{{orderFilterIndex}}" bindchange="changeOrderFilter"><text>{{orderFilters[orderFilterIndex].label}} ▾</text></picker><picker range="{{orderDeliveryNames}}" value="{{orderDeliveryIndex}}" bindchange="changeOrderDelivery"><text>{{orderDeliveryNames[orderDeliveryIndex]}} ▾</text></picker></view>
-    <view class="admin-filter"><input placeholder="单号或手机号" value="{{orderKeyword}}" bindinput="onOrderKeyword" /><button size="mini" bindtap="searchOrders">搜索</button></view>
-    <view wx:if="{{overduePickupOnly}}" class="support-note">仅显示营业日期早于今天的待取餐订单。请联系顾客协商，核销仍需顾客出示自提码。</view>
-    <view class="support-note" wx:if="{{batchCapacity}}">本批已接 {{batchCapacity.used_orders}} 单 · {{batchCapacity.max_orders > 0 ? '上限 ' + batchCapacity.max_orders + ' 单，剩余 ' + batchCapacity.remaining_orders + ' 单' : '未设置接单上限'}}（含待付款及已完成订单）</view>
-    <view class="support-note" wx:if="{{capacityError}}" bindtap="retryOrders">{{capacityError}} · 点击重试</view>
-    <view class="prep-summary" wx:if="{{!allOrderDates}}"><text>本批待备餐汇总：</text><view wx:if="{{prepError}}" bindtap="retryOrders">{{prepError}} · 点击重试</view><block wx:else><view wx:for="{{prepSummary}}" wx:key="product_id">{{item.product_title}} × {{item.quantity}} 份</view></block></view>
-    <view wx:if="{{orderError}}" class="support-note" bindtap="retryOrders">{{orderError}} · 点击重试</view>
-    <view wx:if="{{orderLoading}}" class="support-note">正在加载订单…</view>
-    <view wx:if="{{pendingOrders.length === 0 && !orderLoading && !orderError}}" class="empty-pending-box">
-      <text class="empty-hint">所选日期和条件下暂无订单</text>
-    </view>
-    <view class="pending-orders-feed">
-      <view wx:for="{{pendingOrders}}" wx:key="id" class="pending-order-item">
-        <view class="pending-meta-row">
-          <text class="pending-sn">{{item.status_title}} · {{item.order_sn}}</text>
-          <text class="pending-badge">{{item.delivery_type === 1 ? '作坊自送' : '到店自提'}}</text>
-        </view>
-        <view class="pending-receiver-info" wx:if="{{item.delivery_type === 1}}">
-          <text class="bold-text">📍 {{item.receiver_address}}</text>
-        </view>
-        <view class="pending-receiver-info" wx:else>
-          <text class="bold-text">🏷️ 到店自提码：{{item.pickup_code}}</text>
-        </view>
-        <view class="support-note" bindtap="callSupportCustomer" data-phone="{{item.receiver_phone}}">联系 {{item.receiver_name}}：{{item.receiver_phone}} ›</view>
-        <view class="pending-dish-text">{{item.expect_time_slot}} · {{item.summary_text}}</view><view wx:if="{{item.order_remark}}" class="pending-dish-text">备注：{{item.order_remark}}</view>
-        <view class="pending-action-row">
-          <text class="pending-pay-amount">订单应付 ¥{{item.final_pay_amount}}</text>
-          <button wx:if="{{item.order_status === 20 && item.delivery_type === 1 && item.payment_state === 'PAID'}}" class="btn-single-dispatch btn-press" bindtap="dispatchSingleOrder" data-id="{{item.id}}">
-            本单发车
-          </button>
-          <button wx:if="{{item.order_status === 20 && item.delivery_type === 2 && item.payment_state === 'PAID'}}" size="mini" bindtap="preparePickup" data-id="{{item.id}}">已备好待取</button>
-          <button wx:if="{{item.order_status === 25}}" size="mini" bindtap="verifyPickup" data-id="{{item.id}}" disabled="{{!!completionBusyId}}" loading="{{completionBusyId === item.id}}">核销取餐</button>
-          <button wx:if="{{item.order_status === 30 && item.delivery_type === 1 && item.payment_state === 'PAID'}}" size="mini" bindtap="confirmDelivery" data-id="{{item.id}}" disabled="{{!!completionBusyId}}" loading="{{completionBusyId === item.id}}">核实送达</button>
-          <button wx:if="{{item.order_status === 20 && item.payment_state === 'PAID'}}" size="mini" bindtap="cancelShopOrder" data-id="{{item.id}}">取消退款</button>
-          <button wx:if="{{(item.order_status === 25 || item.order_status === 30 || item.order_status === 40) && item.payment_state === 'PAID'}}" size="mini" bindtap="refundShopOrder" data-id="{{item.id}}" disabled="{{!!refundBusyId}}" loading="{{refundBusyId === item.id}}">整单售后退款</button>
-        </view>
-        <view wx:if="{{item.completion_title}}" class="pending-dish-text">{{item.completion_title}} · {{item.completed_time}}：{{item.completion_note}}</view>
-        <view wx:if="{{item.refund_reason}}" class="pending-dish-text">退款原因：{{item.refund_reason}}</view>
-        <view wx:if="{{item.refund_error}}" class="pending-dish-text">{{item.refund_error}}</view>
-      </view>
-    </view>
-  </view>
-
-  <button wx:if="{{activeTab === 'orders' && orderNextCursor}}" bindtap="moreOrders" loading="{{orderLoading}}" disabled="{{orderLoading}}">加载更多订单</button>
-  <!-- 5. 会员全景花名册与特权管理 (掌柜私域核心) -->
+  <!-- ==================== TAB 3: 会员花名册与特权管理 ==================== -->
   <view wx:if="{{activeTab === 'members'}}" class="section-card">
     <view class="section-header-row">
       <view class="header-left">
-        <text class="section-h2">👥 会员花名册与特权管理 (共{{memberTotal}}位)</text>
-        <text class="section-sub">支持人工开通/撤销会员、增减积分红包、补录推荐人</text>
+        <text class="section-h2">👥 会员花名册 (共{{memberTotal}}位)</text>
+        <text class="section-sub">支持会员管理、增减积分红包及审计流水查看</text>
       </view>
+      <view class="btn-logs-entry btn-press" bindtap="openAdjustLogsModal">📜 调分审计</view>
     </view>
 
     <!-- 会员资产概览四格看板 -->
@@ -315,7 +276,7 @@
       </view>
       <view class="m-stat-box">
         <text class="m-stat-num highlight">{{memberSummary.total_vip_members || 0}}</text>
-        <text class="m-stat-lbl">尊享会员(菜品会员价)</text>
+        <text class="m-stat-lbl">尊享会员(会员价)</text>
       </view>
       <view class="m-stat-box">
         <text class="m-stat-num">¥{{memberSummary.all_time_consumption || '0.00'}}</text>
@@ -327,17 +288,20 @@
       </view>
     </view>
 
+    <!-- 会员身份筛选胶囊 -->
+    <view class="member-filter-pills">
+      <view class="m-filter-chip {{memberFilterIsMember === '' ? 'active' : ''}}" data-filter="" bindtap="changeMemberFilter">全部客官</view>
+      <view class="m-filter-chip {{memberFilterIsMember === '1' ? 'active' : ''}}" data-filter="1" bindtap="changeMemberFilter">尊享会员</view>
+      <view class="m-filter-chip {{memberFilterIsMember === '0' ? 'active' : ''}}" data-filter="0" bindtap="changeMemberFilter">普通客官</view>
+    </view>
+
     <!-- 会员搜索栏 -->
     <view class="member-search-bar">
-      <input
-        class="member-search-input"
-        placeholder="搜索食客姓名 / 手机号 / 会员卡号 / 邀请码"
-        value="{{memberKeyword}}"
-        bindinput="onInputMemberKeyword"
-        bindconfirm="searchMembers"
-      />
-      <button class="btn-search-member btn-press" bindtap="searchMembers">搜索</button>
-      <button class="btn-clear-member" bindtap="clearMemberSearch" wx:if="{{memberKeyword}}">重置</button>
+      <view class="search-input-wrap">
+        <input class="search-input-field" placeholder="姓名 / 手机号 / 卡号 / 邀请码" value="{{memberKeyword}}" bindinput="onInputMemberKeyword" bindconfirm="searchMembers" />
+        <text wx:if="{{memberKeyword}}" class="search-clear-x" bindtap="clearMemberSearch">✕</text>
+      </view>
+      <button class="btn-wk-primary btn-press" bindtap="searchMembers">搜索</button>
     </view>
 
     <!-- 会员列表 -->
@@ -353,9 +317,7 @@
           <view class="m-profile-info">
             <view class="m-name-line">
               <text class="m-nickname">{{item.nickname || '临安食客'}}</text>
-              <text class="m-status-pill {{item.is_member === 1 ? 'vip' : 'normal'}}">
-                {{item.is_member === 1 ? '尊享会员 · 菜品会员价' : '普通客官'}}
-              </text>
+              <text class="m-status-pill {{item.is_member === 1 ? 'vip' : 'normal'}}">{{item.is_member === 1 ? '尊享会员 · 会员价' : '普通客官'}}</text>
             </view>
             <view class="m-sub-line">
               <text class="m-card-sn">卡号: {{item.member_card_no || '暂无'}}</text>
@@ -364,7 +326,6 @@
           </view>
         </view>
 
-        <!-- 财务与裂变数据指标 -->
         <view class="m-metrics-strip">
           <view class="m-metric-item">
             <text class="metric-val">¥{{item.total_consume_amount}}</text>
@@ -373,12 +334,12 @@
           <view class="m-metric-item">
             <text class="metric-val">{{item.normal_points}}</text>
             <text class="metric-label">普通积分</text>
-            <text class="metric-label" wx:if="{{item.normal_points_debt > 0}}">待抵回 {{item.normal_points_debt}} 分</text>
+            <text class="metric-debt" wx:if="{{item.normal_points_debt > 0}}">待抵回 {{item.normal_points_debt}}</text>
           </view>
           <view class="m-metric-item">
             <text class="metric-val red">¥{{item.red_packet_points}}</text>
             <text class="metric-label">红包积分(可抵现)</text>
-            <text class="metric-label" wx:if="{{item.red_packet_debt > 0}}">待抵回 ¥{{item.red_packet_debt}}</text>
+            <text class="metric-debt" wx:if="{{item.red_packet_debt > 0}}">待抵回 ¥{{item.red_packet_debt}}</text>
           </view>
           <view class="m-metric-item">
             <text class="metric-val">{{item.referral_count || 0}}人</text>
@@ -392,25 +353,234 @@
           <text class="ref-empty" wx:else>自主进店 (无推荐人)</text>
         </view>
 
-        <!-- 掌柜特权快捷操作条 -->
+        <!-- 修复：横向紧凑一行排列的操作按钮 -->
         <view class="m-actions-row">
-          <button class="m-action-btn {{item.is_member === 1 ? 'btn-revoke' : 'btn-grant'}}" bindtap="toggleMemberStatus" data-member="{{item}}">
-            {{item.is_member === 1 ? '撤销会员身份' : '👑 升级尊享会员'}}
+          <button class="m-action-btn {{item.is_member === 1 ? 'btn-revoke' : 'btn-grant'}} btn-press" bindtap="toggleMemberStatus" data-member="{{item}}">
+            {{item.is_member === 1 ? '撤销会员' : '👑 升会员'}}
           </button>
-          <button class="m-action-btn btn-points" bindtap="openPointsModal" data-member="{{item}}">
-            🎁 调积分/红包
+          <button class="m-action-btn btn-points btn-press" bindtap="openPointsModal" data-member="{{item}}">
+            🎁 调积分
           </button>
-          <button class="m-action-btn btn-bind-ref" bindtap="openReferrerModal" data-member="{{item}}">
-            🔗 补录推荐人
+          <button class="m-action-btn btn-bind-ref btn-press" bindtap="openAdjustLogsModal" data-member="{{item}}">
+            📜 调分记录
+          </button>
+          <button wx:if="{{!item.referrer_name && !(item.paid_order_count > 0)}}" class="m-action-btn btn-bind-ref btn-press" bindtap="openReferrerModal" data-member="{{item}}">
+            🔗 补推荐人
           </button>
         </view>
       </view>
     </view>
-    <button wx:if="{{memberNextCursor}}" loading="{{memberLoading}}" disabled="{{memberLoading}}" bindtap="moreMembers">加载更多会员（已显示{{members.length}}位）</button>
+    <button class="btn-wk-loadmore btn-press" wx:if="{{memberNextCursor}}" loading="{{memberLoading}}" disabled="{{memberLoading}}" bindtap="moreMembers">加载更多会员（已显示{{members.length}}位）</button>
     <view wx:if="{{memberLoading && !members.length}}" class="empty-pending-box">正在加载会员…</view>
   </view>
 
-  <!-- 6. 新增/编辑菜品弹窗模态框 -->
+  <!-- ==================== TAB 4: 订单问题与售后 ==================== -->
+  <view class="section-card" wx:if="{{activeTab === 'support'}}">
+    <view class="section-h2">订单问题与售后</view>
+    <view class="support-filters">
+      <view class="filter-chip {{supportStatus === 'OPEN' ? 'selected' : ''}}" data-status="OPEN" bindtap="changeSupportStatus">待处理{{activityQueues && activityQueues.support_open > 0 ? '(' + activityQueues.support_open + ')' : ''}}</view>
+      <view class="filter-chip {{supportStatus === 'PROCESSING' ? 'selected' : ''}}" data-status="PROCESSING" bindtap="changeSupportStatus">处理中</view>
+      <view class="filter-chip {{supportStatus === 'RESOLVED' ? 'selected' : ''}}" data-status="RESOLVED" bindtap="changeSupportStatus">已回复</view>
+    </view>
+    <view class="support-note">接单后请联系顾客协商，回复具体处理结果。回复不改变订单资金状态，退款请到订单中操作。</view>
+    <view wx:if="{{supportError}}" class="support-note config-error" bindtap="loadSupportTickets">{{supportError}} · 点击重试</view>
+    <view wx:if="{{!supportTickets.length && !supportLoading && !supportError}}" class="empty-pending-box"><text class="empty-hint">暂无该状态的售后记录</text></view>
+
+    <view class="ticket-cards-feed">
+      <view class="ticket-card-item" wx:for="{{supportTickets}}" wx:key="id">
+        <view class="ticket-head-row">
+          <text class="ticket-category">{{item.category_title}}</text>
+          <text class="ticket-status-tag status-{{item.status}}">{{item.status_title}}</text>
+        </view>
+        <view class="ticket-meta">{{item.order_sn}} · {{item.create_time}}</view>
+        <view class="support-description">{{item.description}}</view>
+        <view class="customer-call-row" bindtap="callSupportCustomer" data-phone="{{item.receiver_phone}}">
+          <text>📞 {{item.receiver_name}}：{{item.receiver_phone}}</text>
+          <text class="call-tag">拨打 ›</text>
+        </view>
+        <view wx:if="{{item.resolution}}" class="ticket-resolution-box">处理结果：{{item.resolution}}</view>
+        <view class="support-actions">
+          <button class="btn-wk-secondary btn-press" data-id="{{item.id}}" bindtap="openSupportOrder">查看订单</button>
+          <button wx:if="{{item.status === 'OPEN'}}" class="btn-wk-warn btn-press" disabled="{{!!supportBusyId}}" data-id="{{item.id}}" bindtap="acceptSupportTicket">接单处理</button>
+          <button wx:if="{{item.status !== 'RESOLVED'}}" class="btn-wk-primary btn-press" disabled="{{!!supportBusyId}}" data-id="{{item.id}}" bindtap="replySupportTicket">回复结果</button>
+        </view>
+      </view>
+    </view>
+    <button class="btn-wk-loadmore btn-press" wx:if="{{supportNextCursor}}" loading="{{supportLoading}}" disabled="{{supportLoading}}" bindtap="moreSupportTickets">加载更多售后</button>
+    <view wx:if="{{supportLoading}}" class="support-note">正在加载…</view>
+  </view>
+
+  <!-- ==================== TAB 5: 个人信息处理申请 ==================== -->
+  <view class="section-card" wx:if="{{activeTab === 'privacy'}}">
+    <view class="section-h2">个人信息处理申请</view>
+    <view class="support-note">先核实本人身份、订单退款及会员资产，再实际处理并回复。回复只记录说明，不自动注销账号或删除订单。</view>
+    <view class="support-filters">
+      <view class="filter-chip {{privacyStatus === 'OPEN' ? 'selected' : ''}}" data-status="OPEN" bindtap="changePrivacyStatus">待处理{{activityQueues && activityQueues.privacy_open > 0 ? '(' + activityQueues.privacy_open + ')' : ''}}</view>
+      <view class="filter-chip {{privacyStatus === 'PROCESSING' ? 'selected' : ''}}" data-status="PROCESSING" bindtap="changePrivacyStatus">核实中</view>
+      <view class="filter-chip {{privacyStatus === 'RESOLVED' ? 'selected' : ''}}" data-status="RESOLVED" bindtap="changePrivacyStatus">已回复</view>
+      <view class="filter-chip {{privacyStatus === 'CANCELLED' ? 'selected' : ''}}" data-status="CANCELLED" bindtap="changePrivacyStatus">已撤回</view>
+    </view>
+    <view wx:if="{{privacyError}}" class="support-note config-error" bindtap="loadPrivacyRequests">{{privacyError}} · 点击重试</view>
+    <view wx:if="{{!privacyRequests.length && !privacyLoading && !privacyError}}" class="empty-pending-box"><text class="empty-hint">暂无该状态的申请</text></view>
+
+    <view class="ticket-cards-feed">
+      <view class="ticket-card-item" wx:for="{{privacyRequests}}" wx:key="id">
+        <view class="ticket-head-row">
+          <text class="ticket-category">{{item.kind_title}}</text>
+          <text class="ticket-status-tag status-{{item.status}}">{{item.status_title}}</text>
+        </view>
+        <view class="ticket-meta">申请 #{{item.id}} · {{item.nickname}} · {{item.create_time}}</view>
+        <view class="support-description">{{item.description}}</view>
+        <view wx:if="{{item.resolution}}" class="ticket-resolution-box">回复：{{item.resolution}}</view>
+        <view wx:if="{{item.status === 'OPEN' || item.status === 'PROCESSING'}}" class="support-actions">
+          <button wx:if="{{item.status === 'OPEN'}}" class="btn-wk-warn btn-press" disabled="{{!!privacyBusyId}}" data-id="{{item.id}}" bindtap="acceptPrivacyRequest">接单核实</button>
+          <button class="btn-wk-primary btn-press" disabled="{{!!privacyBusyId}}" data-id="{{item.id}}" bindtap="replyPrivacyRequest">记录处理说明</button>
+        </view>
+      </view>
+    </view>
+    <button class="btn-wk-loadmore btn-press" wx:if="{{privacyNextCursor}}" loading="{{privacyLoading}}" disabled="{{privacyLoading}}" bindtap="morePrivacyRequests">加载更多申请</button>
+    <view wx:if="{{privacyLoading}}" class="support-note">正在加载…</view>
+  </view>
+
+  <!-- ==================== TAB 6: 运营规则与履约参数设置 ==================== -->
+  <block wx:if="{{activeTab === 'settings'}}">
+    <view class="section-card">
+      <view class="section-header-row">
+        <view class="header-left">
+          <text class="section-h2">⚙️ 运营规则与履约参数</text>
+          <text class="section-sub">实时同步至前台点单、结算抽屉与返佣引擎</text>
+        </view>
+        <view class="btn-wk-secondary btn-press" bindtap="reloadConfigs">↻ 重新读取</view>
+      </view>
+
+      <view wx:if="{{configError}}" class="support-note config-error">{{configError}}</view>
+      <view wx:if="{{configLoading}}" class="support-note">正在读取营业设置…</view>
+      <view wx:if="{{!configLoaded && !configLoading}}" class="support-note">尚未读取营业设置，读取成功后才能编辑和保存。</view>
+      <view wx:if="{{configDirty}}" class="dirty-warn-bar">有尚未保存的修改。保存失败时输入会保留，可放心重试。</view>
+    </view>
+
+    <block wx:if="{{configLoaded}}">
+      <!-- 组 1: 门店营业与联络 -->
+      <view class="section-card">
+        <view class="group-heading">🏠 门店营业与自提信息</view>
+        <view class="config-row-between">
+          <text class="config-title">作坊营业状态</text>
+          <switch disabled="{{configLoading || configSaving}}" checked="{{config.SHOP_OPEN === '1'}}" color="#278464" bindchange="onShopOpen" />
+        </view>
+        <view class="config-block">
+          <text class="config-title">主页实时出炉公告</text>
+          <input disabled="{{configLoading || configSaving}}" class="config-input-box" placeholder="如：今日 16:30 准时出锅，现捞保温直达" value="{{config.WORKSHOP_ANNOUNCEMENT}}" bindinput="onInputAnnouncement" />
+        </view>
+        <view class="config-block">
+          <text class="config-title">门店自提地址</text>
+          <textarea disabled="{{configLoading || configSaving}}" class="config-textarea-box" value="{{config.WORKSHOP_ADDRESS}}" data-field="WORKSHOP_ADDRESS" bindinput="onConfigInput" maxlength="255" placeholder="请填写省市区、街道和门牌号" />
+          <text class="config-desc">用于新建自提订单，历史订单保留原取餐地址。</text>
+        </view>
+        <view class="config-row-between">
+          <text class="config-title">掌柜 / 自送联系人</text>
+          <input disabled="{{configLoading || configSaving}}" class="config-input-inline" value="{{config.DELIVERY_PERSON_NAME}}" data-field="DELIVERY_PERSON_NAME" bindinput="onConfigInput" maxlength="50" />
+        </view>
+        <view class="config-row-between">
+          <text class="config-title">掌柜联系电话</text>
+          <input disabled="{{configLoading || configSaving}}" type="number" maxlength="11" class="config-input-inline" value="{{config.DELIVERY_PERSON_PHONE}}" bindinput="onInputPhone" />
+        </view>
+      </view>
+
+      <!-- 组 2: 批次时间与订单配额 -->
+      <view class="section-card">
+        <view class="group-heading">⏰ 批次时间与接单配额</view>
+        <view class="config-row-between">
+          <text class="config-title">出炉时间</text>
+          <picker mode="time" disabled="{{configLoading || configSaving}}" value="{{config.BATCH_SCHEDULE_TIME}}" data-field="BATCH_SCHEDULE_TIME" bindchange="onConfigInput">
+            <view class="config-picker-chip">{{config.BATCH_SCHEDULE_TIME || '16:30'}} ▾</view>
+          </picker>
+        </view>
+        <view class="config-row-between">
+          <text class="config-title">截单时间（不晚于出炉）</text>
+          <picker mode="time" disabled="{{configLoading || configSaving}}" value="{{config.BATCH_CUTOFF_TIME}}" data-field="BATCH_CUTOFF_TIME" bindchange="onConfigInput">
+            <view class="config-picker-chip">{{config.BATCH_CUTOFF_TIME || '16:00'}} ▾</view>
+          </picker>
+        </view>
+        <view class="config-row-between">
+          <text class="config-title">未来可预约天数 (0-7天)</text>
+          <input disabled="{{configLoading || configSaving}}" type="number" class="config-input-inline" value="{{config.BOOKING_DAYS}}" data-field="BOOKING_DAYS" bindinput="onConfigInput" />
+        </view>
+        <view class="config-row-between">
+          <text class="config-title">每批接单上限 (0表示不限)</text>
+          <input disabled="{{configLoading || configSaving}}" type="number" class="config-input-inline" value="{{config.BATCH_MAX_ORDERS}}" data-field="BATCH_MAX_ORDERS" bindinput="onConfigInput" />
+        </view>
+        <view class="config-row-between">
+          <text class="config-title">未付款关闭时限 (5-30分钟)</text>
+          <input disabled="{{configLoading || configSaving}}" type="number" class="config-input-inline" value="{{config.ORDER_EXPIRE_MINUTES}}" data-field="ORDER_EXPIRE_MINUTES" bindinput="onConfigInput" />
+        </view>
+        <text class="config-desc">未付款订单也占名额；取消或备餐前退款后释放。</text>
+      </view>
+
+      <!-- 组 3: 同城自送运费与小区 -->
+      <view class="section-card">
+        <view class="group-heading">🛵 同城自送与运费</view>
+        <view class="config-row-between">
+          <text class="config-title">同城自送基础运费 (元)</text>
+          <input disabled="{{configLoading || configSaving}}" type="digit" class="config-input-inline" value="{{config.DELIVERY_BASE_FEE}}" bindinput="onInputDeliveryFee" />
+        </view>
+        <view class="config-row-between">
+          <text class="config-title">免运费满额门槛 (元)</text>
+          <input disabled="{{configLoading || configSaving}}" type="digit" class="config-input-inline" value="{{config.DELIVERY_FREE_THRESHOLD}}" bindinput="onInputFreeThreshold" />
+        </view>
+        <view class="config-block">
+          <text class="config-title">可自送小区白名单 (逗号分隔，留空仅自提)</text>
+          <textarea disabled="{{configLoading || configSaving}}" class="config-textarea-box" value="{{config.DELIVERY_AREAS}}" data-field="DELIVERY_AREAS" bindinput="onConfigInput" maxlength="255" placeholder="如：春天花园,锦绣江南" />
+        </view>
+      </view>
+
+      <!-- 组 4: 会员特权与返佣 -->
+      <view class="section-card">
+        <view class="group-heading">👑 会员晋升与奖励比例</view>
+        <view class="config-block">
+          <view class="config-label-row config-mode-row">
+            <text class="config-title">会员晋升门槛模式</text>
+            <view class="segment-picker">
+              <view class="seg-item {{config.MEMBER_ENTRY_MODE === 'FREE' ? 'active' : ''}}" bindtap="changeUpgradeType" data-type="FREE">新客免费开卡</view>
+              <view class="seg-item {{config.MEMBER_ENTRY_MODE === 'CONSUME' ? 'active' : ''}}" bindtap="changeUpgradeType" data-type="CONSUME">累计消费晋级</view>
+              <view class="seg-item {{config.MEMBER_ENTRY_MODE === 'MANUAL' ? 'active' : ''}}" bindtap="changeUpgradeType" data-type="MANUAL">掌柜邀请</view>
+            </view>
+          </view>
+          <text class="config-desc">{{config.MEMBER_ENTRY_MODE === 'FREE' ? '顾客可主动免费开通会员' : config.MEMBER_ENTRY_MODE === 'MANUAL' ? '仅由掌柜在会员管理中开通' : '需累计有效现金货款达标后自动晋级，下一单享会员价'}}</text>
+        </view>
+        <view class="config-row-between" wx:if="{{config.MEMBER_ENTRY_MODE === 'CONSUME'}}">
+          <text class="config-title">晋升门槛消费金额 (元)</text>
+          <input disabled="{{configLoading || configSaving}}" type="digit" class="config-input-inline" value="{{config.MEMBER_ENTRY_THRESHOLD}}" data-field="MEMBER_ENTRY_THRESHOLD" bindinput="onConfigInput" />
+        </view>
+        <view class="config-block">
+          <view class="config-label-row">
+            <text class="config-title">红包单笔抵现上限比例</text>
+            <text class="config-val red">{{redDeductPercent}}%</text>
+          </view>
+          <slider disabled="{{configLoading || configSaving}}" min="0" max="100" step="5" value="{{redDeductPercent}}" activeColor="#D9480F" block-color="#D9480F" bindchange="updateRedRatioSlider" />
+        </view>
+        <view class="config-block">
+          <view class="config-label-row">
+            <text class="config-title">推荐好友微信实付返佣率</text>
+            <text class="config-val red">{{commissionPercent}}%</text>
+          </view>
+          <slider disabled="{{configLoading || configSaving}}" min="0" max="10" step="1" value="{{commissionPercent}}" activeColor="#B45309" block-color="#B45309" bindchange="updateCommissionSlider" />
+          <text class="config-desc">有效现金货款不含配送费和各类优惠，好友完成订单后发放。</text>
+        </view>
+
+        <button class="btn-save-config btn-press" disabled="{{configLoading || configSaving}}" loading="{{configSaving}}" bindtap="saveAllConfigs">
+          保存全部营业设置
+        </button>
+      </view>
+    </block>
+
+    <!-- 吸底浮动保存栏（存在未保存变更时浮出） -->
+    <view class="sticky-save-bar" wx:if="{{configLoaded && configDirty}}">
+      <text class="sticky-save-hint">● 有未保存修改</text>
+      <button class="btn-sticky-save btn-press" disabled="{{configLoading || configSaving}}" loading="{{configSaving}}" bindtap="saveAllConfigs">立即保存设置</button>
+    </view>
+  </block>
+
+  <!-- ==================== 弹窗 1: 新增/编辑菜品 ==================== -->
   <view class="modal-backdrop" wx:if="{{showAddModal}}">
     <view class="modal-box">
       <view class="modal-title-row">
@@ -431,16 +601,29 @@
           <text class="form-label">会员专享价 (元)</text>
           <input type="digit" class="form-input" placeholder="填写该菜品会员价" value="{{dishForm.member_price}}" bindinput="onInputFormMemberPrice" />
         </view>
-        <view class="form-row"><text class="form-label">分类</text><picker range="{{categoryNames}}" value="{{dishForm.category_id - 1}}" bindchange="onDishCategory">{{categoryNames[dishForm.category_id - 1] || '请选择分类'}} ▾</picker></view>
+        <view class="form-row">
+          <text class="form-label">分类</text>
+          <picker range="{{categoryNames}}" value="{{dishForm.category_id - 1}}" bindchange="onDishCategory">
+            <view class="form-picker-box">{{categoryNames[dishForm.category_id - 1] || '请选择分类'}} ▾</view>
+          </picker>
+        </view>
         <view class="form-row photo-editor">
           <text class="form-label">商品实拍图</text>
           <image wx:if="{{photoPreview || dishForm.cover_img}}" class="dish-photo-preview" src="{{photoPreview || dishForm.cover_img}}" mode="aspectFill" />
-          <button size="mini" loading="{{photoBusy}}" disabled="{{photoBusy || dishSaving}}" bindtap="chooseDishPhoto">{{photoBusy ? '正在处理照片' : '拍照或从相册选择'}}</button>
-          <text class="photo-hint">上传后保存菜品，顾客才能看到新照片</text>
+          <view class="photo-btns-row">
+            <button class="btn-wk-secondary btn-press" loading="{{photoBusy}}" disabled="{{photoBusy || dishSaving}}" bindtap="chooseDishPhoto">{{photoBusy ? '处理照片中' : '📷 拍照/相册选择'}}</button>
+            <button wx:if="{{dishForm.cover_img && !photoPreview}}" class="btn-wk-danger-outline btn-press" disabled="{{photoBusy || dishSaving}}" bindtap="clearDishPhoto">移除封面</button>
+          </view>
+          <text class="photo-hint">上传后点击保存菜品，顾客才能看到新照片</text>
           <text wx:if="{{photoError}}" class="photo-error">{{photoError}}</text>
-          <view wx:if="{{photoPreview && !photoBusy}}"><button size="mini" disabled="{{dishSaving}}" bindtap="uploadDishPhoto">重试上传</button><button size="mini" disabled="{{dishSaving}}" bindtap="discardDishPhoto">放弃新照片</button></view>
-          <button wx:if="{{dishForm.cover_img && !photoPreview}}" size="mini" disabled="{{photoBusy || dishSaving}}" bindtap="clearDishPhoto">移除封面</button>
-          <view wx:if="{{!photoCloudCover}}"><text class="form-label">或填写已有图片HTTPS地址</text><input class="form-input" disabled="{{photoBusy || dishSaving || photoPreview}}" value="{{dishForm.cover_img}}" data-field="cover_img" bindinput="onDishField" maxlength="500" /></view>
+          <view class="photo-btns-row" wx:if="{{photoPreview && !photoBusy}}">
+            <button class="btn-wk-primary btn-press" disabled="{{dishSaving}}" bindtap="uploadDishPhoto">重试上传</button>
+            <button class="btn-wk-secondary btn-press" disabled="{{dishSaving}}" bindtap="discardDishPhoto">放弃新照片</button>
+          </view>
+          <view wx:if="{{!photoCloudCover}}" style="width:100%;">
+            <text class="form-label">或填写已有图片HTTPS地址</text>
+            <input class="form-input" disabled="{{photoBusy || dishSaving || photoPreview}}" value="{{dishForm.cover_img}}" data-field="cover_img" bindinput="onDishField" maxlength="500" />
+          </view>
         </view>
         <view class="form-row"><text class="form-label">每批默认可售份数</text><input class="form-input" type="number" value="{{dishForm.stock_qty}}" data-field="stock_qty" bindinput="onDishField" /></view>
         <view class="form-row"><text class="form-label">规格净重/辣度</text><input class="form-input" value="{{dishForm.specification}}" data-field="specification" bindinput="onDishField" maxlength="100" /></view>
@@ -462,7 +645,33 @@
     </view>
   </view>
 
-  <!-- 7. 人工调整积分/红包弹窗 -->
+  <!-- ==================== 弹窗 2: 快捷库存调整（含当前值预填与快捷加减） ==================== -->
+  <view class="modal-backdrop" wx:if="{{showStockModal}}">
+    <view class="modal-box">
+      <view class="modal-title-row">
+        <text class="modal-title">调整本批库存【{{stockTarget.title}}】</text>
+        <view class="modal-close" bindtap="closeStockModal">✕</view>
+      </view>
+      <view class="modal-form">
+        <view class="form-row">
+          <text class="form-label">当前日期：{{orderDate}} · 批次 {{config.BATCH_SCHEDULE_TIME}}</text>
+          <input type="number" class="form-input stock-num-input" value="{{stockInputVal}}" bindinput="onStockInput" />
+        </view>
+        <view class="quick-stock-btns">
+          <view class="q-stock-btn btn-press" data-delta="-5" bindtap="quickAdjustStock">-5 份</view>
+          <view class="q-stock-btn btn-press" data-delta="5" bindtap="quickAdjustStock">+5 份</view>
+          <view class="q-stock-btn btn-press" data-delta="10" bindtap="quickAdjustStock">+10 份</view>
+          <view class="q-stock-btn danger btn-press" data-delta="-9999" bindtap="quickAdjustStock">沽清(0)</view>
+        </view>
+      </view>
+      <view class="modal-btn-row">
+        <button class="btn-cancel" disabled="{{stockSaving}}" bindtap="closeStockModal">取消</button>
+        <button class="btn-submit" loading="{{stockSaving}}" disabled="{{stockSaving}}" bindtap="saveStockModal">保存库存</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ==================== 弹窗 3: 人工调整积分/红包 ==================== -->
   <view class="modal-backdrop" wx:if="{{showPointsModal}}">
     <view class="modal-box">
       <view class="modal-title-row">
@@ -483,12 +692,12 @@
           </view>
         </view>
         <view class="form-row">
-          <text class="form-label">变动数值 (正数赠送，负数扣减)</text>
+          <text class="form-label">变动数值 (正数赠送，负数扣减{{pointsForm.adjust_type === 'NORMAL_POINT' ? '；普通积分须为整数' : ''}})</text>
           <input type="digit" class="form-input" placeholder="如: 50 或 -20" value="{{pointsForm.amount}}" bindinput="onInputPointsAmount" />
         </view>
         <view class="form-row">
           <text class="form-label">调整原因 (必填审计备注)</text>
-          <input class="form-input" placeholder="如：老客生日礼遇 / 线下熟客手工转账录入" value="{{pointsForm.reason}}" bindinput="onInputPointsReason" />
+          <input class="form-input" placeholder="如：老客生日礼遇 / 线下熟客手工录入" value="{{pointsForm.reason}}" bindinput="onInputPointsReason" />
         </view>
       </view>
 
@@ -499,7 +708,32 @@
     </view>
   </view>
 
-  <!-- 8. 补录/修正推荐人弹窗 -->
+  <!-- ==================== 弹窗 4: 调分历史审计流水 ==================== -->
+  <view class="modal-backdrop" wx:if="{{showAdjustLogsModal}}">
+    <view class="modal-box">
+      <view class="modal-title-row">
+        <text class="modal-title">调分审计流水【{{adjustLogsMemberName}}】</text>
+        <view class="modal-close" bindtap="closeAdjustLogsModal">✕</view>
+      </view>
+      <scroll-view scroll-y class="logs-scroll-list">
+        <view wx:if="{{adjustLogsLoading}}" class="support-note">正在加载审计记录…</view>
+        <view wx:elif="{{!adjustLogs.length}}" class="empty-pending-box"><text class="empty-hint">暂无人工调分审计记录</text></view>
+        <view class="adjust-log-row" wx:for="{{adjustLogs}}" wx:key="id">
+          <view class="log-top-row">
+            <text class="log-type-tag">{{item.account_type === 'NORMAL_POINT' ? '普通积分' : '红包积分'}}</text>
+            <text class="log-amount {{item.amount >= 0 ? 'plus' : 'minus'}}">{{item.amount >= 0 ? '+' : ''}}{{item.amount}}</text>
+          </view>
+          <view class="log-reason">{{item.reason}}</view>
+          <view class="log-meta">变动前 {{item.before_val}} → 变动后 {{item.after_val}} · {{item.create_time}}</view>
+        </view>
+      </scroll-view>
+      <view class="modal-btn-row">
+        <button class="btn-submit" bindtap="closeAdjustLogsModal">关闭</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ==================== 弹窗 5: 补录/修正推荐人 ==================== -->
   <view class="modal-backdrop" wx:if="{{showReferrerModal}}">
     <view class="modal-box">
       <view class="modal-title-row">

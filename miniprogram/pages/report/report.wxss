@@ -1,9 +1,20 @@
 page { background:#f7f5f2; color:#292524; }
 .page { padding:28rpx 24rpx 80rpx; }
+.header-row { display:flex; align-items:center; justify-content:space-between; }
 .title { font-size:40rpx; font-weight:700; }
-.date { background:#fff; padding:24rpx; border-radius:14rpx; margin:24rpx 0; font-size:30rpx; }
+.today-pill { font-size:24rpx; color:#a44319; background:#faeee5; padding:8rpx 20rpx; border-radius:20rpx; font-weight:600; }
+.date-bar { display:flex; align-items:center; gap:12rpx; margin:20rpx 0; }
+.date-nav-btn { background:#fff; padding:20rpx 18rpx; border-radius:14rpx; font-size:24rpx; color:#574c45; font-weight:600; white-space:nowrap; }
+.date-picker-wrap { flex:1; }
+.date { background:#fff; padding:20rpx; border-radius:14rpx; font-size:28rpx; font-weight:600; text-align:center; }
 .card { background:#fff; padding:28rpx; border-radius:20rpx; margin:24rpx 0; }
 .heading { font-size:31rpx; font-weight:600; margin-bottom:20rpx; }
+.kpi-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14rpx; margin-bottom:22rpx; }
+.kpi-box { background:#faf7f4; border:1rpx solid #efe8e0; border-radius:16rpx; padding:18rpx 16rpx; display:flex; flex-direction:column; gap:6rpx; }
+.kpi-box.accent { background:#fff5ef; border-color:#f6d5c4; }
+.kpi-num { font-size:32rpx; font-weight:700; color:#292524; }
+.kpi-box.accent .kpi-num { color:#a44319; }
+.kpi-lbl { font-size:22rpx; color:#786c64; }
 .minor { font-size:28rpx; margin-top:30rpx; }
 .row { display:flex; justify-content:space-between; align-items:flex-start; gap:18rpx; font-size:27rpx; line-height:1.7; margin:15rpx 0; }
 .row text:first-child { flex:1; } .row text:last-child { text-align:right; }

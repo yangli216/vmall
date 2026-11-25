@@ -7,8 +7,13 @@ const adminConfig = require('../../utils/admin-config');
 Page({
   ...productImage.methods,
   onDishImageError: function(e) {
-    const index = Number(e.currentTarget.dataset.index);
-    if (this.data.dishes[index]) this.setData({['dishes[' + index + '].imageFailed']: true});
+    const id = Number(e.currentTarget.dataset.id);
+    const dishes = [...(this.data.dishes || [])];
+    const realIndex = id ? dishes.findIndex(d => d.id === id) : Number(e.currentTarget.dataset.index);
+    if (realIndex >= 0 && dishes[realIndex]) {
+      dishes[realIndex] = Object.assign({}, dishes[realIndex], { imageFailed: true });
+      this.setData({ dishes, filteredDishes: this.applyDishFilters(dishes) });
+    }
   },
   ...adminPrivacy.methods,
   ...adminConfig.methods,
@@ -19,9 +24,25 @@ Page({
     orderLoading:false,orderError:'',prepError:'',capacityError:'',batchCapacity:null,orderFilterIndex:0,orderDeliveryIndex:0,orderDeliveryNames:['全部取餐方式','作坊自送','到店自提'],
     orderFilters:[{label:'全部订单',value:''},{label:'待付款',value:'10'},{label:'待备餐',value:'20'},{label:'待取餐',value:'25'},{label:'配送中',value:'30'},{label:'已完成',value:'40'},{label:'退款处理中',value:'70'},{label:'已退款/已取消',value:'50,60'}],
     categoryNames: ['招牌必吃','秘制酱牛肉','麻辣鸭副件','爽脆下酒菜','手工饮品'],
+    categoryOptions: [
+      { id: 0, name: '全部分类' },
+      { id: 1, name: '招牌必吃' },
+      { id: 2, name: '秘制酱牛肉' },
+      { id: 3, name: '麻辣鸭副件' },
+      { id: 4, name: '爽脆下酒菜' },
+      { id: 5, name: '手工饮品' }
+    ],
     dishes: [],
+    filteredDishes: [],
+    productCategoryFilter: 0,
+    productStatusFilter: 'ALL',
     pendingOrders: [],
+    dispatchableCount: 0,
+    prepTotalQty: 0,
     members: [], memberTotal: 0, memberNextCursor: null, memberLoading: false, memberError: '',
+    memberFilterIsMember: '',
+    showAdjustLogsModal: false, adjustLogs: [], adjustLogsLoading: false, adjustLogsMemberName: '',
+    showStockModal: false, stockTarget: null, stockInputVal: '', stockSaving: false,
     privacyRequests:[],privacyStatus:'OPEN',privacyNextCursor:null,privacyLoading:false,privacyError:'',privacyBusyId:null,
     supportTickets: [], supportStatus: 'OPEN', supportNextCursor: null, supportLoading: false, supportError: '', supportBusyId: null, refundBusyId: null,
     memberSummary: {
@@ -163,23 +184,88 @@ Page({
     finally{this.setData({supportBusyId:null});}
   },
   callSupportCustomer: function(e){wx.makePhoneCall({phoneNumber:e.currentTarget.dataset.phone});},
-  openSupportOrder: function(e){const ticket=this.data.supportTickets.find(t=>t.id===Number(e.currentTarget.dataset.id));if(!ticket)return;this.setData({activeTab:'orders',allOrderDates:false,overduePickupOnly:false,orderDate:ticket.batch_date || this.data.orderDate,orderKeyword:ticket.order_sn,orderFilterIndex:0,orderDeliveryIndex:0});this.loadPendingOrders();},
+  openSupportOrder: function(e){const ticket=this.data.supportTickets.find(t=>t.id===Number(e.currentTarget.dataset.id));if(!ticket)return;this.setData({activeTab:'orders',allOrderDates:!ticket.batch_date,overduePickupOnly:false,orderDate:ticket.batch_date || this.data.orderDate,orderKeyword:ticket.order_sn,orderFilterIndex:0,orderDeliveryIndex:0});this.loadPendingOrders();},
   changeOrderDate: function(e) {this.setData({orderDate:e.detail.value,allOrderDates:false,overduePickupOnly:false});this.loadPendingOrders();this.loadDishes();},
   showSelectedDate: function(){this.setData({allOrderDates:false,overduePickupOnly:false});this.loadPendingOrders();},
   onOrderKeyword: function(e) {this.setData({orderKeyword:e.detail.value});},
+  clearOrderKeyword: function() {this.setData({orderKeyword:''});this.loadPendingOrders();},
   searchOrders: function() {this.loadPendingOrders();},
+  copyOrderAddress: function(e) {
+    const addr = e.currentTarget.dataset.address;
+    if (!addr) return;
+    wx.setClipboardData({ data: addr, success: () => wx.showToast({ title: '地址已复制', icon: 'success' }) });
+  },
+  copyPrepSummary: function() {
+    const list = this.data.prepSummary || [];
+    if (!list.length) return wx.showToast({ title: '暂无待备餐数据', icon: 'none' });
+    const lines = [`【${this.data.orderDate} ${this.data.config.BATCH_SCHEDULE_TIME} 备餐清单】`, `共 ${this.data.prepTotalQty} 份：`];
+    list.forEach(item => lines.push(`- ${item.product_title} × ${item.quantity} 份`));
+    wx.setClipboardData({ data: lines.join('\n'), success: () => wx.showToast({ title: '清单已复制', icon: 'success' }) });
+  },
   changeOrderFilter: function(e){const index=Number(e.detail.value);if(!this.data.orderFilters[index])return;this.setData({orderFilterIndex:index,overduePickupOnly:false});this.loadPendingOrders();},
   changeOrderDelivery: function(e){const index=Number(e.detail.value);if(!this.data.orderDeliveryNames[index])return;this.setData({orderDeliveryIndex:index,overduePickupOnly:false});this.loadPendingOrders();},
   retryOrders: function(){this.loadPendingOrders();},
   onDishField: function(e) {if(this.data.dishSaving || (e.currentTarget.dataset.field==='cover_img' && (this.data.photoBusy || this._pendingPhoto)))return;this.setData({['dishForm.'+e.currentTarget.dataset.field]:e.detail.value});},
   onDishCategory: function(e) {if(this.data.dishSaving)return;this.setData({'dishForm.category_id':Number(e.detail.value)+1});},
   adjustStock: function(e) {
-    const id=e.currentTarget.dataset.id;
+    const id=Number(e.currentTarget.dataset.id);
+    const target=(this.data.dishes || []).find(d=>d.id===id);
+    if(target){this.openStockModal({currentTarget:{dataset:{dish:target}}});return;}
     wx.showModal({title:'调整本批剩余份数',editable:true,placeholderText:'填写新的可售剩余份数（0至9999）',success:async r=>{
       if(!r.confirm)return;
       try{await app.api('/api/admin/product/stock','POST',{product_id:id,batch_date:this.data.orderDate,batch_time:this.data.config.BATCH_SCHEDULE_TIME,available_qty:Number(r.content)});this.loadDishes();}
       catch(error){wx.showToast({title:error.message,icon:'none'});}
     }});
+  },
+  openStockModal: function(e) {
+    const dish = e.currentTarget.dataset.dish;
+    if (!dish) return;
+    this.setData({
+      showStockModal: true,
+      stockTarget: dish,
+      stockInputVal: String(dish.stock_qty !== undefined ? dish.stock_qty : 0),
+      stockSaving: false
+    });
+  },
+  closeStockModal: function() {
+    if (this.data.stockSaving) return;
+    this.setData({ showStockModal: false, stockTarget: null });
+  },
+  onStockInput: function(e) {
+    this.setData({ stockInputVal: e.detail.value });
+  },
+  quickAdjustStock: function(e) {
+    const delta = Number(e.currentTarget.dataset.delta);
+    const cur = parseInt(this.data.stockInputVal, 10) || 0;
+    if (delta === -9999) {
+      this.setData({ stockInputVal: '0' });
+    } else {
+      const next = Math.max(0, Math.min(9999, cur + delta));
+      this.setData({ stockInputVal: String(next) });
+    }
+  },
+  saveStockModal: async function() {
+    if (this.data.stockSaving || !this.data.stockTarget) return;
+    const qty = Number(this.data.stockInputVal);
+    if (!Number.isInteger(qty) || qty < 0 || qty > 9999) {
+      return wx.showToast({ title: '请输入 0 至 9999 的整数', icon: 'none' });
+    }
+    this.setData({ stockSaving: true });
+    try {
+      await app.api('/api/admin/product/stock', 'POST', {
+        product_id: this.data.stockTarget.id,
+        batch_date: this.data.orderDate,
+        batch_time: this.data.config.BATCH_SCHEDULE_TIME,
+        available_qty: qty
+      });
+      wx.showToast({ title: '库存已调整', icon: 'success' });
+      this.setData({ showStockModal: false, stockTarget: null });
+      this.loadDishes();
+    } catch (error) {
+      wx.showToast({ title: error.message || '调整失败', icon: 'none' });
+    } finally {
+      this.setData({ stockSaving: false });
+    }
   },
   preparePickup: async function(e) {try{await app.api('/api/admin/order/ready','POST',{order_id:e.currentTarget.dataset.id});this.loadPendingOrders();}catch(error){wx.showToast({title:error.message,icon:'none'});}},
   verifyPickup: function(e) {
@@ -240,12 +326,40 @@ Page({
   },
 
   // 获取真实菜品列表 (带精选老卤兜底)
+  applyDishFilters: function(dishes, catId, statusFilter) {
+    const list = dishes !== undefined ? dishes : (this.data.dishes || []);
+    const cat = catId !== undefined ? catId : (this.data.productCategoryFilter || 0);
+    const st = statusFilter !== undefined ? statusFilter : (this.data.productStatusFilter || 'ALL');
+    return list.filter(d => {
+      if (cat && Number(d.category_id) !== Number(cat)) return false;
+      if (st === 'ON' && d.status !== 1) return false;
+      if (st === 'OFF' && d.status !== 0) return false;
+      if (st === 'LOW' && Number(d.stock_qty) > 5) return false;
+      return true;
+    });
+  },
+  changeProductCatFilter: function(e) {
+    const idx = Number(e.detail.value);
+    const opt = (this.data.categoryOptions || [])[idx];
+    const catId = opt ? opt.id : 0;
+    this.setData({
+      productCategoryFilter: catId,
+      filteredDishes: this.applyDishFilters(this.data.dishes, catId, this.data.productStatusFilter)
+    });
+  },
+  changeProductStatusFilter: function(e) {
+    const st = e.currentTarget.dataset.status;
+    this.setData({
+      productStatusFilter: st,
+      filteredDishes: this.applyDishFilters(this.data.dishes, this.data.productCategoryFilter, st)
+    });
+  },
   loadDishes: async function(cb) {
     const sequence=this._dishesSequence=(this._dishesSequence || 0)+1;
     const date=this.data.orderDate,time=this.data.config.BATCH_SCHEDULE_TIME;
     this.setData({loading:true});
-    try {const rows=await app.api('/api/products?batch_date='+date+'&batch_time='+time);if(sequence===this._dishesSequence)this.setData({dishes:rows});}
-    catch(error){if(sequence===this._dishesSequence){this.setData({dishes:[]});wx.showToast({title:error.message,icon:'none'});}}
+    try {const rows=await app.api('/api/products?batch_date='+date+'&batch_time='+time);if(sequence===this._dishesSequence){const list=Array.isArray(rows)?rows:[];this.setData({dishes:list,filteredDishes:this.applyDishFilters(list)});}}
+    catch(error){if(sequence===this._dishesSequence){this.setData({dishes:[],filteredDishes:[]});wx.showToast({title:error.message,icon:'none'});}}
     finally{if(sequence===this._dishesSequence)this.setData({loading:false});if(cb)cb();}
   },
   loadPendingOrders: async function(append) {
@@ -254,7 +368,7 @@ Page({
     const sequence=this._ordersSequence=(this._ordersSequence || 0)+1;
     const date=this.data.orderDate,time=this.data.config.BATCH_SCHEDULE_TIME,filter=this.data.orderFilters[this.data.orderFilterIndex];
     this.setData({orderLoading:true,orderError:'',prepError:'',capacityError:''});
-    if(!append)this.setData({pendingOrders:[],orderNextCursor:null,prepSummary:[],batchCapacity:null});
+    if(!append)this.setData({pendingOrders:[],dispatchableCount:0,orderNextCursor:null,prepSummary:[],prepTotalQty:0,batchCapacity:null});
     try {
       let path='/api/admin/orders?keyword='+encodeURIComponent(this.data.orderKeyword);
       if(!this.data.allOrderDates)path+='&batch_date='+date;
@@ -271,9 +385,17 @@ Page({
       if(sequence!==this._ordersSequence)return;
       const titles={10:'待付款',20:'待备餐',25:'待取餐',30:'配送中',40:'已完成',50:'已退款',60:'已取消',70:'退款处理中'};
       const sources={CUSTOMER:'顾客确认收货',ADMIN_PICKUP:'掌柜核销取餐',ADMIN_DELIVERY:'掌柜核实送达'};
-      if(list.status==='fulfilled')this.setData({pendingOrders:(append?this.data.pendingOrders:[]).concat(list.value.data.map(o=>Object.assign({},o,{status_title:titles[o.order_status],completion_title:sources[o.completion_source] || ''}))),orderNextCursor:list.value.next_cursor});
+      if(list.status==='fulfilled'){
+        const merged=(append?this.data.pendingOrders:[]).concat(list.value.data.map(o=>Object.assign({},o,{status_title:titles[o.order_status],completion_title:sources[o.completion_source] || ''})));
+        const dispatchable=merged.filter(o=>o.order_status===20 && o.delivery_type===1 && o.payment_state==='PAID').length;
+        this.setData({pendingOrders:merged,dispatchableCount:dispatchable,orderNextCursor:list.value.next_cursor});
+      }
       else this.setData({orderError:list.reason.message || '订单加载失败'});
-      if(summary.status==='fulfilled')this.setData({prepSummary:summary.value});else this.setData({prepError:summary.reason.message || '备餐汇总加载失败'});
+      if(summary.status==='fulfilled'){
+        const sumList=Array.isArray(summary.value)?summary.value:[];
+        const totalQty=sumList.reduce((acc,cur)=>acc+(Number(cur.quantity)||0),0);
+        this.setData({prepSummary:sumList,prepTotalQty:totalQty});
+      }else this.setData({prepError:summary.reason.message || '备餐汇总加载失败'});
       if(capacity.status==='fulfilled')this.setData({batchCapacity:capacity.value});else this.setData({capacityError:capacity.reason.message || '接单名额加载失败'});
     } catch(error){if(sequence===this._ordersSequence)this.setData({orderError:error.message});}
     finally{if(sequence===this._ordersSequence)this.setData({orderLoading:false});}
@@ -283,9 +405,9 @@ Page({
   // 一键切换上下架/沽清状态
   toggleProductStatus: function (e) {
     const that = this;
-    const dishId = e.currentTarget.dataset.id;
-    const index = e.currentTarget.dataset.index;
+    const dishId = Number(e.currentTarget.dataset.id);
     const newStatus = e.detail.value ? 1 : 0;
+    const realIndex = (that.data.dishes || []).findIndex(d => d.id === dishId);
 
     app.callContainer({
       path: '/api/admin/product/toggle',
@@ -301,17 +423,17 @@ Page({
           icon: 'success'
         });
         const dishes = [...that.data.dishes];
-        dishes[index].status = newStatus;
-        that.setData({ dishes });
+        if (realIndex >= 0) dishes[realIndex] = Object.assign({}, dishes[realIndex], { status: newStatus });
+        that.setData({ dishes, filteredDishes: that.applyDishFilters(dishes) });
       } else {
         wx.showToast({ title: res.msg || '切换失败', icon: 'none' });
         const dishes = [...that.data.dishes];
-        that.setData({ dishes });
+        that.setData({ dishes, filteredDishes: that.applyDishFilters(dishes) });
       }
     }).catch(() => {
       wx.showToast({ title: '操作失败，请重试', icon: 'none' });
       const dishes = [...that.data.dishes];
-      that.setData({ dishes });
+      that.setData({ dishes, filteredDishes: that.applyDishFilters(dishes) });
     });
   },
 
@@ -397,12 +519,17 @@ Page({
   },
   onInputFormOriginPrice: function (e) {
     if(this.data.dishSaving)return;
-    const origin = parseFloat(e.detail.value) || 0;
-    const member = (origin * 0.88).toFixed(2);
-    this.setData({
-      'dishForm.origin_price': e.detail.value,
-      'dishForm.member_price': member
-    });
+    const val = e.detail.value;
+    if (!this.data.isEditingDish) {
+      const origin = parseFloat(val) || 0;
+      const member = origin > 0 ? (origin * 0.88).toFixed(2) : '';
+      this.setData({
+        'dishForm.origin_price': val,
+        'dishForm.member_price': member
+      });
+    } else {
+      this.setData({ 'dishForm.origin_price': val });
+    }
   },
   onInputFormMemberPrice: function (e) {
     if(this.data.dishSaving)return;
@@ -530,7 +657,9 @@ Page({
     if (append && (this.data.memberLoading || !this.data.memberNextCursor)) return;
     const sequence = this._memberSequence = (this._memberSequence || 0) + 1;
     const kw = (this.data.memberKeyword || '').trim();
+    const isMemberFilter = this.data.memberFilterIsMember;
     let url = '/api/admin/members?keyword=' + encodeURIComponent(kw);
+    if (isMemberFilter === '0' || isMemberFilter === '1') url += '&is_member=' + isMemberFilter;
     if (append) url += '&before_id=' + this.data.memberNextCursor;
     this.setData({memberLoading:true, memberError:''});
     try {
@@ -546,6 +675,33 @@ Page({
     }
   },
   moreMembers: function () { this.loadMembers(undefined, true); },
+  changeMemberFilter: function (e) {
+    const filter = String(e.currentTarget.dataset.filter || '');
+    if (filter === this.data.memberFilterIsMember) return;
+    this.setData({ memberFilterIsMember: filter });
+    this.loadMembers();
+  },
+  openAdjustLogsModal: async function (e) {
+    const member = e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.member;
+    const userId = member ? member.id : '';
+    this.setData({
+      showAdjustLogsModal: true,
+      adjustLogsLoading: true,
+      adjustLogs: [],
+      adjustLogsMemberName: member ? (member.nickname || '该客官') : '全部客官'
+    });
+    try {
+      const rows = await app.api('/api/admin/member/adjust-logs' + (userId ? '?user_id=' + userId : ''));
+      this.setData({ adjustLogs: Array.isArray(rows) ? rows : [] });
+    } catch (err) {
+      wx.showToast({ title: err.message || '流水加载失败', icon: 'none' });
+    } finally {
+      this.setData({ adjustLogsLoading: false });
+    }
+  },
+  closeAdjustLogsModal: function () {
+    this.setData({ showAdjustLogsModal: false });
+  },
 
   onInputMemberKeyword: function (e) {
     this.setData({ memberKeyword: e.detail.value });
@@ -640,6 +796,10 @@ Page({
 
     if (isNaN(amt) || amt === 0) {
       wx.showToast({ title: '请输入有效变动数值(可填负数)', icon: 'none' });
+      return;
+    }
+    if (form.adjust_type === 'NORMAL_POINT' && !Number.isInteger(amt)) {
+      wx.showToast({ title: '普通积分变动须为整数', icon: 'none' });
       return;
     }
     if (!form.reason || !form.reason.trim()) {

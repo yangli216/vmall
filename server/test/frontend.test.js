@@ -555,3 +555,103 @@ test('index checkout autofills default address and guides address selection on s
  assert.equal(storage.get('pandou_contact').receiverPhone, '13912345678');
 });
 
+test('admin workbench supports member filter, integer point validation, adjust logs and safe dish filtering/editing', async () => {
+ const requests = [], toasts = [], copies = [];
+ const { page } = loadPage('admin', {
+  api: async (path, method, body) => {
+   requests.push({ path, method, body });
+   if (path.startsWith('/api/admin/members')) return { list: [{ id: 1, is_member: 1 }], total: 1, next_cursor: null, summary: { total_users: 1 } };
+   if (path.startsWith('/api/admin/member/adjust-logs')) return [{ id: 9, account_type: 'NORMAL_POINT', amount: '10', before_val: '0', after_val: '10', reason: '老客回馈' }];
+   if (path === '/api/admin/product/stock') return { ok: true };
+   return [];
+  },
+  callContainer: async opts => { requests.push({ path: opts.path, method: opts.method, body: opts.data }); return { code: 0, data: [] }; }
+ }, {
+  showToast: o => toasts.push(o.title),
+  setClipboardData: o => { copies.push(o.data); if (o.success) o.success(); }
+ });
+
+ // Member filter passes is_member param
+ page.changeMemberFilter({ currentTarget: { dataset: { filter: '1' } } });
+ await new Promise(setImmediate);
+ assert.match(requests[0].path, /is_member=1/);
+
+ // Integer check prevents fractional normal point submission
+ page.data.currentMember = { id: 5, nickname: '老张' };
+ page.data.pointsForm = { adjust_type: 'NORMAL_POINT', amount: '12.5', reason: '测试小数拦截' };
+ await page.submitAdjustPoints();
+ assert.ok(toasts.some(t => /整数/.test(t)));
+ assert.equal(requests.filter(r => r.path === '/api/admin/member/adjust-points').length, 0);
+
+ // Adjust logs loader fetches audit rows
+ await page.openAdjustLogsModal({ currentTarget: { dataset: { member: { id: 5, nickname: '老张' } } } });
+ assert.equal(page.data.showAdjustLogsModal, true);
+ assert.equal(page.data.adjustLogs.length, 1);
+ assert.equal(page.data.adjustLogs[0].reason, '老客回馈');
+
+ // Editing existing product does NOT overwrite custom member_price when origin_price changes
+ page.openEditModal({ currentTarget: { dataset: { dish: { id: 2, title: '老卤牛肉', origin_price: '50.00', member_price: '39.90', category_id: 2, stock_qty: 10 } } } });
+ page.onInputFormOriginPrice({ detail: { value: '55.00' } });
+ assert.equal(page.data.dishForm.origin_price, '55.00');
+ assert.equal(page.data.dishForm.member_price, '39.90');
+
+ // Adding new product auto-calculates 88% member_price
+ page.openAddModal();
+ page.onInputFormOriginPrice({ detail: { value: '100' } });
+ assert.equal(page.data.dishForm.member_price, '88.00');
+
+ // Filtered product toggle updates the right dish by id, not filtered index
+ page.data.dishes = [
+  { id: 10, title: '招牌鸡爪', category_id: 1, status: 1, stock_qty: 20 },
+  { id: 20, title: '卤鸭脖', category_id: 3, status: 1, stock_qty: 3 }
+ ];
+ page.changeProductStatusFilter({ currentTarget: { dataset: { status: 'LOW' } } });
+ assert.deepEqual(Array.from(page.data.filteredDishes, d => d.id), [20]);
+ page.toggleProductStatus({ currentTarget: { dataset: { id: 20, index: 0 } }, detail: { value: false } });
+ await new Promise(setImmediate);
+ assert.equal(page.data.dishes[0].status, 1);
+ assert.equal(page.data.dishes[1].status, 0);
+
+ // Stock modal quick adjust and save
+ page.data.orderDate = '2026-11-25';
+ page.openStockModal({ currentTarget: { dataset: { dish: page.data.dishes[1] } } });
+ assert.equal(page.data.stockInputVal, '3');
+ page.quickAdjustStock({ currentTarget: { dataset: { delta: 10 } } });
+ assert.equal(page.data.stockInputVal, '13');
+ await page.saveStockModal();
+ const stockReq = requests.find(r => r.path === '/api/admin/product/stock');
+ assert.equal(stockReq.body.product_id, 20);
+ assert.equal(stockReq.body.available_qty, 13);
+
+ // Prep summary copy
+ page.data.prepSummary = [{ product_id: 1, product_title: '五香牛肉', quantity: 4 }];
+ page.data.prepTotalQty = 4;
+ page.copyPrepSummary();
+ assert.match(copies[0], /五香牛肉 × 4 份/);
+ assert.match(copies[0], /共 4 份/);
+});
+
+test('report translates SIGN_IN flows and shifts dates cleanly', async () => {
+ const requests = [];
+ const { page } = loadPage('report', {
+  api: async path => {
+   requests.push(path);
+   if (path.includes('/daily')) return { date: path.slice(-10), cash: {}, benefits: [{ account_type: 'NORMAL_POINT', event_type: 'SIGN_IN', amount: '10', unit: '分', records: 1 }] };
+   return { list: [], next_cursor: null };
+  }
+ });
+ page.onLoad();
+ await new Promise(setImmediate);
+ assert.equal(page.data.summary.benefits[0].event_title, '每日签到赠送');
+
+ const beforeDate = page.data.date;
+ page.shiftDate({ currentTarget: { dataset: { delta: -1 } } });
+ await new Promise(setImmediate);
+ assert.notEqual(page.data.date, beforeDate);
+ assert.ok(requests.some(p => p.includes('date=' + page.data.date)));
+
+ page.goToday();
+ assert.equal(page.data.date, beforeDate);
+});
+
+
