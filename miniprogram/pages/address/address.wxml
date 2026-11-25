@@ -35,6 +35,10 @@
             <text class="user-name">{{item.name}}</text>
             <text class="user-phone">{{item.phone || '未留手机号'}}</text>
           </view>
+          <view class="card-range-row" wx:if="{{item.rangeWarning || item.distanceText}}">
+            <text wx:if="{{!item.inRange}}" class="range-tag warn">⚠️ {{item.rangeWarning}}</text>
+            <text wx:elif="{{item.distanceText}}" class="range-tag ok">📍 {{item.distanceText}}</text>
+          </view>
         </view>
         <!-- 右侧极简编辑图标 -->
         <view class="card-edit-btn" catchtap="openEditForm" data-id="{{item.id}}">
@@ -82,9 +86,14 @@
         </view>
       </view>
 
-      <!-- 作坊可自送小区白名单快捷点选 -->
+      <!-- 定位距离与配送范围提示 -->
+      <view class="form-range-hint {{formOutOfRange ? 'warn' : 'ok'}}" wx:if="{{formRangeHint}}">
+        <text>{{formRangeHint}}</text>
+      </view>
+
+      <!-- 作坊可自送区域/街道关键词快捷点选 -->
       <view class="whitelist-areas-box" wx:if="{{deliveryAreas.length > 0}}">
-        <text class="wl-label">可自送小区（点选直填）：</text>
+        <text class="wl-label">可自送区域关键词（点选参考，地图定位可跳过）：</text>
         <view class="wl-chips">
           <text
             class="wl-chip {{form.area === areaItem ? 'selected' : ''}}"

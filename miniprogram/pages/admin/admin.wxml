@@ -477,9 +477,12 @@
           <input disabled="{{configLoading || configSaving}}" class="config-input-box" placeholder="如：今日 16:30 准时出锅，现捞保温直达" value="{{config.WORKSHOP_ANNOUNCEMENT}}" bindinput="onInputAnnouncement" />
         </view>
         <view class="config-block">
-          <text class="config-title">门店自提地址</text>
+          <view class="config-label-row">
+            <text class="config-title">门店自提与发货地址</text>
+            <text class="config-action-pill" bindtap="pickWorkshopLocation">📍 地图校准坐标</text>
+          </view>
           <textarea disabled="{{configLoading || configSaving}}" class="config-textarea-box" value="{{config.WORKSHOP_ADDRESS}}" data-field="WORKSHOP_ADDRESS" bindinput="onConfigInput" maxlength="255" placeholder="请填写省市区、街道和门牌号" />
-          <text class="config-desc">用于新建自提订单，历史订单保留原取餐地址。</text>
+          <text class="config-desc">用于新建自提订单及计算自送距离（当前坐标：{{config.WORKSHOP_LAT && config.WORKSHOP_LNG ? config.WORKSHOP_LAT + ', ' + config.WORKSHOP_LNG : '未校准'}}）。</text>
         </view>
         <view class="config-row-between">
           <text class="config-title">掌柜 / 自送联系人</text>
@@ -532,9 +535,17 @@
           <text class="config-title">免运费满额门槛 (元)</text>
           <input disabled="{{configLoading || configSaving}}" type="digit" class="config-input-inline" value="{{config.DELIVERY_FREE_THRESHOLD}}" bindinput="onInputFreeThreshold" />
         </view>
+        <view class="config-row-between">
+          <text class="config-title">最大自送半径 (公里，0不限)</text>
+          <input disabled="{{configLoading || configSaving}}" type="digit" class="config-input-inline" value="{{config.DELIVERY_MAX_KM}}" data-field="DELIVERY_MAX_KM" bindinput="onConfigInput" placeholder="如：5" />
+        </view>
         <view class="config-block">
-          <text class="config-title">可自送小区白名单 (逗号分隔，留空仅自提)</text>
-          <textarea disabled="{{configLoading || configSaving}}" class="config-textarea-box" value="{{config.DELIVERY_AREAS}}" data-field="DELIVERY_AREAS" bindinput="onConfigInput" maxlength="255" placeholder="如：春天花园,锦绣江南" />
+          <view class="config-label-row">
+            <text class="config-title">可自送区域/街道关键词 (逗号分隔)</text>
+            <text class="config-action-pill" bindtap="fillLinanCoreAreas">一键填临安主城区</text>
+          </view>
+          <textarea disabled="{{configLoading || configSaving}}" class="config-textarea-box" value="{{config.DELIVERY_AREAS}}" data-field="DELIVERY_AREAS" bindinput="onConfigInput" maxlength="255" placeholder="如：临安区,锦城街道,锦北街道,锦南街道,青山湖街道" />
+          <text class="config-desc">地图定位选址按公里半径校验；手填及微信导入地址需包含以上任一关键词。两者均留空则仅支持到店自提。</text>
         </view>
       </view>
 

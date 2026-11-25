@@ -46,6 +46,9 @@ test('public config and accepted writes exclude administrator credentials',()=>{
  for(const value of ['-1','1.5','10000','abc'])assert.throws(()=>validateConfigs({BATCH_MAX_ORDERS:value}));
  assert.equal(validateConfigs({BATCH_MAX_ORDERS:'100'}).BATCH_MAX_ORDERS,'100');
  assert.deepEqual(validateConfigs({COMMISSION_RATE:'0.03',DELIVERY_AREAS:'钱王新村'}),{COMMISSION_RATE:'0.03',DELIVERY_AREAS:'钱王新村'});
+ assert.deepEqual(validateConfigs({DELIVERY_MAX_KM:'5',WORKSHOP_LAT:'30.2339',WORKSHOP_LNG:'119.7247'}),{DELIVERY_MAX_KM:'5',WORKSHOP_LAT:'30.2339',WORKSHOP_LNG:'119.7247'});
+ for(const badKm of ['-1','55','3.15','abc'])assert.throws(()=>validateConfigs({DELIVERY_MAX_KM:badKm}));
+ for(const badLat of ['91','-91','abc'])assert.throws(()=>validateConfigs({WORKSHOP_LAT:badLat}));
 });
 test('batch cutoff and dates use China timezone, independent of server timezone',()=>{
  const c={...DEFAULT_CONFIG};
@@ -59,6 +62,14 @@ test('delivery whitelist and complete contacts are enforced before ordering',()=
  assert.equal(validateFulfillment(body,c,now).date,'2026-11-18');
  for(const changes of [{receiver_name:''},{receiver_phone:'123'},{delivery_area:'外地'},{receiver_address:'其他地址123'},{batch_date:'2026-11-20'},{delivery_type:3}])assert.throws(()=>validateFulfillment({...body,...changes},c,now));
  assert.throws(()=>validateFulfillment(body,{...c,DELIVERY_AREAS:''},now));
+
+ // Radius mode: nearby map coordinates pass even without matching area keyword; far coordinates are rejected
+ const dualCfg={...DEFAULT_CONFIG,DELIVERY_AREAS:'锦城街道,临安区',WORKSHOP_LAT:'30.2339',WORKSHOP_LNG:'119.7247',DELIVERY_MAX_KM:'5'};
+ assert.equal(validateFulfillment({...body,receiver_address:'钱王财富中心8楼',delivery_area:'钱王财富中心',delivery_lat:30.2401,delivery_lng:119.7302},dualCfg,now).date,'2026-11-18');
+ assert.throws(()=>validateFulfillment({...body,receiver_address:'滨江区坚塔街708号 创业慧康大厦',delivery_area:'创业慧康大厦',delivery_lat:30.1812,delivery_lng:120.1755},dualCfg,now),/超出5公里自送范围/);
+ // Without coordinates: Lin'an street/district keyword passes, outside region rejects
+ assert.equal(validateFulfillment({...body,receiver_address:'临安区 钱王街88号',delivery_area:'临安区'},dualCfg,now).date,'2026-11-18');
+ assert.throws(()=>validateFulfillment({...body,receiver_address:'滨江区坚塔街708号 创业慧康大厦',delivery_area:'创业慧康大厦'},dualCfg,now),/不在可自送区域范围内/);
 });
 test('production identity ignores query and development headers',()=>{
  assert.equal(identity({'x-dev-openid':'test'},{NODE_ENV:'production',ALLOW_DEV_AUTH:'true'}),undefined);

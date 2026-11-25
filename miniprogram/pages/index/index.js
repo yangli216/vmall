@@ -4,7 +4,7 @@ const {captureReferral} = require('../../utils/referral');
 const addressUtil = require('../../utils/address');
 Page({
   data: {
-    deliveryType: 2, destAddress: '', receiverName: '', receiverPhone: '', deliveryArea: '',
+    deliveryType: 2, destAddress: '', receiverName: '', receiverPhone: '', deliveryArea: '', deliveryLat: null, deliveryLng: null,
     currentBatchText: '正在加载可预约批次', slots: [], slotIndex: 0, fullBatchText:'', deliveryAreas: [], config: {},
     categories: [{ id: 0, name: '全部卤味' }, { id: 1, name: '招牌必吃', iconNormal:'/images/category/cat_1.png',iconActive:'/images/category/cat_1_active.png' },
       { id: 2, name: '秘制酱牛肉',iconNormal:'/images/category/cat_2.png',iconActive:'/images/category/cat_2_active.png' },
@@ -32,6 +32,8 @@ Page({
     this._contactRevision=revision;
     const contact=wx.getStorageSync('pandou_contact'),fields={};
     ['receiverName','receiverPhone','destAddress','deliveryArea'].forEach(key=>{fields[key]=contact && typeof contact[key]==='string'?contact[key]:'';});
+    fields.deliveryLat = contact && typeof contact.deliveryLat === 'number' ? contact.deliveryLat : null;
+    fields.deliveryLng = contact && typeof contact.deliveryLng === 'number' ? contact.deliveryLng : null;
     this.requestId=null;this.setData(fields);this.invalidateBill();
     if (this.data.isDrawerOpen && this.data.cartCount > 0) this.calculateBill();
   },
@@ -122,7 +124,9 @@ Page({
           destAddress: address,
           receiverName: def.name || '',
           receiverPhone: def.phone || '',
-          deliveryArea: matchedArea
+          deliveryArea: matchedArea,
+          deliveryLat: typeof def.latitude === 'number' ? def.latitude : null,
+          deliveryLng: typeof def.longitude === 'number' ? def.longitude : null
         });
         this.saveContact();
       }
@@ -159,7 +163,9 @@ Page({
           destAddress: address,
           receiverName: def.name || '',
           receiverPhone: def.phone || '',
-          deliveryArea: matchedArea
+          deliveryArea: matchedArea,
+          deliveryLat: typeof def.latitude === 'number' ? def.latitude : null,
+          deliveryLng: typeof def.longitude === 'number' ? def.longitude : null
         });
         this.saveContact();
       }
@@ -236,7 +242,7 @@ Page({
   stopBubble() {},
   onContactInput(e) { if(this.data.submitting)return; const field = e.currentTarget.dataset.field; if (!['receiverName','receiverPhone','destAddress'].includes(field)) return; this.setData({ [field]: e.detail.value }); this.requestId = null; this.saveContact(); },
   onAreaChange(e) { if(this.data.submitting)return; this.setData({ deliveryArea: this.data.deliveryAreas[Number(e.detail.value)] }); this.requestId = null; this.saveContact(); },
-  saveContact() { wx.setStorageSync('pandou_contact', { receiverName: this.data.receiverName, receiverPhone: this.data.receiverPhone, destAddress: this.data.destAddress, deliveryArea: this.data.deliveryArea }); },
+  saveContact() { wx.setStorageSync('pandou_contact', { receiverName: this.data.receiverName, receiverPhone: this.data.receiverPhone, destAddress: this.data.destAddress, deliveryArea: this.data.deliveryArea, deliveryLat: this.data.deliveryLat ?? null, deliveryLng: this.data.deliveryLng ?? null }); },
   toggleNormalPoints(e) { if(this.data.submitting)return; this.setData({ useNormalPoints: e.detail.value }); this.calculateBill(); },
   toggleRedPoints(e) { if(this.data.submitting)return; this.setData({ useRedPoints: e.detail.value }); this.calculateBill(); },
   onRedAmountChange(e) { if(this.data.submitting)return; this.setData({ inputRedAmount: e.detail.value }); this.calculateBill(); },
@@ -266,8 +272,15 @@ Page({
         this.openAddressPicker();
         return;
       }
-      if (!this.data.deliveryArea || !this.data.destAddress.includes(this.data.deliveryArea)) {
-        return wx.showToast({ title: '收货地址需在配送支持的小区内', icon: 'none' });
+      const cfg = Object.assign({ delivery_areas: this.data.deliveryAreas }, this.data.config || {});
+      const range = addressUtil.checkDeliveryRange({
+        area: this.data.deliveryArea,
+        detail: this.data.destAddress,
+        latitude: this.data.deliveryLat,
+        longitude: this.data.deliveryLng
+      }, cfg);
+      if (!range.ok) {
+        return wx.showToast({ title: range.reason || '地址不在可自送范围内', icon: 'none' });
       }
     } else {
       if (!/^1[3-9]\d{9}$/.test(receiverPhone)) {
@@ -279,6 +292,8 @@ Page({
       receiver_phone: receiverPhone,
       receiver_address: this.data.deliveryType === 1 ? this.data.destAddress : (this.data.config.WORKSHOP_ADDRESS || ''),
       delivery_area: this.data.deliveryArea || '',
+      delivery_lat: this.data.deliveryType === 1 && typeof this.data.deliveryLat === 'number' ? this.data.deliveryLat : null,
+      delivery_lng: this.data.deliveryType === 1 && typeof this.data.deliveryLng === 'number' ? this.data.deliveryLng : null,
       order_remark: this.data.orderRemark || '',
       expected_pay_amount: this.data.calcResult.final_pay_amount
     });

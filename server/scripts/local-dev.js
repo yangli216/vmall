@@ -90,7 +90,7 @@ async function start(){
     if(fresh){
       await root.query("UPDATE t_product SET stock_qty=40,specification='份量见菜品名称（联调样品）',storage_note='本机测试商品，不用于实际销售'");
       const settings={SHOP_OPEN:'1',WORKSHOP_ANNOUNCEMENT:'本机联调环境：模拟支付不会扣款，所有余额均为测试数据',
-        DELIVERY_AREAS:'联调小区,测试小区',WORKSHOP_ADDRESS:'联调路1号（测试自提地址）',DELIVERY_PERSON_NAME:'测试配送员',DELIVERY_PERSON_PHONE:'13900000000'};
+        DELIVERY_AREAS:'临安区,锦城街道,锦北街道,锦南街道,青山湖街道,玲珑街道',WORKSHOP_ADDRESS:'浙江省杭州市临安区锦城街道临天八弄36号',WORKSHOP_LAT:'30.2339',WORKSHOP_LNG:'119.7247',DELIVERY_MAX_KM:'5',DELIVERY_PERSON_NAME:'测试配送员',DELIVERY_PERSON_PHONE:'13900000000'};
       for(const [key,value] of Object.entries(settings))await root.execute(
         'INSERT INTO t_system_config(config_key,config_value) VALUES (?,?) ON DUPLICATE KEY UPDATE config_value=VALUES(config_value)',[key,value]);
     }

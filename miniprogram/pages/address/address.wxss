@@ -141,6 +141,50 @@ button::after {
   color: #4B4036;
 }
 
+.card-range-row {
+  margin-top: 2rpx;
+}
+
+.range-tag {
+  display: inline-block;
+  font-size: 20rpx;
+  padding: 3rpx 10rpx;
+  border-radius: 8rpx;
+  font-weight: 600;
+}
+
+.range-tag.ok {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1rpx solid #A7F3D0;
+}
+
+.range-tag.warn {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1rpx solid #FECACA;
+}
+
+.form-range-hint {
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 12rpx 16rpx;
+  border-radius: 12rpx;
+  margin-top: 12rpx;
+}
+
+.form-range-hint.ok {
+  background: #ECFDF5;
+  color: #047857;
+  border: 1rpx solid #A7F3D0;
+}
+
+.form-range-hint.warn {
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1rpx solid #FECACA;
+}
+
 .card-edit-btn {
   width: 68rpx;
   height: 68rpx;

@@ -1,5 +1,5 @@
 const app=getApp();
-const keys=['MEMBER_ENTRY_MODE','MEMBER_ENTRY_THRESHOLD','DELIVERY_BASE_FEE','DELIVERY_FREE_THRESHOLD','DELIVERY_PERSON_PHONE','DELIVERY_PERSON_NAME','WORKSHOP_ADDRESS','WORKSHOP_ANNOUNCEMENT','DELIVERY_AREAS','BATCH_SCHEDULE_TIME','BATCH_CUTOFF_TIME','BOOKING_DAYS','SHOP_OPEN','BATCH_MAX_ORDERS','ORDER_EXPIRE_MINUTES'];
+const keys=['MEMBER_ENTRY_MODE','MEMBER_ENTRY_THRESHOLD','DELIVERY_BASE_FEE','DELIVERY_FREE_THRESHOLD','DELIVERY_PERSON_PHONE','DELIVERY_PERSON_NAME','WORKSHOP_ADDRESS','WORKSHOP_LAT','WORKSHOP_LNG','DELIVERY_MAX_KM','WORKSHOP_ANNOUNCEMENT','DELIVERY_AREAS','BATCH_SCHEDULE_TIME','BATCH_CUTOFF_TIME','BOOKING_DAYS','SHOP_OPEN','BATCH_MAX_ORDERS','ORDER_EXPIRE_MINUTES'];
 const methods={
   editConfigFields(fields){
     if(!this.data.configLoaded || this.data.configLoading || this.data.configSaving || this._configUnloaded)return;
@@ -38,6 +38,28 @@ const methods={
   onInputFreeThreshold(e){this.editConfigFields({'config.DELIVERY_FREE_THRESHOLD':e.detail.value});},
   onInputPhone(e){this.editConfigFields({'config.DELIVERY_PERSON_PHONE':e.detail.value});},
   onInputAnnouncement(e){this.editConfigFields({'config.WORKSHOP_ANNOUNCEMENT':e.detail.value});},
+  fillLinanCoreAreas(){
+    this.editConfigFields({'config.DELIVERY_AREAS':'临安区,锦城街道,锦北街道,锦南街道,青山湖街道,玲珑街道'});
+    wx.showToast({title:'已填入临安主城区',icon:'none'});
+  },
+  pickWorkshopLocation(){
+    if(!this.data.configLoaded || this.data.configLoading || this.data.configSaving || this._configUnloaded)return;
+    wx.chooseLocation({
+      success:res=>{
+        const addr=[res.address,res.name].filter(Boolean).join(' ').trim();
+        const updates={
+          'config.WORKSHOP_LAT':Number(res.latitude).toFixed(6),
+          'config.WORKSHOP_LNG':Number(res.longitude).toFixed(6)
+        };
+        if(addr)updates['config.WORKSHOP_ADDRESS']=addr.slice(0,255);
+        this.editConfigFields(updates);
+        wx.showToast({title:'门店坐标已更新，记得保存',icon:'none'});
+      },
+      fail:err=>{
+        if(!/cancel/i.test((err&&err.errMsg)||''))wx.showToast({title:'未获取到位置，请检查定位权限',icon:'none'});
+      }
+    });
+  },
   async saveAllConfigs(){
     if(!this.data.configLoaded || this.data.configLoading || this.data.configSaving || this._configUnloaded)return;
     const configs={};keys.forEach(key=>{configs[key]=this.data.config[key];});

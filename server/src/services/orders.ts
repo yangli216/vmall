@@ -25,7 +25,9 @@ export async function create(userId: number, body: any) {
   requireValue(typeof body.request_id === 'string' && /^[A-Za-z0-9_-]{16,64}$/.test(body.request_id), '缺少有效下单请求号，请重新结算');
   requireValue(body.order_remark === undefined || (typeof body.order_remark === 'string' && body.order_remark.length <= 255), '备注最多255字');
   const canonical = { items, delivery_type: body.delivery_type, receiver_name: body.receiver_name, receiver_phone: body.receiver_phone,
-    receiver_address: body.receiver_address || '', delivery_area: body.delivery_area || '', batch_date: body.batch_date, batch_time: body.batch_time,
+    receiver_address: body.receiver_address || '', delivery_area: body.delivery_area || '',
+    delivery_lat: body.delivery_lat ?? null, delivery_lng: body.delivery_lng ?? null,
+    batch_date: body.batch_date, batch_time: body.batch_time,
     use_normal_points: body.use_normal_points === true, use_red_packet_points: body.use_red_packet_points === true,
     custom_red_amount: body.custom_red_amount ?? null, order_remark: body.order_remark || '', expected_pay_amount: body.expected_pay_amount };
   const hash = createHash('sha256').update(JSON.stringify(canonical)).digest('hex');

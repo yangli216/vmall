@@ -560,6 +560,29 @@ test('standalone address page supports whitelist pick, WeChat import, map locate
  assert.equal(shared.get('pandou_contact').receiverPhone,'13500002222');
  assert.equal(shared.get('pandou_contact').deliveryArea,'锦城小区');
 
+ // 4d. Hybrid range check: map coordinates validate radius and block out-of-range delivery before submit
+ addrPage.setData({ shopConfig: { DELIVERY_AREAS: '临安区,锦城街道', DELIVERY_MAX_KM: '5', WORKSHOP_LAT: '30.2339', WORKSHOP_LNG: '119.7247' } });
+ storageWx.chooseLocation = o => o.success({ name: '创业慧康大厦', address: '浙江省杭州市滨江区坚塔街708号', latitude: 30.1812, longitude: 120.1755 });
+ addrPage.openCreateForm();
+ await addrPage.locateOnMap();
+ assert.equal(addrPage.data.formOutOfRange, true);
+ assert.match(addrPage.data.formRangeHint, /超出5公里自送范围/);
+
+ storageWx.chooseLocation = o => o.success({ name: '临安宝龙广场', address: '浙江省杭州市临安区钱王街855号', latitude: 30.2401, longitude: 119.7302 });
+ await addrPage.locateOnMap();
+ assert.equal(addrPage.data.formOutOfRange, false);
+ addrPage.onFormInput({currentTarget:{dataset:{field:'name'}},detail:{value:'赵先生'}});
+ addrPage.onFormInput({currentTarget:{dataset:{field:'phone'}},detail:{value:'13600001122'}});
+ addrPage.saveForm();
+ assert.equal(shared.get('pandou_contact').deliveryLat, 30.2401);
+ assert.equal(shared.get('pandou_contact').deliveryLng, 119.7302);
+
+ // 4e. Admin settings presets fill Lin'an core areas cleanly
+ const {page:adminRangePage}=loadPage('admin',{api:async()=>({})});
+ adminRangePage.data.configLoaded=true;
+ adminRangePage.fillLinanCoreAreas();
+ assert.match(adminRangePage.data.config.DELIVERY_AREAS, /锦城街道/);
+
  // 5. Index checkout autofills default address and opens standalone page on submit without address
  indexPage.data.destAddress='';
  indexPage.data.calcReady=true;

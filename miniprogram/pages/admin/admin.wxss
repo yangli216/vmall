@@ -1367,6 +1367,15 @@ button::after {
 
 .config-val { font-weight: 700; color: #111827; font-size: 26rpx; }
 .config-val.red { color: #D9480F; }
+.config-action-pill {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #AA4624;
+  background: #FFF1E6;
+  border: 1rpx solid #FDBA74;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+}
 .config-desc { font-size: 22rpx; color: #8A7D70; line-height: 1.55; display: block; margin-top: 8rpx; }
 
 .segment-picker {

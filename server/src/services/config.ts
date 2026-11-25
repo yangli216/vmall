@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG: Record<string, string> = {
   RED_PACKET_MAX_DEDUCT_RATIO: '0.50', COMMISSION_RATE: '0.03',
   DELIVERY_BASE_FEE: '3.00', DELIVERY_FREE_THRESHOLD: '38.00',
   DELIVERY_AREAS: '', WORKSHOP_ADDRESS: '浙江省杭州市临安区锦城街道临天八弄36号',
+  WORKSHOP_LAT: '30.2339', WORKSHOP_LNG: '119.7247', DELIVERY_MAX_KM: '5',
   DELIVERY_PERSON_NAME: '潘师傅', DELIVERY_PERSON_PHONE: '13735518290',
   WORKSHOP_ANNOUNCEMENT: '', BATCH_SCHEDULE_TIME: '16:30', BATCH_CUTOFF_TIME: '16:00',
   BOOKING_DAYS: '1', SHOP_OPEN: '1', ORDER_EXPIRE_MINUTES: '15', BATCH_MAX_ORDERS:'0'
@@ -46,6 +47,15 @@ export function validateConfigs(input: unknown): Record<string, string> {
     if (key === 'SHOP_OPEN') requireValue(['0', '1'].includes(value), '营业状态无效');
     if (key === 'DELIVERY_PERSON_PHONE') requireValue(/^1[3-9]\d{9}$/.test(value), '联系电话格式无效');
     if (['WORKSHOP_ADDRESS', 'DELIVERY_PERSON_NAME'].includes(key)) requireValue(value.length > 0, '门店信息不能为空');
+    if (key === 'DELIVERY_MAX_KM') {
+      requireValue(/^\d{1,2}(\.\d)?$/.test(value) && Number(value) >= 0 && Number(value) <= 50, '自送半径须为0至50公里（最多一位小数，0表示不限距离）');
+    }
+    if (key === 'WORKSHOP_LAT') {
+      requireValue(value === '' || (/^-?\d{1,2}(\.\d{1,6})?$/.test(value) && Math.abs(Number(value)) <= 90), '作坊纬度格式无效');
+    }
+    if (key === 'WORKSHOP_LNG') {
+      requireValue(value === '' || (/^-?\d{1,3}(\.\d{1,6})?$/.test(value) && Math.abs(Number(value)) <= 180), '作坊经度格式无效');
+    }
     result[key] = value;
   }
   return result;
