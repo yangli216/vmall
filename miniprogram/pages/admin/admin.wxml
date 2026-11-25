@@ -205,13 +205,16 @@
         <text class="section-h2">菜品管理 <text class="dish-total">共{{dishes.length}}款（当前显示{{filteredDishes.length}}）</text></text>
         <text class="section-sub">上下架与定价 · 库存对应当前所选营业日</text>
       </view>
-      <button class="btn-add-dish btn-press" bindtap="openAddModal">＋ 新增</button>
+      <view class="products-header-actions">
+        <button class="btn-cat-manage btn-press" bindtap="openCategoryModal">🏷️ 分类维护</button>
+        <button class="btn-add-dish btn-press" bindtap="openAddModal">＋ 新增</button>
+      </view>
     </view>
 
     <!-- 分类与状态快捷筛选 -->
     <view class="product-filter-bar">
-      <picker class="prod-cat-picker" range="{{categoryOptions}}" range-key="name" value="{{productCategoryFilter}}" bindchange="changeProductCatFilter">
-        <view class="prod-cat-pill">{{categoryOptions[productCategoryFilter].name || '全部分类'}} ▾</view>
+      <picker class="prod-cat-picker" range="{{categoryOptions}}" range-key="name" value="{{productCategoryIndex}}" bindchange="changeProductCatFilter">
+        <view class="prod-cat-pill">{{categoryOptions[productCategoryIndex].name || '全部分类'}} ▾</view>
       </picker>
       <scroll-view scroll-x="true" show-scrollbar="{{false}}" class="prod-status-scroll">
         <view class="prod-status-inner">
@@ -605,8 +608,8 @@
         </view>
         <view class="form-row">
           <text class="form-label">分类</text>
-          <picker range="{{categoryNames}}" value="{{dishForm.category_id - 1}}" bindchange="onDishCategory">
-            <view class="form-picker-box">{{categoryNames[dishForm.category_id - 1] || '请选择分类'}} ▾</view>
+          <picker range="{{rawCategories}}" range-key="name" value="{{dishCategoryIndex}}" bindchange="onDishCategory">
+            <view class="form-picker-box">{{rawCategories[dishCategoryIndex].name || '请选择分类'}} ▾</view>
           </picker>
         </view>
         <view class="form-row photo-editor">
@@ -754,6 +757,41 @@
         <button class="btn-cancel" bindtap="closeReferrerModal">取消</button>
         <button class="btn-submit" bindtap="submitBindReferrer">确认绑定并关联</button>
       </view>
+    </view>
+  </view>
+
+  <!-- ==================== 弹窗 6: 菜品分类动态维护 ==================== -->
+  <view class="modal-backdrop" wx:if="{{showCategoryModal}}">
+    <view class="modal-box">
+      <view class="modal-title-row">
+        <text class="modal-title">菜品分类维护 ({{rawCategories.length}}类)</text>
+        <view class="modal-close" bindtap="closeCategoryModal">✕</view>
+      </view>
+
+      <view class="category-form-box">
+        <view class="cat-form-head">{{categoryForm.id ? '✏️ 编辑分类' : '＋ 新增分类'}}</view>
+        <view class="cat-form-row">
+          <input class="form-input cat-name-input" placeholder="分类名称（如：凉拌素菜）" maxlength="30" value="{{categoryForm.name}}" data-field="name" bindinput="onCategoryFieldInput" />
+          <input class="form-input cat-sort-input" type="number" placeholder="排序(越大越靠前)" maxlength="4" value="{{categoryForm.sort_order}}" data-field="sort_order" bindinput="onCategoryFieldInput" />
+        </view>
+        <view class="cat-form-btns">
+          <button wx:if="{{categoryForm.id}}" class="btn-wk-secondary btn-press" disabled="{{categorySaving}}" bindtap="cancelEditCategory">取消编辑</button>
+          <button class="btn-wk-primary btn-press" loading="{{categorySaving}}" disabled="{{categorySaving}}" bindtap="saveCategoryForm">{{categoryForm.id ? '保存修改' : '添加分类'}}</button>
+        </view>
+      </view>
+
+      <scroll-view scroll-y class="logs-scroll-list cat-list-scroll">
+        <view class="cat-manage-row" wx:for="{{rawCategories}}" wx:key="id">
+          <view class="cat-row-info">
+            <text class="cat-row-name">{{item.name}}</text>
+            <text class="cat-row-meta">ID:{{item.id}} · 排序权重:{{item.sort_order}}</text>
+          </view>
+          <view class="cat-row-actions">
+            <view class="btn-wk-secondary btn-press" data-cat="{{item}}" bindtap="editCategoryItem">编辑</view>
+            <view class="btn-wk-danger-outline btn-press" data-cat="{{item}}" bindtap="confirmDeleteCategory">删除</view>
+          </view>
+        </view>
+      </scroll-view>
     </view>
   </view>
 

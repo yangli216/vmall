@@ -658,6 +658,27 @@ button::after {
   border: 0;
 }
 
+.products-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  flex-shrink: 0;
+}
+
+.btn-cat-manage {
+  flex: none;
+  width: auto !important;
+  padding: 14rpx 18rpx !important;
+  font-size: 23rpx !important;
+  line-height: 1.2 !important;
+  border-radius: 14rpx !important;
+  background: #FFFFFF !important;
+  color: #5C5044 !important;
+  border: 1rpx solid #DED5C9 !important;
+  font-weight: 600;
+  margin: 0 !important;
+}
+
 .products-section .btn-add-dish {
   flex: none;
   width: auto !important;
@@ -1608,4 +1629,80 @@ button::after {
 
 .config-error {
   color: #B42318;
+}
+
+/* 菜品分类维护弹窗 */
+.category-form-box {
+  background: #FAF8F5;
+  border: 1rpx solid #EAE3DA;
+  border-radius: 16rpx;
+  padding: 18rpx;
+  margin-bottom: 18rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.cat-form-head {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #4A3D32;
+}
+
+.cat-form-row {
+  display: flex;
+  gap: 10rpx;
+}
+
+.cat-name-input {
+  flex: 1.8;
+}
+
+.cat-sort-input {
+  flex: 1;
+  text-align: center;
+}
+
+.cat-form-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12rpx;
+}
+
+.cat-list-scroll {
+  max-height: 44vh;
+}
+
+.cat-manage-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #F0ECE6;
+}
+
+.cat-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+  flex: 1;
+}
+
+.cat-row-name {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: #2E2925;
+}
+
+.cat-row-meta {
+  font-size: 21rpx;
+  color: #8A7D70;
+}
+
+.cat-row-actions {
+  display: flex;
+  gap: 10rpx;
+  flex-shrink: 0;
 }

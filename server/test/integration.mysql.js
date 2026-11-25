@@ -98,6 +98,22 @@ test('MySQL8 migration, live HTTP, competing last-item orders, zero-payment idem
     const malformed=await fetch(base+'/api/admin/product/image',{method:'POST',headers:{'content-type':'application/json','x-dev-openid':'test-admin'},body:'{bad'});assert.equal(malformed.status,400);
    }finally{imageService.productImageStorage.put=savedPut;envKeys.forEach((k,i)=>original[i]===undefined?delete process.env[k]:process.env[k]=original[i]);}
   });
+  await t.test('product categories support CRUD, cascade product names and block deletion when used',async()=>{
+   assert.equal((await api('/api/admin/category/add',{name:'非管理员'},'buyer-a')).code,403);
+   const added=await api('/api/admin/category/add',{name:'凉拌时蔬',sort_order:88},'test-admin');
+   assert.equal(added.code,0);const catId=added.data.id;
+   assert.equal((await api('/api/admin/category/add',{name:'凉拌时蔬'},'test-admin')).code,409);
+   const prod=await api('/api/admin/product/add',{title:'凉拌黄瓜',origin_price:'12.00',member_price:'10.00',category_id:catId,stock_qty:5},'test-admin');
+   assert.equal(prod.code,0);
+   assert.equal((await api('/api/admin/category/delete',{id:catId},'test-admin')).code,409);
+   assert.equal((await api('/api/admin/category/update',{id:catId,name:'爽口凉拌',sort_order:90},'test-admin')).code,0);
+   const list=(await api('/api/products?category_id='+catId,null,'buyer-a')).data;
+   assert.equal(list[0].category_name,'爽口凉拌');
+   assert.equal((await api('/api/admin/product/delete',{id:prod.data.id},'test-admin')).code,0);
+   assert.equal((await api('/api/admin/category/delete',{id:catId},'test-admin')).code,0);
+   const cats=(await api('/api/categories',null,'buyer-a')).data;
+   assert.equal(cats.some(c=>c.id===catId),false);
+  });
   await t.test('daily sign in grants points once per day, prevents duplicates and records ledger flow',async()=>{
    const who='signin-buyer';await api('/api/user/info',null,who);
    const initialStatus=await api('/api/user/signin-status',null,who);
@@ -544,6 +560,8 @@ test('MySQL8 migration, live HTTP, competing last-item orders, zero-payment idem
     fs.copyFileSync(path.join(__dirname,'../migrations/009_report_payment_amounts.sql'),path.join(stage,'migrations/009_report_payment_amounts.sql'));run();run();
     fs.copyFileSync(path.join(__dirname,'../migrations/010_daily_signin.sql'),path.join(stage,'migrations/010_daily_signin.sql'));run();run();
     const [signins]=await upgrade.query('SELECT COUNT(*) AS total FROM t_user_sign_in');assert.equal(signins[0].total,0);
+    fs.copyFileSync(path.join(__dirname,'../migrations/011_product_categories.sql'),path.join(stage,'migrations/011_product_categories.sql'));run();run();
+    const [cats]=await upgrade.query('SELECT COUNT(*) AS total FROM t_product_category WHERE is_deleted=0');assert.equal(cats[0].total,5);
     const [amounts]=await upgrade.execute('SELECT payer_paid_amount,payer_refund_amount FROM t_order WHERE id=?',[completed.insertId]);assert.equal(amounts[0].payer_paid_amount,null);assert.equal(amounts[0].payer_refund_amount,null);
     const [zeros]=await upgrade.query("SELECT order_sn,payer_paid_amount,payer_refund_amount FROM t_order WHERE order_sn LIKE 'UPGRADE-ZERO-%'");
     const zeroRefund=zeros.find(r=>r.order_sn==='UPGRADE-ZERO-REFUND');assert.equal(Number(zeroRefund.payer_paid_amount),0);assert.equal(Number(zeroRefund.payer_refund_amount),0);

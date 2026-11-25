@@ -23,6 +23,13 @@ Page({
     activityQueues:null,activityError:'',activityCheckedAt:'',newPaidCount:0,newSupportCount:0,
     orderLoading:false,orderError:'',prepError:'',capacityError:'',batchCapacity:null,orderFilterIndex:0,orderDeliveryIndex:0,orderDeliveryNames:['全部取餐方式','作坊自送','到店自提'],
     orderFilters:[{label:'全部订单',value:''},{label:'待付款',value:'10'},{label:'待备餐',value:'20'},{label:'待取餐',value:'25'},{label:'配送中',value:'30'},{label:'已完成',value:'40'},{label:'退款处理中',value:'70'},{label:'已退款/已取消',value:'50,60'}],
+    rawCategories: [
+      { id: 1, name: '招牌必吃', sort_order: 50 },
+      { id: 2, name: '秘制酱牛肉', sort_order: 40 },
+      { id: 3, name: '麻辣鸭副件', sort_order: 30 },
+      { id: 4, name: '爽脆下酒菜', sort_order: 20 },
+      { id: 5, name: '手工饮品', sort_order: 10 }
+    ],
     categoryNames: ['招牌必吃','秘制酱牛肉','麻辣鸭副件','爽脆下酒菜','手工饮品'],
     categoryOptions: [
       { id: 0, name: '全部分类' },
@@ -35,7 +42,12 @@ Page({
     dishes: [],
     filteredDishes: [],
     productCategoryFilter: 0,
+    productCategoryIndex: 0,
     productStatusFilter: 'ALL',
+    dishCategoryIndex: 0,
+    showCategoryModal: false,
+    categoryForm: { id: 0, name: '', sort_order: '0' },
+    categorySaving: false,
     pendingOrders: [],
     dispatchableCount: 0,
     prepTotalQty: 0,
@@ -149,11 +161,11 @@ Page({
       await this.loadConfigs();
       if(this._configUnloaded)return;
       if(!this.data.configLoaded){this.setData({loading:false,orderError:'请先重新读取营业设置，再查看批次订单'});return;}
-      this.loadDishes();this.loadPendingOrders();this.loadMembers();
+      this.loadCategories();this.loadDishes();this.loadPendingOrders();this.loadMembers();
     } catch(error) {wx.showModal({title:'掌柜管理',content:error.message,showCancel:false,success:()=>wx.navigateBack()});}
   },
   openReport:function(){wx.navigateTo({url:'/pages/report/report'});},
-  changeAdminTab: function(e) {if(this.data.configSaving)return;const tab=e.currentTarget.dataset.tab;this.setData({activeTab:tab});if(tab==='support')this.loadSupportTickets();if(tab==='privacy')this.loadPrivacyRequests();if(tab==='orders' || tab==='products'){if(!this.data.configLoaded){this.reloadConfigs();return;}if(tab==='orders')this.loadPendingOrders();else this.loadDishes();}},
+  changeAdminTab: function(e) {if(this.data.configSaving)return;const tab=e.currentTarget.dataset.tab;this.setData({activeTab:tab});if(tab==='support')this.loadSupportTickets();if(tab==='privacy')this.loadPrivacyRequests();if(tab==='orders' || tab==='products'){if(!this.data.configLoaded){this.reloadConfigs();return;}if(tab==='orders')this.loadPendingOrders();else{this.loadCategories();this.loadDishes();}}},
   changeSupportStatus: function(e) {this.setData({supportStatus:e.currentTarget.dataset.status});this.loadSupportTickets();},
   loadSupportTickets: async function(append=false) {
     if(append!==true)append=false;
@@ -206,7 +218,117 @@ Page({
   changeOrderDelivery: function(e){const index=Number(e.detail.value);if(!this.data.orderDeliveryNames[index])return;this.setData({orderDeliveryIndex:index,overduePickupOnly:false});this.loadPendingOrders();},
   retryOrders: function(){this.loadPendingOrders();},
   onDishField: function(e) {if(this.data.dishSaving || (e.currentTarget.dataset.field==='cover_img' && (this.data.photoBusy || this._pendingPhoto)))return;this.setData({['dishForm.'+e.currentTarget.dataset.field]:e.detail.value});},
-  onDishCategory: function(e) {if(this.data.dishSaving)return;this.setData({'dishForm.category_id':Number(e.detail.value)+1});},
+  onDishCategory: function(e) {
+    if (this.data.dishSaving) return;
+    const idx = Number(e.detail.value);
+    const list = this.data.rawCategories || [];
+    const target = list[idx];
+    this.setData({
+      dishCategoryIndex: idx >= 0 ? idx : 0,
+      'dishForm.category_id': target ? target.id : (idx + 1)
+    });
+  },
+  loadCategories: async function() {
+    try {
+      const rows = await app.api('/api/categories');
+      if (!Array.isArray(rows) || !rows.length) return;
+      const options = [{ id: 0, name: '全部分类' }].concat(rows.map(c => ({ id: c.id, name: c.name })));
+      let catIdx = options.findIndex(o => o.id === Number(this.data.productCategoryFilter || 0));
+      let catFilter = this.data.productCategoryFilter || 0;
+      if (catIdx < 0) { catIdx = 0; catFilter = 0; }
+      this.setData({
+        rawCategories: rows,
+        categoryNames: rows.map(c => c.name),
+        categoryOptions: options,
+        productCategoryIndex: catIdx,
+        productCategoryFilter: catFilter,
+        filteredDishes: this.applyDishFilters(this.data.dishes, catFilter, this.data.productStatusFilter)
+      });
+    } catch (e) {}
+  },
+  openCategoryModal: function() {
+    this.loadCategories();
+    this.setData({
+      showCategoryModal: true,
+      categoryForm: { id: 0, name: '', sort_order: '0' },
+      categorySaving: false
+    });
+  },
+  closeCategoryModal: function() {
+    if (this.data.categorySaving) return;
+    this.setData({ showCategoryModal: false, categoryForm: { id: 0, name: '', sort_order: '0' } });
+  },
+  onCategoryFieldInput: function(e) {
+    const field = e.currentTarget.dataset.field;
+    if (!['name', 'sort_order'].includes(field)) return;
+    this.setData({ ['categoryForm.' + field]: e.detail.value });
+  },
+  editCategoryItem: function(e) {
+    const cat = e.currentTarget.dataset.cat;
+    if (!cat) return;
+    this.setData({
+      categoryForm: { id: cat.id, name: cat.name, sort_order: String(cat.sort_order !== undefined ? cat.sort_order : 0) }
+    });
+  },
+  cancelEditCategory: function() {
+    this.setData({ categoryForm: { id: 0, name: '', sort_order: '0' } });
+  },
+  saveCategoryForm: async function() {
+    if (this.data.categorySaving) return;
+    const f = this.data.categoryForm;
+    const name = (f.name || '').trim();
+    const sortOrder = f.sort_order === '' ? 0 : Number(f.sort_order);
+    if (!name || name.length > 30) {
+      return wx.showToast({ title: '请填写1至30字的分类名称', icon: 'none' });
+    }
+    if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 9999) {
+      return wx.showToast({ title: '排序权重须为0至9999整数', icon: 'none' });
+    }
+    this.setData({ categorySaving: true });
+    try {
+      if (f.id) {
+        await app.api('/api/admin/category/update', 'POST', { id: f.id, name, sort_order: sortOrder });
+        wx.showToast({ title: '分类已更新', icon: 'success' });
+      } else {
+        await app.api('/api/admin/category/add', 'POST', { name, sort_order: sortOrder });
+        wx.showToast({ title: '分类已新增', icon: 'success' });
+      }
+      this.setData({ categoryForm: { id: 0, name: '', sort_order: '0' } });
+      await this.loadCategories();
+      this.loadDishes();
+    } catch (err) {
+      wx.showToast({ title: err.message || '保存失败', icon: 'none' });
+    } finally {
+      this.setData({ categorySaving: false });
+    }
+  },
+  confirmDeleteCategory: function(e) {
+    const cat = e.currentTarget.dataset.cat;
+    if (!cat || this.data.categorySaving) return;
+    wx.showModal({
+      title: '确认删除分类？',
+      content: `确定删除菜品分类「${cat.name}」吗？若该分类下仍有菜品，需先调整菜品分类后再删。`,
+      confirmColor: '#DC2626',
+      confirmText: '确认删除',
+      success: async r => {
+        if (!r.confirm) return;
+        this.setData({ categorySaving: true });
+        try {
+          await app.api('/api/admin/category/delete', 'POST', { id: cat.id });
+          wx.showToast({ title: '分类已删除', icon: 'success' });
+          if (this.data.categoryForm.id === cat.id) {
+            this.setData({ categoryForm: { id: 0, name: '', sort_order: '0' } });
+          }
+          await this.loadCategories();
+          this.loadDishes();
+        } catch (err) {
+          wx.showToast({ title: err.message || '无法删除该分类', icon: 'none', duration: 2800 });
+        } finally {
+          this.setData({ categorySaving: false });
+        }
+      }
+    });
+  },
   adjustStock: function(e) {
     const id=Number(e.currentTarget.dataset.id);
     const target=(this.data.dishes || []).find(d=>d.id===id);
@@ -343,6 +465,7 @@ Page({
     const opt = (this.data.categoryOptions || [])[idx];
     const catId = opt ? opt.id : 0;
     this.setData({
+      productCategoryIndex: idx >= 0 ? idx : 0,
       productCategoryFilter: catId,
       filteredDishes: this.applyDishFilters(this.data.dishes, catId, this.data.productStatusFilter)
     });
@@ -476,9 +599,12 @@ Page({
   openEditModal: function (e) {
     if(this.data.dishSaving)return;this.resetDishPhoto();
     const dish = e.currentTarget.dataset.dish;
+    const list = this.data.rawCategories || [];
+    const catIdx = list.findIndex(c => c.id === Number(dish.category_id));
     this.setData({
       showAddModal: true,
       isEditingDish: true,
+      dishCategoryIndex: catIdx >= 0 ? catIdx : 0,
       photoCloudCover:typeof dish.cover_img==='string' && dish.cover_img.indexOf('cloud://')===0,
       dishForm: {
         id: dish.id,
@@ -494,16 +620,19 @@ Page({
   // 打开新增模态框
   openAddModal: function () {
     if(this.data.dishSaving)return;this.resetDishPhoto();
+    const list = this.data.rawCategories || [];
+    const defaultCatId = list[0] ? list[0].id : 1;
     this.setData({
       showAddModal: true,
       isEditingDish: false,
+      dishCategoryIndex: 0,
       dishForm: {
         id: 0,
         title: '',
         origin_price: '',
         member_price: '',
         badge: '今日现捞',
-        intro: '', category_id:1, cover_img:'', stock_qty:0, specification:'', storage_note:''
+        intro: '', category_id:defaultCatId, cover_img:'', stock_qty:0, specification:'', storage_note:''
       }
     });
   },

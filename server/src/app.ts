@@ -63,6 +63,7 @@ export function createApp() {
     await query('SELECT active_user_id,status FROM t_privacy_request LIMIT 0');
     await query('SELECT payer_paid_amount,payer_refund_amount FROM t_order LIMIT 0');
     await query('SELECT sign_date FROM t_user_sign_in LIMIT 0');
+    await query('SELECT name,sort_order FROM t_product_category LIMIT 0');
     if(simulated)await query('SELECT out_trade_no,trade_state FROM t_dev_payment LIMIT 0');
     ctx.body={status:'UP',...(simulated?{payment_mode:'mock',local_development:true}:{})};
   });
@@ -103,6 +104,8 @@ export function createApp() {
   router.post('/admin/product/image',adminRequired,bodyParser({jsonLimit:'3mb',enableTypes:['json']}),auditAdmin,product.uploadImage);
   manage('/admin/product/toggle',product.toggleProductStatus);manage('/admin/product/add',product.addProduct);
   manage('/admin/product/update',product.updateProduct);manage('/admin/product/delete',product.deleteProduct);
+  manage('/admin/category/add',product.addCategory);manage('/admin/category/update',product.updateCategory);
+  manage('/admin/category/delete',product.deleteCategory);
   manage('/admin/config/update',admin.updateSystemConfig);
   router.get('/admin/config',adminRequired,admin.getAdminConfig);
   manage('/admin/order/dispatch',order.dispatchDelivery);manage('/admin/order/ready',order.readyPickup);

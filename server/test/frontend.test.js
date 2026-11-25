@@ -654,4 +654,76 @@ test('report translates SIGN_IN flows and shifts dates cleanly', async () => {
  assert.equal(page.data.date, beforeDate);
 });
 
+test('admin manages product categories dynamically and index page syncs remote categories', async () => {
+ let remoteCategories = [
+  { id: 1, name: '招牌必吃', sort_order: 50 },
+  { id: 6, name: '凉拌小菜', sort_order: 60 }
+ ];
+ const adminCalls = [], modals = [];
+ const { page: adminPage } = loadPage('admin', {
+  api: async (path, method, body) => {
+   adminCalls.push({ path, method, body });
+   if (path === '/api/categories') return remoteCategories;
+   if (path === '/api/admin/category/add') {
+    const item = { id: 7, name: body.name, sort_order: body.sort_order };
+    remoteCategories = [item, ...remoteCategories];
+    return item;
+   }
+   if (path === '/api/admin/category/update') {
+    remoteCategories = remoteCategories.map(c => c.id === body.id ? { ...c, name: body.name, sort_order: body.sort_order } : c);
+    return {};
+   }
+   if (path === '/api/admin/category/delete') {
+    remoteCategories = remoteCategories.filter(c => c.id !== body.id);
+    return {};
+   }
+   return [];
+  }
+ }, { showModal: o => modals.push(o) });
+
+ adminPage.openCategoryModal();
+ await new Promise(setImmediate);
+ assert.equal(adminPage.data.rawCategories.length, 2);
+ assert.equal(adminPage.data.categoryOptions[2].name, '凉拌小菜');
+
+ // Selecting non-sequential category id 6 maps accurately when editing product
+ adminPage.openEditModal({ currentTarget: { dataset: { dish: { id: 9, title: '拌黄瓜', origin_price: '12.00', member_price: '10.00', category_id: 6, stock_qty: 5 } } } });
+ assert.equal(adminPage.data.dishCategoryIndex, 1);
+ assert.equal(adminPage.data.dishForm.category_id, 6);
+
+ // Add category
+ adminPage.onCategoryFieldInput({ currentTarget: { dataset: { field: 'name' } }, detail: { value: '新品卤味' } });
+ adminPage.onCategoryFieldInput({ currentTarget: { dataset: { field: 'sort_order' } }, detail: { value: '99' } });
+ await adminPage.saveCategoryForm();
+ assert.ok(adminCalls.some(c => c.path === '/api/admin/category/add' && c.body.name === '新品卤味' && c.body.sort_order === 99));
+ assert.equal(adminPage.data.rawCategories[0].id, 7);
+
+ // Update category
+ adminPage.editCategoryItem({ currentTarget: { dataset: { cat: { id: 7, name: '新品卤味', sort_order: 99 } } } });
+ adminPage.onCategoryFieldInput({ currentTarget: { dataset: { field: 'name' } }, detail: { value: '精选新品' } });
+ await adminPage.saveCategoryForm();
+ assert.ok(adminCalls.some(c => c.path === '/api/admin/category/update' && c.body.id === 7 && c.body.name === '精选新品'));
+
+ // Delete category
+ adminPage.confirmDeleteCategory({ currentTarget: { dataset: { cat: { id: 7, name: '精选新品' } } } });
+ await modals[0].success({ confirm: true });
+ assert.ok(adminCalls.some(c => c.path === '/api/admin/category/delete' && c.body.id === 7));
+
+ // Index page dynamically renders remote categories while preserving built-in icons for id 1..4
+ const { page: indexPage } = loadPage('index', {
+  api: async path => {
+   if (path === '/api/batches') return { slots: [], config: { RED_PACKET_MAX_DEDUCT_RATIO: '0.50' }, delivery_areas: [] };
+   if (path === '/api/user/info') return { is_member: 1, normal_points: 10, red_packet_points: '0.00' };
+   if (path === '/api/categories') return remoteCategories;
+   return [];
+  }
+ });
+ await indexPage.refresh();
+ assert.equal(indexPage.data.categories[0].name, '全部卤味');
+ assert.equal(indexPage.data.categories[1].iconNormal, '/images/category/cat_1.png');
+ assert.equal(indexPage.data.categories[2].name, '凉拌小菜');
+ assert.equal(indexPage.data.categories[2].iconNormal, undefined);
+});
+
+
 
