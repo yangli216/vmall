@@ -27,7 +27,7 @@
           <view class="card-addr-row">
             <text class="tag-default" wx:if="{{item.is_default}}">默认</text>
             <text class="tag-current" wx:if="{{mode === 'select' && item.id === activeId}}">当前选用</text>
-            <text class="addr-main-txt" wx:if="{{item.detail}}">{{item.area && item.detail.indexOf(item.area) === -1 ? item.area + ' ' : ''}}{{item.detail}}</text>
+            <text class="addr-main-txt" wx:if="{{item.detail}}">{{item.displayDetail || item.detail}}</text>
             <text class="addr-missing-txt" wx:else>未填写具体门牌，请点右侧 ✏️ 补充</text>
           </view>
           <!-- 第 2 行：收货人与手机号 -->

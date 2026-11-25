@@ -37,7 +37,12 @@ Page({
   },
 
   refreshList() {
-    const list = addressUtil.getAddressList();
+    const list = addressUtil.getAddressList().map(item => {
+      const area = item.area || '';
+      const detail = item.detail || '';
+      const displayDetail = detail && area && !detail.includes(area) ? `${area} ${detail}` : detail;
+      return Object.assign({}, item, { displayDetail });
+    });
     let activeId = this.data.activeId;
     if (this.data.mode === 'select' && !activeId) {
       const contact = wx.getStorageSync(addressUtil.CONTACT_KEY);
