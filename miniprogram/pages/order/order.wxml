@@ -47,9 +47,7 @@
     <view class="order-card-header" data-id="{{item.id}}" bindtap="expand">
       <view class="header-left">
         <text class="shop-brand-name">潘小兜·手工老卤</text>
-        <text class="delivery-badge {{item.delivery_type === 1 ? 'dispatch' : 'pickup'}}">
-          {{item.delivery_type === 1 ? '作坊自送' : '到店自提'}}
-        </text>
+        <text class="delivery-badge {{item.delivery_type === 1 ? 'dispatch' : 'pickup'}}">{{item.delivery_type === 1 ? '作坊自送' : '到店自提'}}</text>
       </view>
       <view class="header-right">
         <text class="order-status-badge status-{{item.order_status}}">{{item.status_title}}</text>
