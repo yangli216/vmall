@@ -1,0 +1,380 @@
+/* miniprogram/pages/address/address.wxss */
+page {
+  background: #F6F4F0;
+  color: #2D251E;
+}
+
+button::after {
+  border: none;
+}
+
+.addr-page {
+  min-height: 100vh;
+  padding: 24rpx 24rpx calc(160rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.mode-tip-banner {
+  background: #FFF7ED;
+  border: 1rpx solid #FDBA74;
+  color: #C2410C;
+  font-size: 23rpx;
+  font-weight: 600;
+  padding: 14rpx 20rpx;
+  border-radius: 14rpx;
+  margin-bottom: 20rpx;
+  text-align: center;
+}
+
+/* 空状态 */
+.empty-address-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  text-align: center;
+}
+
+.empty-pin {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #3F3429;
+  margin-bottom: 10rpx;
+}
+
+.empty-desc {
+  font-size: 24rpx;
+  color: #8D7C6B;
+  line-height: 1.5;
+}
+
+/* 地址列表卡片（地址为主视觉） */
+.address-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.std-addr-card {
+  background: #FFFFFF;
+  border: 1.5rpx solid #EAE3DA;
+  border-radius: 20rpx;
+  padding: 26rpx 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.std-addr-card.is-active {
+  background: #FFFAF6;
+  border-color: #AA4624;
+  box-shadow: 0 4rpx 14rpx rgba(170, 70, 36, 0.08);
+}
+
+.card-left-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.card-addr-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.tag-default {
+  font-size: 19rpx;
+  font-weight: 700;
+  background: #AA4624;
+  color: #FFFFFF;
+  padding: 3rpx 10rpx;
+  border-radius: 6rpx;
+  flex-shrink: 0;
+}
+
+.tag-current {
+  font-size: 19rpx;
+  font-weight: 700;
+  background: #ECFDF5;
+  color: #059669;
+  border: 1rpx solid #A7F3D0;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  flex-shrink: 0;
+}
+
+.addr-main-txt {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1F2937;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.addr-missing-txt {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #D9480F;
+}
+
+.card-user-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  font-size: 25rpx;
+  color: #6E6155;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #4B4036;
+}
+
+.card-edit-btn {
+  width: 68rpx;
+  height: 68rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #F7F4EF;
+  flex-shrink: 0;
+}
+
+.edit-icon {
+  font-size: 30rpx;
+  color: #6B5E52;
+}
+
+/* 底部吸底双栏操作热区 */
+.bottom-fixed-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1rpx solid #EAE3DA;
+  padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 16rpx;
+  box-shadow: 0 -6rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.dock-btn {
+  flex: 1;
+  height: 84rpx;
+  border-radius: 42rpx !important;
+  font-size: 27rpx !important;
+  font-weight: 700 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.dock-wx {
+  background: #F0FDF4 !important;
+  color: #15803D !important;
+  border: 1.5rpx solid #86EFAC !important;
+}
+
+.dock-add {
+  background: linear-gradient(135deg, #C2410C, #AA4624) !important;
+  color: #FFFFFF !important;
+}
+
+.dock-ico {
+  font-size: 28rpx;
+}
+
+/* ==================== 表单视图 ==================== */
+.form-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18rpx;
+  padding: 4rpx 6rpx;
+}
+
+.form-top-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #2D251E;
+}
+
+.form-top-back {
+  font-size: 24rpx;
+  color: #AA4624;
+  font-weight: 600;
+  padding: 8rpx 16rpx;
+  background: #FAEDE2;
+  border-radius: 12rpx;
+}
+
+.std-form-card {
+  background: #FFFFFF;
+  border: 1rpx solid #EAE3DA;
+  border-radius: 22rpx;
+  padding: 8rpx 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.form-field-row {
+  display: flex;
+  align-items: center;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #F2EDE6;
+  gap: 16rpx;
+}
+
+.form-field-row.no-border {
+  border-bottom: none;
+}
+
+.field-label {
+  width: 140rpx;
+  flex-shrink: 0;
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #3F3429;
+}
+
+.field-control-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 27rpx;
+  color: #1F2937;
+  height: 56rpx;
+}
+
+.field-clear {
+  font-size: 24rpx;
+  color: #9CA3AF;
+  padding: 8rpx 10rpx;
+}
+
+.btn-locate-inline {
+  flex-shrink: 0;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1rpx solid #BFDBFE;
+  font-size: 22rpx;
+  font-weight: 700;
+  padding: 10rpx 16rpx;
+  border-radius: 12rpx;
+}
+
+/* 可自送小区白名单快捷标签 */
+.whitelist-areas-box {
+  padding: 16rpx 0 18rpx;
+  border-bottom: 1rpx solid #F2EDE6;
+}
+
+.wl-label {
+  display: block;
+  font-size: 22rpx;
+  color: #8A7D70;
+  margin-bottom: 12rpx;
+}
+
+.wl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+
+.wl-chip {
+  font-size: 22rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 20rpx;
+  background: #F6F3EE;
+  color: #5C5044;
+  border: 1rpx solid #E5DDD2;
+}
+
+.wl-chip.selected {
+  background: #FFF1E6;
+  color: #AA4624;
+  border-color: #AA4624;
+  font-weight: 700;
+}
+
+.switch-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+}
+
+.switch-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.switch-title {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #2D251E;
+}
+
+.switch-sub {
+  font-size: 22rpx;
+  color: #8D7C6B;
+}
+
+.form-submit-area {
+  margin-top: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.btn-form-save {
+  width: 100% !important;
+  height: 88rpx;
+  border-radius: 44rpx !important;
+  background: linear-gradient(135deg, #C2410C, #AA4624) !important;
+  color: #FFFFFF !important;
+  font-size: 30rpx !important;
+  font-weight: 700 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-form-delete {
+  width: 100% !important;
+  height: 82rpx;
+  border-radius: 41rpx !important;
+  background: #FFFFFF !important;
+  color: #DC2626 !important;
+  border: 1rpx solid #FECACA !important;
+  font-size: 27rpx !important;
+  font-weight: 600 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

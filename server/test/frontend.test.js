@@ -469,90 +469,98 @@ test('member registration supports WeChat profile authorization and address mana
  assert.ok(calls.some(c=>c.path==='/api/user/activate-free'));
  assert.equal(page.data.showProfileModal,false);
 
- page.openAddressManager();
- assert.equal(page.data.showAddressModal,true);
- await page.importWechatAddress();
- assert.ok(page.data.addressList.length>0);
- assert.equal(page.data.addressList[0].name,'王先生');
- page.closeAddressManager();
- assert.equal(page.data.showAddressModal,false);
+ const navRoutes=[];
+ const memberNav=loadPage('member',{globalData:{},api:async()=>({})},{navigateTo:o=>navRoutes.push(o.url)});
+ memberNav.page.openAddressManager();
+ assert.deepEqual(navRoutes,['/pages/address/address?mode=manage']);
 });
-test('index checkout rapidly selects maintained address and recalculates bills',()=>{
- const storage=new Map([['pandou_addresses',[{id:'addr_1',name:'赵六',phone:'13966667777',area:'临安锦城',detail:'锦城小区5幢101',is_default:true}]]]);
- const {page}=loadPage('index',{},{getStorageSync:k=>storage.get(k),setStorageSync:(k,v)=>storage.set(k,v),removeStorageSync:k=>storage.delete(k),showToast:()=>{}});
- page.data.deliveryAreas=['锦城小区'];
- page.openAddressPicker();
- assert.equal(page.data.showAddressPicker,true);
- assert.equal(page.data.addressList.length,1);
+test('standalone address page supports whitelist pick, WeChat import, map locate, CRUD and checkout sync',async()=>{
+ const shared=new Map([['pandou_contact',{receiverName:'仅留姓名',receiverPhone:'13800000000',destAddress:'',deliveryArea:''}]]);
+ const navs=[],backs=[],toasts=[],modals=[];
+ const storageWx={
+  getStorageSync:k=>shared.get(k),
+  setStorageSync:(k,v)=>shared.set(k,v),
+  removeStorageSync:k=>shared.delete(k),
+  showToast:o=>toasts.push(o.title),
+  showModal:o=>modals.push(o),
+  navigateTo:o=>navs.push(o.url),
+  navigateBack:()=>backs.push(true),
+  chooseAddress:o=>o.success({userName:'王先生',telNumber:'13500001111',provinceName:'浙江省',cityName:'杭州市',countyName:'临安区',detailInfo:'春天花园1幢'}),
+  chooseLocation:o=>o.success({name:'青山湖小区',address:'浙江省杭州市临安区青山湖街道99号',latitude:30.2,longitude:119.7})
+ };
 
- page.selectAddress({currentTarget:{dataset:{id:'addr_1'}}});
- assert.equal(page.data.receiverName,'赵六');
- assert.equal(page.data.receiverPhone,'13966667777');
- assert.equal(page.data.destAddress,'锦城小区5幢101');
- assert.equal(page.data.deliveryArea,'锦城小区');
- assert.equal(page.data.showAddressPicker,false);
-});
+ // 1. Empty destAddress in pandou_contact should NOT migrate as an empty-detail address card
+ const addrApp={globalData:{},api:async path=>{if(path==='/api/config/all')return {DELIVERY_AREAS:'青山湖小区,锦城小区'};return {};}};
+ const addrCtx=vm.createContext({getApp:()=>addrApp,Page:p=>{addrCtx.__page=p;},wx:storageWx,setTimeout:fn=>fn(),clearTimeout:()=>{}});
+ function miniReq(req,from=path.join(__dirname,'../../miniprogram/pages/address/address.js')){
+  const file=path.resolve(path.dirname(from),req)+'.js',module={exports:{}};
+  vm.runInContext('(function(require,module,exports){'+fs.readFileSync(file,'utf8')+'\n})',addrCtx)(r=>miniReq(r,file),module,module.exports);return module.exports;
+ }
+ addrCtx.require=miniReq;
+ vm.runInContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/pages/address/address.js'),'utf8'),addrCtx);
+ const addrPage=addrCtx.__page;
+ addrPage.setData=function(data){for(const [k,v] of Object.entries(data)){const parts=k.split('.');let t=this.data;for(const p of parts.slice(0,-1))t=t[p]||(t[p]={});t[parts[parts.length-1]]=v;}};
 
-test('index checkout autofills default address and guides address selection on submit without address', async () => {
- const storage=new Map([['pandou_addresses',[{id:'addr_default',name:'李掌柜',phone:'13800000000',area:'青山湖小区',detail:'青山湖小区10幢202',is_default:true}]]]);
- let toastMsg = '';
- const {page}=loadPage('index',{},{
-   getStorageSync:k=>storage.get(k),
-   setStorageSync:(k,v)=>storage.set(k,v),
-   removeStorageSync:k=>storage.delete(k),
-   showToast:(opt)=>{ toastMsg = opt.title; }
- });
- page.data.cartCount = 2;
- page.data.slots = [{date:'2026-11-20',time:'16:30'}];
- page.data.deliveryAreas = ['青山湖小区'];
- page.data.deliveryType = 1;
- page.data.destAddress = '';
+ addrPage.onLoad({mode:'select'});
+ await new Promise(setImmediate);
+ addrPage.onShow();
+ assert.equal(addrPage.data.addressList.length,0);
+ assert.deepEqual(Array.from(addrPage.data.deliveryAreas),['青山湖小区','锦城小区']);
 
- // Opening sheet auto-populates default address
- page.openCheckoutSheet();
- assert.equal(page.data.destAddress, '青山湖小区10幢202');
- assert.equal(page.data.receiverName, '李掌柜');
- assert.equal(page.data.receiverPhone, '13800000000');
- assert.equal(page.data.deliveryArea, '青山湖小区');
+ // 2. Create form supports map location + whitelist quick-pick + save & return
+ addrPage.openCreateForm();
+ assert.equal(addrPage.data.isEditing,true);
+ await addrPage.locateOnMap();
+ assert.equal(addrPage.data.form.area,'青山湖小区');
+ addrPage.pickWhitelistArea({currentTarget:{dataset:{area:'锦城小区'}}});
+ assert.equal(addrPage.data.form.area,'锦城小区');
+ addrPage.onFormInput({currentTarget:{dataset:{field:'name'}},detail:{value:'陈女士'}});
+ addrPage.onFormInput({currentTarget:{dataset:{field:'phone'}},detail:{value:'13912345678'}});
+ addrPage.onFormInput({currentTarget:{dataset:{field:'detail'}},detail:{value:'18幢601'}});
+ addrPage.saveForm();
 
- // If address was cleared and submit is called, it pops toast and opens address picker
- page.data.destAddress = '';
- page.data.calcReady = true;
- await page.submitOrderPay();
- assert.equal(toastMsg, '请选择或完善配送地址');
- assert.equal(page.data.showAddressPicker, true);
+ assert.equal(addrPage.data.isEditing,false);
+ assert.equal(backs.length,1);
+ assert.equal(shared.get('pandou_contact').receiverName,'陈女士');
+ assert.equal(shared.get('pandou_contact').deliveryArea,'锦城小区');
+ assert.ok(shared.get('pandou_contact').destAddress.includes('锦城小区 18幢601'));
 
- // Contact modal allows editing recipient and phone via dedicated dialog
- page.openContactModal();
- assert.equal(page.data.showContactModal, true);
- assert.equal(page.data.tempReceiverName, '李掌柜');
- assert.equal(page.data.tempReceiverPhone, '13800000000');
+ // 3. Index page navigates to standalone address page and syncs saved contact on return
+ const {page:indexPage}=loadPage('index',{api:async()=>({})},storageWx);
+ indexPage.data.cartCount=2;
+ indexPage.data.slots=[{date:'2026-11-20',time:'16:30'}];
+ indexPage.data.deliveryAreas=['青山湖小区','锦城小区'];
+ indexPage.data.deliveryType=1;
+ indexPage.openAddressPicker();
+ assert.equal(navs[0],'/pages/address/address?mode=select');
 
- page.onTempNameInput({ detail: { value: '杨力' } });
- page.onTempPhoneInput({ detail: { value: '13738027508' } });
- page.saveContactModal();
+ indexPage.syncSavedContact();
+ assert.equal(indexPage.data.receiverName,'陈女士');
+ assert.equal(indexPage.data.receiverPhone,'13912345678');
+ assert.equal(indexPage.data.deliveryArea,'锦城小区');
+ assert.ok(indexPage.data.destAddress.includes('锦城小区 18幢601'));
 
- assert.equal(page.data.showContactModal, false);
- assert.equal(page.data.receiverName, '杨力');
- assert.equal(page.data.receiverPhone, '13738027508');
- assert.equal(storage.get('pandou_contact').receiverName, '杨力');
- assert.equal(storage.get('pandou_contact').receiverPhone, '13738027508');
+ // 4. WeChat import in manage mode adds record without empty detail
+ addrPage.data.mode='manage';
+ await addrPage.importFromWechat();
+ assert.equal(addrPage.data.addressList[0].name,'王先生');
+ assert.ok(addrPage.data.addressList[0].detail.includes('春天花园1幢'));
 
- // Delivery modal allows unified modification of recipient, phone and address together
- page.data.deliveryType = 1;
- page.openDeliveryModal();
- assert.equal(page.data.showDeliveryModal, true);
- page.onEditNameInput({ detail: { value: '陈女士' } });
- page.onEditPhoneInput({ detail: { value: '13912345678' } });
- page.onEditAddressInput({ detail: { value: '青山湖小区18幢601' } });
- page.saveUnifiedDelivery();
+ // 5. Index checkout autofills default address and opens standalone page on submit without address
+ indexPage.data.destAddress='';
+ indexPage.data.calcReady=true;
+ await indexPage.submitOrderPay();
+ assert.ok(toasts.includes('请选择或完善配送地址'));
+ assert.equal(navs[navs.length-1],'/pages/address/address?mode=select');
 
- assert.equal(page.data.showDeliveryModal, false);
- assert.equal(page.data.receiverName, '陈女士');
- assert.equal(page.data.receiverPhone, '13912345678');
- assert.ok(page.data.destAddress.includes('青山湖小区18幢601'));
- assert.equal(storage.get('pandou_contact').receiverName, '陈女士');
- assert.equal(storage.get('pandou_contact').receiverPhone, '13912345678');
+ // 6. Self-pickup contact modal still works cleanly
+ indexPage.openContactModal();
+ indexPage.onTempNameInput({detail:{value:'杨力'}});
+ indexPage.onTempPhoneInput({detail:{value:'13738027508'}});
+ indexPage.saveContactModal();
+ assert.equal(indexPage.data.showContactModal,false);
+ assert.equal(indexPage.data.receiverName,'杨力');
+ assert.equal(indexPage.data.receiverPhone,'13738027508');
 });
 
 test('admin workbench supports member filter, integer point validation, adjust logs and safe dish filtering/editing', async () => {

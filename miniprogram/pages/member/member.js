@@ -53,9 +53,9 @@ Page({
   refreshAddressSummary() {
     const list = addressUtil.getAddressList();
     const def = addressUtil.getDefaultAddress();
-    let summary = '暂无已保存地址，支持微信一键导入';
+    let summary = '管理周边自送地址，支持微信一键导入';
     if (def) {
-      summary = `${def.name} ${def.phone ? def.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : ''} · ${def.detail}`;
+      summary = `${def.name} ${def.phone ? def.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : ''} · ${def.detail || '待补充详细门牌'}`;
     }
     this.setData({ addressList: list, defaultAddressSummary: summary });
   },
@@ -224,134 +224,7 @@ Page({
 
   // ---------------- 配送地址自行维护 ----------------
   openAddressManager() {
-    this.refreshAddressSummary();
-    this.setData({ showAddressModal: true });
-  },
-
-  closeAddressManager() {
-    this.setData({ showAddressModal: false });
-  },
-
-  async importWechatAddress() {
-    try {
-      const record = await addressUtil.importFromWechat();
-      wx.showToast({ title: '已从微信导入地址', icon: 'success' });
-      this.refreshAddressSummary();
-    } catch (err) {
-      if (!/cancel/i.test(err.errMsg || '')) {
-        wx.showToast({ title: '未获取到微信地址', icon: 'none' });
-      }
-    }
-  },
-
-  async chooseLocationForAddAddress() {
-    try {
-      const res = await addressUtil.chooseLocation();
-      const poiName = res.name || '';
-      const address = res.detail || res.cleanAddress || '';
-      const u = this.data.userInfo || {};
-      this.setData({
-        showAddressEditModal: true,
-        addressForm: {
-          id: '',
-          name: u.name || u.nickname || '',
-          phone: u.phone || '',
-          area: poiName || res.area || '临安锦城',
-          detail: address,
-          is_default: this.data.addressList.length === 0
-        }
-      });
-      wx.showToast({ title: '已定位，请补充门牌号', icon: 'none', duration: 2500 });
-    } catch (err) {
-      if (!/cancel/i.test((err && err.message) || (err && err.errMsg) || '')) {
-        wx.showToast({ title: '定位未完成或未授权', icon: 'none' });
-      }
-    }
-  },
-
-  async chooseLocationForForm() {
-    try {
-      const res = await addressUtil.chooseLocation();
-      const poiName = res.name || '';
-      const address = res.detail || res.cleanAddress || '';
-      this.setData({
-        'addressForm.area': poiName || res.area || this.data.addressForm.area || '临安锦城',
-        'addressForm.detail': address
-      });
-      wx.showToast({ title: '已定位，请补充门牌号', icon: 'none', duration: 2500 });
-    } catch (err) {
-      if (!/cancel/i.test((err && err.message) || (err && err.errMsg) || '')) {
-        wx.showToast({ title: '定位未完成或未授权', icon: 'none' });
-      }
-    }
-  },
-
-  openAddAddressModal() {
-    this.setData({
-      showAddressEditModal: true,
-      addressForm: { id: '', name: '', phone: this.data.userInfo.phone || '', area: '临安锦城', detail: '', is_default: this.data.addressList.length === 0 }
-    });
-  },
-
-  openEditAddressModal(e) {
-    const id = e.currentTarget.dataset.id;
-    const target = this.data.addressList.find(a => a.id === id);
-    if (!target) return;
-    this.setData({
-      showAddressEditModal: true,
-      addressForm: Object.assign({}, target)
-    });
-  },
-
-  closeAddressEditModal() {
-    if (this.data.addressSaving) return;
-    this.setData({ showAddressEditModal: false });
-  },
-
-  onAddressFormInput(e) {
-    const field = e.currentTarget.dataset.field;
-    this.setData({ [`addressForm.${field}`]: e.detail.value });
-  },
-
-  onAddressDefaultSwitch(e) {
-    this.setData({ ['addressForm.is_default']: Boolean(e.detail.value) });
-  },
-
-  saveAddressRecord() {
-    if (this.data.addressSaving) return;
-    try {
-      this.setData({ addressSaving: true });
-      addressUtil.saveAddress(this.data.addressForm);
-      wx.showToast({ title: '地址已保存', icon: 'success' });
-      this.setData({ showAddressEditModal: false });
-      this.refreshAddressSummary();
-    } catch (err) {
-      wx.showToast({ title: err.message, icon: 'none' });
-    } finally {
-      this.setData({ addressSaving: false });
-    }
-  },
-
-  onDeleteAddress(e) {
-    const id = e.currentTarget.dataset.id;
-    wx.showModal({
-      title: '确认删除地址？',
-      content: '删除后无法恢复，可重新从微信导入或手动新建。',
-      success: r => {
-        if (r.confirm) {
-          addressUtil.deleteAddress(id);
-          wx.showToast({ title: '地址已删除', icon: 'none' });
-          this.refreshAddressSummary();
-        }
-      }
-    });
-  },
-
-  onSetDefaultAddress(e) {
-    const id = e.currentTarget.dataset.id;
-    addressUtil.setDefaultAddress(id);
-    wx.showToast({ title: '已设为默认地址', icon: 'success' });
-    this.refreshAddressSummary();
+    wx.navigateTo({ url: '/pages/address/address?mode=manage' });
   },
 
   // ---------------- 其他操作 ----------------

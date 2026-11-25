@@ -33,6 +33,7 @@ Page({
     const contact=wx.getStorageSync('pandou_contact'),fields={};
     ['receiverName','receiverPhone','destAddress','deliveryArea'].forEach(key=>{fields[key]=contact && typeof contact[key]==='string'?contact[key]:'';});
     this.requestId=null;this.setData(fields);this.invalidateBill();
+    if (this.data.isDrawerOpen && this.data.cartCount > 0) this.calculateBill();
   },
   onPullDownRefresh() { this.refresh().finally(() => wx.stopPullDownRefresh()); },
   async refresh() {
@@ -177,83 +178,14 @@ Page({
       this.openContactModal();
       return;
     }
-    const list = addressUtil.getAddressList();
-    const areaIndex = this.data.deliveryAreas.findIndex(a => a === this.data.deliveryArea);
-    this.setData({
-      addressList: list,
-      showDeliveryModal: true,
-      showAddressPicker: true,
-      showManualEdit: list.length === 0,
-      editReceiverName: this.data.receiverName || '',
-      editReceiverPhone: this.data.receiverPhone || '',
-      editDestAddress: this.data.destAddress || '',
-      editDeliveryArea: this.data.deliveryArea || (this.data.deliveryAreas[0] || ''),
-      editAreaIndex: areaIndex >= 0 ? areaIndex : 0
-    });
-  },
-  closeDeliveryModal() {
-    this.setData({ showDeliveryModal: false, showAddressPicker: false, showManualEdit: false });
-  },
-  toggleDeliveryEditForm() {
-    this.setData({ showManualEdit: !this.data.showManualEdit });
-  },
-  onEditNameInput(e) { this.setData({ editReceiverName: e.detail.value }); },
-  onEditPhoneInput(e) { this.setData({ editReceiverPhone: e.detail.value }); },
-  onEditAddressInput(e) { this.setData({ editDestAddress: e.detail.value }); },
-  onEditAreaChange(e) {
-    const idx = Number(e.detail.value);
-    this.setData({
-      editAreaIndex: idx,
-      editDeliveryArea: this.data.deliveryAreas[idx] || ''
-    });
-  },
-  saveUnifiedDelivery() {
-    const name = (this.data.editReceiverName || '').trim();
-    const phone = (this.data.editReceiverPhone || '').trim();
-    let detail = (this.data.editDestAddress || '').trim();
-    const area = (this.data.editDeliveryArea || '').trim();
-
-    if (!name) return wx.showToast({ title: '请填写收件人姓名', icon: 'none' });
-    if (!/^1[3-9]\d{9}$/.test(phone)) return wx.showToast({ title: '请填写11位有效手机号', icon: 'none' });
-    if (!detail) return wx.showToast({ title: '请填写详细收货地址', icon: 'none' });
-
-    if (area && !detail.includes(area)) {
-      detail = area + ' ' + detail;
-    }
-
-    try {
-      addressUtil.saveAddress({
-        name,
-        phone,
-        area,
-        detail,
-        is_default: this.data.addressList.length === 0
-      });
-    } catch (e) {}
-
-    const list = addressUtil.getAddressList();
-    this.setData({
-      receiverName: name,
-      receiverPhone: phone,
-      deliveryArea: area,
-      destAddress: detail,
-      addressList: list,
-      showDeliveryModal: false,
-      showAddressPicker: false,
-      showManualEdit: false
-    });
-    this.saveContact();
-    this.invalidateBill();
-    wx.showToast({ title: '配送信息已更新', icon: 'success' });
+    this.openAddressPicker();
   },
   openAddressPicker() {
     if (this.data.submitting) return;
-    const list = addressUtil.getAddressList();
-    this.setData({
-      addressList: list,
-      showAddressPicker: true,
-      showDeliveryModal: true
-    });
+    wx.navigateTo({ url: '/pages/address/address?mode=select' });
+  },
+  closeDeliveryModal() {
+    this.setData({ showDeliveryModal: false, showAddressPicker: false, showManualEdit: false });
   },
   closeAddressPicker() {
     this.closeDeliveryModal();
@@ -302,78 +234,6 @@ Page({
   },
   preventTouchMove() {},
   stopBubble() {},
-  selectAddress(e) {
-    if (this.data.submitting) return;
-    const id = e.currentTarget.dataset.id;
-    const target = this.data.addressList.find(a => a.id === id);
-    if (!target) return;
-    const address = target.detail || '';
-    const matchedArea = this.data.deliveryAreas.find(a => address.includes(a) || (target.area && target.area.includes(a))) || target.area || '';
-    this.setData({
-      destAddress: address,
-      receiverName: target.name || '',
-      receiverPhone: target.phone || '',
-      deliveryArea: matchedArea,
-      showAddressPicker: false,
-      showDeliveryModal: false,
-      showManualEdit: false
-    });
-    this.requestId = null;
-    this.saveContact();
-    this.invalidateBill();
-    wx.showToast({ title: '已选择配送信息', icon: 'success' });
-  },
-  async importAddressFromWechat() {
-    if (this.data.submitting) return;
-    try {
-      const record = await addressUtil.importFromWechat();
-      const list = addressUtil.getAddressList();
-      const address = record.detail || '';
-      const matchedArea = this.data.deliveryAreas.find(a => address.includes(a)) || record.area || '';
-      this.setData({
-        addressList: list,
-        destAddress: address,
-        receiverName: record.name,
-        receiverPhone: record.phone,
-        deliveryArea: matchedArea,
-        showAddressPicker: false,
-        showDeliveryModal: false,
-        showManualEdit: false
-      });
-      this.requestId = null;
-      this.saveContact();
-      this.invalidateBill();
-      wx.showToast({ title: '已导入微信配送信息', icon: 'success' });
-    } catch (err) {
-      if (!/cancel/i.test(err.errMsg || '')) {
-        wx.showToast({ title: '未获取到微信地址', icon: 'none' });
-      }
-    }
-  },
-  async chooseLocationForDelivery() {
-    if (this.data.submitting) return;
-    try {
-      const res = await addressUtil.chooseLocation();
-      const poiName = res.name || '';
-      const address = res.detail || res.cleanAddress || '';
-      const areas = this.data.deliveryAreas || [];
-      const matchedArea = areas.find(a => (address + ' ' + poiName).includes(a)) || poiName || '';
-      const areaIndex = areas.findIndex(a => a === matchedArea);
-
-      this.setData({
-        showManualEdit: true,
-        editDeliveryArea: matchedArea,
-        editSelectedArea: matchedArea,
-        editAreaIndex: areaIndex >= 0 ? areaIndex : 0,
-        editDestAddress: address
-      });
-      wx.showToast({ title: '已定位，请补充门牌号', icon: 'none', duration: 2500 });
-    } catch (err) {
-      if (!/cancel/i.test((err && err.message) || (err && err.errMsg) || '')) {
-        wx.showToast({ title: '定位未完成或未授权', icon: 'none' });
-      }
-    }
-  },
   onContactInput(e) { if(this.data.submitting)return; const field = e.currentTarget.dataset.field; if (!['receiverName','receiverPhone','destAddress'].includes(field)) return; this.setData({ [field]: e.detail.value }); this.requestId = null; this.saveContact(); },
   onAreaChange(e) { if(this.data.submitting)return; this.setData({ deliveryArea: this.data.deliveryAreas[Number(e.detail.value)] }); this.requestId = null; this.saveContact(); },
   saveContact() { wx.setStorageSync('pandou_contact', { receiverName: this.data.receiverName, receiverPhone: this.data.receiverPhone, destAddress: this.data.destAddress, deliveryArea: this.data.deliveryArea }); },

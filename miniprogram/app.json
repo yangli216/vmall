@@ -2,6 +2,7 @@
   "pages": [
     "pages/index/index",
     "pages/member/member",
+    "pages/address/address",
     "pages/promote/promote",
     "pages/order/order",
     "pages/admin/admin",

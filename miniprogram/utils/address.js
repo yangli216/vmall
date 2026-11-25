@@ -6,13 +6,13 @@ function getAddressList() {
   const list = wx.getStorageSync(ADDRESS_KEY);
   if (Array.isArray(list) && list.length > 0) return list;
   const old = wx.getStorageSync(CONTACT_KEY);
-  if (old && (old.receiverName || old.destAddress)) {
+  if (old && old.destAddress && String(old.destAddress).trim()) {
     const init = [{
       id: 'addr_default',
       name: (old.receiverName || '临安街坊').trim(),
       phone: (old.receiverPhone || '').trim(),
       area: (old.deliveryArea || '').trim(),
-      detail: (old.destAddress || '').trim(),
+      detail: String(old.destAddress).trim(),
       is_default: true,
       create_time: Date.now()
     }];
