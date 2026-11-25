@@ -67,11 +67,11 @@
       <view class="signin-info-col">
         <view class="signin-title-line">
           <text class="signin-title">每日签到领积分</text>
-          <text class="signin-streak-badge" wx:if="{{signInInfo.continuous_days > 0}}">连签 {{signInInfo.continuous_days}} 天</text>
+          <text class="signin-streak-badge" wx:if="{{signInInfo.continuous_days > 0}}">连签{{signInInfo.continuous_days}}天</text>
         </view>
         <view class="signin-desc-text">
-          <text wx:if="{{signInInfo.is_signed_today}}">今日已签到，明日继续领 +{{signInInfo.reward_points || 10}} 积分</text>
-          <text wx:else>今日打卡立赠 +{{signInInfo.reward_points || 10}} 普通积分，下单可抵扣</text>
+          <text wx:if="{{signInInfo.is_signed_today}}">今日已打卡，明日继续领 +{{signInInfo.reward_points || 10}} 分</text>
+          <text wx:else>打卡立赠 +{{signInInfo.reward_points || 10}} 普通积分，下单可抵现</text>
         </view>
       </view>
     </view>
@@ -80,7 +80,7 @@
       disabled="{{signInInfo.is_signed_today || signingIn}}" 
       loading="{{signingIn}}" 
       bindtap="handleDailySignIn">
-      {{signInInfo.is_signed_today ? '✓ 今日已签' : '签到 +10分'}}
+      {{signInInfo.is_signed_today ? '✓ 已签' : '签到 +' + (signInInfo.reward_points || 10)}}
     </button>
   </view>
 
@@ -138,7 +138,7 @@
         <text>发给微信好友</text>
       </button>
       <button class="member-share-btn btn-share-pyq btn-press" bindtap="showTimelineGuide">
-        <text class="btn-emoji">⭕️</text>
+        <text class="btn-emoji">✨</text>
         <text>分享到朋友圈</text>
       </button>
     </view>
