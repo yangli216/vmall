@@ -213,11 +213,13 @@
       <picker class="prod-cat-picker" range="{{categoryOptions}}" range-key="name" value="{{productCategoryFilter}}" bindchange="changeProductCatFilter">
         <view class="prod-cat-pill">{{categoryOptions[productCategoryFilter].name || '全部分类'}} ▾</view>
       </picker>
-      <scroll-view scroll-x class="prod-status-scroll" enable-flex>
-        <view class="prod-status-chip {{productStatusFilter === 'ALL' ? 'active' : ''}}" data-status="ALL" bindtap="changeProductStatusFilter">全部</view>
-        <view class="prod-status-chip {{productStatusFilter === 'ON' ? 'active' : ''}}" data-status="ON" bindtap="changeProductStatusFilter">在售</view>
-        <view class="prod-status-chip {{productStatusFilter === 'OFF' ? 'active' : ''}}" data-status="OFF" bindtap="changeProductStatusFilter">已下架</view>
-        <view class="prod-status-chip {{productStatusFilter === 'LOW' ? 'active' : ''}}" data-status="LOW" bindtap="changeProductStatusFilter">低库存(≤5)</view>
+      <scroll-view scroll-x="true" show-scrollbar="{{false}}" class="prod-status-scroll">
+        <view class="prod-status-inner">
+          <view class="prod-status-chip {{productStatusFilter === 'ALL' ? 'active' : ''}}" data-status="ALL" bindtap="changeProductStatusFilter">全部</view>
+          <view class="prod-status-chip {{productStatusFilter === 'ON' ? 'active' : ''}}" data-status="ON" bindtap="changeProductStatusFilter">在售</view>
+          <view class="prod-status-chip {{productStatusFilter === 'OFF' ? 'active' : ''}}" data-status="OFF" bindtap="changeProductStatusFilter">已下架</view>
+          <view class="prod-status-chip {{productStatusFilter === 'LOW' ? 'active' : ''}}" data-status="LOW" bindtap="changeProductStatusFilter">低库存(≤5)</view>
+        </view>
       </scroll-view>
     </view>
 
